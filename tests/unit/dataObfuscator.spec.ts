@@ -24,7 +24,7 @@ describe('dataObfuscator', () => {
     MOCK_OBFUSCATED,
     MOCK_OBFUSCATED,
     MOCK_OBFUSCATED,
-    MOCK_OBFUSCATED,
+    mockDate,
     mockFunc
   ];
   const objectInputWithAll: any = {
@@ -42,13 +42,19 @@ describe('dataObfuscator', () => {
     c: MOCK_OBFUSCATED,
     d: MOCK_OBFUSCATED,
     e: MOCK_OBFUSCATED,
-    f: MOCK_OBFUSCATED,
+    f: mockDate,
     g: mockFunc
   };
 
-  let dataObfuscator: DataObfuscator;
+  let standardDataObfuscator: DataObfuscator;
+  let optionedDataObfuscator: DataObfuscator;
   beforeAll(() => {
-    dataObfuscator = new DataObfuscatorImpl(mockStrategy);
+    standardDataObfuscator = new DataObfuscatorImpl(mockStrategy);
+    optionedDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
+      obfuscateBooleans: true,
+      obfuscateDates: true,
+      obfuscateFunctions: true
+    })
   });
 
   beforeEach(() => {
@@ -56,49 +62,63 @@ describe('dataObfuscator', () => {
   });
 
   it('Ignores null and undefined values', () => {
-    expect(dataObfuscator.obfuscateValues(null)).toBe(null);
-    expect(dataObfuscator.obfuscateValues(undefined)).toBe(undefined);
+    expect(standardDataObfuscator.obfuscateValues(null)).toBe(null);
+    expect(standardDataObfuscator.obfuscateValues(undefined)).toBe(undefined);
   });
 
-  it('Ignores boolean values', () => {
-    expect(dataObfuscator.obfuscateValues(true)).toBe(true);
-    expect(dataObfuscator.obfuscateValues(false)).toBe(false);
+  it('Ignores boolean values when not specified in options', () => {
+    expect(standardDataObfuscator.obfuscateValues(true)).toBe(true);
+    expect(standardDataObfuscator.obfuscateValues(false)).toBe(false);
   });
 
-  it('Ignores functions', () => {
-    expect(dataObfuscator.obfuscateValues(mockFunc)).toBe(mockFunc);
+  it('Obfuscates booleans when specified in options', () => {
+    expect(optionedDataObfuscator.obfuscateValues(true)).toBe(MOCK_OBFUSCATED);
+    expect(optionedDataObfuscator.obfuscateValues(false)).toBe(MOCK_OBFUSCATED);
+  });
+
+  it('Ignores functions when not specified in options', () => {
+    expect(standardDataObfuscator.obfuscateValues(mockFunc)).toBe(mockFunc);
+  });
+
+  it('Obfuscates functions when specified in options', () => {
+    expect(optionedDataObfuscator.obfuscateValues(mockFunc)).toBe(MOCK_OBFUSCATED);
   });
 
   it('Obfuscates a string value in place', () => {
-    expect(dataObfuscator.obfuscateValues(mockString)).toBe(MOCK_OBFUSCATED);
+    expect(standardDataObfuscator.obfuscateValues(mockString)).toBe(MOCK_OBFUSCATED);
   });
 
   it('Obfuscates a number value in place', () => {
-    expect(dataObfuscator.obfuscateValues(mockNum)).toBe(MOCK_OBFUSCATED);
+    expect(standardDataObfuscator.obfuscateValues(mockNum)).toBe(MOCK_OBFUSCATED);
   });
 
   it('Obfuscates a BigInt value in place', () => {
-    expect(dataObfuscator.obfuscateValues(mockBigInt)).toBe(MOCK_OBFUSCATED);
+    expect(standardDataObfuscator.obfuscateValues(mockBigInt)).toBe(MOCK_OBFUSCATED);
   });
 
-  it('Obfuscates a Date value in place using its ISO string', () => {
+  it('Ignores datas when not specified in options', () => {
+    const result = standardDataObfuscator.obfuscateValues(mockDate);
+    expect(result).toStrictEqual(mockDate);
+  });
+
+  it('Obfuscates a Date value in place using its ISO string when specified in options', () => {
     const spy = jest.spyOn(mockStrategy, 'execute');
-    const result = dataObfuscator.obfuscateValues(mockDate);
-    expect(result).toBe(MOCK_OBFUSCATED);
+    const result = optionedDataObfuscator.obfuscateValues(mockDate);
+    expect(result).toStrictEqual(MOCK_OBFUSCATED);
     expect(spy).toHaveBeenCalledWith(mockDateIso);
   });
 
   it('Obfuscates an array of various value types correctly', () => {
-    const result = dataObfuscator.obfuscateValues(arrayInputWithAll);
+    const result = standardDataObfuscator.obfuscateValues(arrayInputWithAll);
     result.forEach((item: any, index: number) => {
-      expect(item).toBe(expectedArrayInputWithAllResult[index]);
+      expect(item).toStrictEqual(expectedArrayInputWithAllResult[index]);
     });
   });
 
   it('Obfuscates an object of various value types correctly ', () => {
-    const result = dataObfuscator.obfuscateValues(objectInputWithAll);
+    const result = standardDataObfuscator.obfuscateValues(objectInputWithAll);
     Object.keys(result).forEach((key: string) => {
-      expect(result[key]).toBe(expectedObjectInputWithAllResult[key]);
+      expect(result[key]).toStrictEqual(expectedObjectInputWithAllResult[key]);
     });
   });
 
@@ -108,11 +128,11 @@ describe('dataObfuscator', () => {
       anArray: arrayInputWithAll
     };
 
-    const { anArray } = dataObfuscator.obfuscateValues(
+    const { anArray } = standardDataObfuscator.obfuscateValues(
       objectInputWithNestedArray
     );
     anArray.forEach((item: any, index: number) => {
-      expect(item).toBe(expectedArrayInputWithAllResult[index]);
+      expect(item).toStrictEqual(expectedArrayInputWithAllResult[index]);
     });
   });
 
@@ -136,19 +156,19 @@ describe('dataObfuscator', () => {
       }
     };
 
-    const result = dataObfuscator.obfuscateValues(deeplyNested);
+    const result = standardDataObfuscator.obfuscateValues(deeplyNested);
     result.a.a2.a3.a4.forEach((item: any, index: number) => {
-      expect(item).toBe(expectedArrayInputWithAllResult[index]);
+      expect(item).toStrictEqual(expectedArrayInputWithAllResult[index]);
     });
     Object.keys(result.b.b2.b3).forEach((key: string) => {
-      expect(result.b.b2.b3[key]).toBe(expectedObjectInputWithAllResult[key]);
+      expect(result.b.b2.b3[key]).toStrictEqual(expectedObjectInputWithAllResult[key]);
     });
     const { array, ...rest } = result.b.b21;
     array.forEach((item: any, index: number) => {
-      expect(item).toBe(expectedArrayInputWithAllResult[index]);
+      expect(item).toStrictEqual(expectedArrayInputWithAllResult[index]);
     });
     Object.keys(rest).forEach((key: string) => {
-      expect(rest[key]).toBe(expectedObjectInputWithAllResult[key]);
+      expect(rest[key]).toStrictEqual(expectedObjectInputWithAllResult[key]);
     });
 
     expect(deeplyNested.a.a2.a3.a4.includes(MOCK_OBFUSCATED)).toBeFalsy();

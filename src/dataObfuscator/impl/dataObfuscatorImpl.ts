@@ -1,12 +1,13 @@
 import rfdc from 'rfdc';
 import { Strategy } from '../../strategies';
 import { DataObfuscator } from '../dataObfuscator';
+import { DataObfuscatorOptions } from '../dataObfuscatorOptions';
 
 // TODO - Add config parameter to allow for things like formatting, conditionally ignoring booleans, etc
 
 export class DataObfuscatorImpl implements DataObfuscator {
-  protected deepCopy = rfdc({ proto: true, circles: true });
-  constructor(protected strategy: Strategy) {}
+  private deepCopy = rfdc({ proto: true, circles: true });
+  constructor(private strategy: Strategy, private readonly options?: DataObfuscatorOptions) {}
 
   public obfuscateValues(value: any): any {
     const copy = this.deepCopy(value);
@@ -42,14 +43,26 @@ export class DataObfuscatorImpl implements DataObfuscator {
 
   private handleSpecificType(
     value: boolean | Function | Date
-  ): boolean | Function | string {
+  ): boolean | Function | string | Date {
     if (typeof value === 'boolean') {
-      return value;
+      return this.handleBoolean(value);
     } else if (typeof value === 'function') {
-      return value;
+      return this.handleFunction(value);
     }
 
-    return this.strategy.execute(value.toISOString());
+    return this.handleDate(value);
+  }
+
+  private handleFunction(value: Function): Function | string {
+    return this.options?.obfuscateFunctions ? this.strategy.execute(value.toString()) : value;
+  }
+
+  private handleDate(value: Date): Date | string {
+    return this.options?.obfuscateDates ? this.strategy.execute(value.toISOString()) : value;
+  }
+
+  private handleBoolean(value: boolean) {
+    return this.options?.obfuscateBooleans ? this.strategy.execute(String(value)) : value;
   }
 
   private obfuscateObjectValuesInPlace(object: any): void {
