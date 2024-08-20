@@ -36,6 +36,15 @@ describe('dataObfuscator', () => {
     f: mockDate,
     g: mockFunc
   };
+  const expectedObjectInputWithAllResult: any = {
+    a: null,
+    b: undefined,
+    c: MOCK_OBFUSCATED,
+    d: MOCK_OBFUSCATED,
+    e: MOCK_OBFUSCATED,
+    f: MOCK_OBFUSCATED,
+    g: mockFunc
+  };
 
   let dataObfuscator: DataObfuscator;
   beforeAll(() => {
@@ -87,23 +96,13 @@ describe('dataObfuscator', () => {
   });
 
   it('Obfuscates an object of various value types correctly ', () => {
-    const expectedOutput: any = {
-      a: null,
-      b: undefined,
-      c: MOCK_OBFUSCATED,
-      d: MOCK_OBFUSCATED,
-      e: MOCK_OBFUSCATED,
-      f: MOCK_OBFUSCATED,
-      g: mockFunc
-    };
-
     const result = dataObfuscator.obfuscateValues(objectInputWithAll);
     Object.keys(result).forEach((key: string) => {
-      expect(result[key]).toBe(expectedOutput[key]);
+      expect(result[key]).toBe(expectedObjectInputWithAllResult[key]);
     });
   });
 
-  it('Can handle arrays nested in objects', () => {
+  it('Can obfuscate arrays nested in objects', () => {
     const objectInputWithNestedArray: any = {
       ...objectInputWithAll,
       anArray: arrayInputWithAll
@@ -115,5 +114,43 @@ describe('dataObfuscator', () => {
     anArray.forEach((item: any, index: number) => {
       expect(item).toBe(expectedArrayInputWithAllResult[index]);
     });
+  });
+
+  it('Can obfuscate deeply nested objects without modifying original', () => {
+    const deeplyNested: any = {
+      a: {
+        a2: {
+          a3: {
+            a4: arrayInputWithAll
+          }
+        }
+      },
+      b: {
+        b2: {
+          b3: objectInputWithAll
+        },
+        b21: {
+          ...objectInputWithAll,
+          array: arrayInputWithAll
+        }
+      }
+    };
+
+    const result = dataObfuscator.obfuscateValues(deeplyNested);
+    result.a.a2.a3.a4.forEach((item: any, index: number) => {
+      expect(item).toBe(expectedArrayInputWithAllResult[index]);
+    });
+    Object.keys(result.b.b2.b3).forEach((key: string) => {
+      expect(result.b.b2.b3[key]).toBe(expectedObjectInputWithAllResult[key]);
+    });
+    const { array, ...rest } = result.b.b21;
+    array.forEach((item: any, index: number) => {
+      expect(item).toBe(expectedArrayInputWithAllResult[index]);
+    });
+    Object.keys(rest).forEach((key: string) => {
+      expect(rest[key]).toBe(expectedObjectInputWithAllResult[key]);
+    });
+
+    expect(deeplyNested.a.a2.a3.a4.includes(MOCK_OBFUSCATED)).toBeFalsy();
   });
 });

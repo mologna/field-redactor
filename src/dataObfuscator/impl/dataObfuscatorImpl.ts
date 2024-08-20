@@ -49,16 +49,7 @@ export class DataObfuscatorImpl
 
   private obfuscateObjectValuesInPlace(object: any): void {
     for (const key of Object.keys(object)) {
-      const val = object[key];
-      if (val === null || val === undefined) {
-        object[key] = val;
-      } else if (this.isSpecificType(val)) {
-        object[key] = this.handleSpecificType(val);
-      } else if (typeof val !== 'object') {
-        object[key] = this.strategy.execute(String(val));
-      } else {
-        this.obfuscateObjectValuesInPlace(val);
-      }
+      object[key] = this.obfuscateValues(object[key]);
     }
   }
 }
