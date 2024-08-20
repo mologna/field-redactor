@@ -1,12 +1,13 @@
+import rfdc from 'rfdc';
+import { Strategy } from '../../strategies';
 import { DataObfuscator } from '../dataObfuscator';
-import { BaseDataObfuscator } from './baseDataObfuscator';
 
 // TODO - Add config parameter to allow for things like formatting, conditionally ignoring booleans, etc
 
-export class DataObfuscatorImpl
-  extends BaseDataObfuscator
-  implements DataObfuscator
-{
+export class DataObfuscatorImpl implements DataObfuscator {
+  protected deepCopy = rfdc({ proto: true, circles: true });
+  constructor(protected strategy: Strategy) {}
+
   public obfuscateValues(value: any): any {
     if (value === null || value === undefined) {
       return value;
