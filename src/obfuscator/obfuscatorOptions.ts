@@ -1,6 +1,7 @@
 import { Formatter } from '../formatter/formatter';
+import { Secret } from '../secrets/secret';
 
-export type DataObfuscatorOptions = {
+export type ObfuscatorOptions = {
   values: {
     dates: boolean;
     functions: boolean;
@@ -8,3 +9,7 @@ export type DataObfuscatorOptions = {
   };
   formatter?: Formatter;
 };
+
+export type PiiObfuscatorOptions = ObfuscatorOptions & {
+  secret: Secret
+}

@@ -1,9 +1,9 @@
-import { Formatter, FormatterImpl } from '../formatter';
-import { Strategy, STRATEGIES, HashStrategy } from '../strategies';
-import { DataObfuscator } from './dataObfuscator';
-import { DataObfuscatorImpl } from './impl/dataObfuscatorImpl';
+import { Formatter, FormatterImpl } from '../../formatter';
+import { Strategy, STRATEGIES, HashStrategy } from '../../strategies';
+import { Obfuscator } from '../obfuscator';
+import { DataObfuscatorImpl } from '../impl/dataObfuscatorImpl';
 
-export class DataObfuscatorBuilder {
+export class ObfuscatorBuilder {
   private strategy?: Strategy | STRATEGIES = undefined;
   private formatter?: Formatter | string = undefined;
   private obfuscateBooleans: boolean = false;
@@ -12,33 +12,33 @@ export class DataObfuscatorBuilder {
 
   constructor() {}
 
-  public setStrategy(strategy: STRATEGIES | Strategy): DataObfuscatorBuilder {
+  public setStrategy(strategy: STRATEGIES | Strategy): ObfuscatorBuilder {
     this.strategy = strategy;
     return this;
   }
 
-  public setFormat(format: string | Formatter): DataObfuscatorBuilder {
+  public setFormat(format: string | Formatter): ObfuscatorBuilder {
     this.formatter = format;
 
     return this;
   }
 
-  public setObfuscateBooleans(value: boolean): DataObfuscatorBuilder {
+  public setObfuscateBooleans(value: boolean): ObfuscatorBuilder {
     this.obfuscateBooleans = value;
     return this;
   }
 
-  public setObfuscateDates(value: boolean): DataObfuscatorBuilder {
+  public setObfuscateDates(value: boolean): ObfuscatorBuilder {
     this.obfuscateDates = value;
     return this;
   }
 
-  public setObfuscateFuncs(value: boolean): DataObfuscatorBuilder {
+  public setObfuscateFuncs(value: boolean): ObfuscatorBuilder {
     this.obfuscateFuncs = value;
     return this;
   }
 
-  public build(): DataObfuscator {
+  public build(): Obfuscator {
     if (!this.strategy) {
       throw new Error('Must set strategy before building.');
     }

@@ -1,33 +1,7 @@
 import { Secret } from '../../src/secrets/secret';
+import { commonSecretKeys } from '../mocks/secrets';
 
 describe('secret', () => {
-  const commonSecretKeys: { [key: string]: string } = {
-    password: 'test',
-    pass: 'test',
-    pw: 'test',
-    secret: 'test',
-    token: 'test',
-    apikey: 'test',
-    mdn: 'test',
-    phone: '6152431111',
-    first: 'a name',
-    last: 'a name',
-    address: 'an address',
-    line: 'a line',
-    email: 'first.last@example.com',
-    fullname: 'a full name',
-    authkey: 'a key',
-    appAuthKey: 'a key',
-    imei: 'a number',
-    auth: 'an auth',
-    security: 'some secret',
-    account: 'some account value',
-    identifier: 'some unique identifier',
-    pin: '123456',
-    key: 'a key',
-    sessionid: 'an id'
-  };
-
   it('Default secret list redacts against common secret keys', () => {
     const secret: Secret = new Secret();
     Object.keys(commonSecretKeys).forEach((key) => {

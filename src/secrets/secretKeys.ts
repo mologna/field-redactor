@@ -23,6 +23,7 @@ export const SECRET_KEYS = [
   /full/i,
   /fullname/i,
   /command/i,
+  /ssn/i,
 
   // authentication and security information
   /appAuthKey/i,
@@ -41,10 +42,8 @@ export const SECRET_KEYS = [
   // specific
   /^connect\.sid$/, // https://github.com/expressjs/session
   /\btn\b/i,
-  /transactionId/i,
   /zipCode/i,
   /zip/i,
-  /correlationId/i,
   /appId/i
 ];
 
