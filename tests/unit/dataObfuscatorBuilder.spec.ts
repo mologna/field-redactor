@@ -17,6 +17,10 @@ describe('DataObfuscatorBuilder', () => {
   const mockNum = 12345;
   const mockFunc = () => {};
 
+  it('Throws an exception if user does not set strategy before building', () => {
+    expect(() => new DataObfuscatorBuilder().build()).toThrow('Must set strategy before building.');
+  })
+
   it('can build a data obfuscator with a defined strategy', () => {
     const result: DataObfuscator = new DataObfuscatorBuilder()
       .setStrategy(STRATEGIES.MD5_HEX)

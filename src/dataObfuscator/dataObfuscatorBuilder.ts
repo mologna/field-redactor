@@ -40,7 +40,7 @@ export class DataObfuscatorBuilder {
 
   public build(): DataObfuscator {
     if (!this.strategy) {
-      throw new Error('Must set strategy before building');
+      throw new Error('Must set strategy before building.');
     }
     const strategy = this.getStrategy(this.strategy);
     const formatter = this.formatter
@@ -87,11 +87,9 @@ export class DataObfuscatorBuilder {
 
   private internalStrategyFactory(strategy: STRATEGIES): Strategy {
     switch (strategy) {
-      case STRATEGIES.MD5_HEX: {
+      default: {
         return new HashStrategy('md5', 'hex');
       }
-      default:
-        throw new Error('Strategy not supported');
     }
   }
 }
