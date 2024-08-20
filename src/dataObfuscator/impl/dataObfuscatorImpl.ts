@@ -7,7 +7,10 @@ import { DataObfuscatorOptions } from '../dataObfuscatorOptions';
 
 export class DataObfuscatorImpl implements DataObfuscator {
   private deepCopy = rfdc({ proto: true, circles: true });
-  constructor(private strategy: Strategy, private readonly options?: DataObfuscatorOptions) {}
+  constructor(
+    private strategy: Strategy,
+    private readonly options?: DataObfuscatorOptions
+  ) {}
 
   public obfuscateValues(value: any): any {
     const copy = this.deepCopy(value);
@@ -17,8 +20,12 @@ export class DataObfuscatorImpl implements DataObfuscator {
   private obfuscateValuesInPlace(value: any): any {
     if (value === null || value === undefined) {
       return value;
-    } else if (this.isSpecificType(value)) {
-      return this.handleSpecificType(value);
+    } else if (typeof value === 'boolean') {
+      return this.handleBoolean(value);
+    } else if (typeof value === 'function') {
+      return this.handleFunction(value);
+    } else if (value instanceof Date) {
+      return this.handleDate(value);
     } else if (typeof value !== 'object') {
       return this.strategy.execute(String(value));
     } else if (Array.isArray(value)) {
@@ -33,36 +40,22 @@ export class DataObfuscatorImpl implements DataObfuscator {
     return array.map(this.obfuscateValuesInPlace.bind(this));
   }
 
-  private isSpecificType(value: any): boolean {
-    return (
-      typeof value === 'boolean' ||
-      typeof value === 'function' ||
-      value instanceof Date
-    );
-  }
-
-  private handleSpecificType(
-    value: boolean | Function | Date
-  ): boolean | Function | string | Date {
-    if (typeof value === 'boolean') {
-      return this.handleBoolean(value);
-    } else if (typeof value === 'function') {
-      return this.handleFunction(value);
-    }
-
-    return this.handleDate(value);
-  }
-
   private handleFunction(value: Function): Function | string {
-    return this.options?.obfuscateFunctions ? this.strategy.execute(value.toString()) : value;
+    return this.options?.values?.functions
+      ? this.strategy.execute(value.toString())
+      : value;
   }
 
   private handleDate(value: Date): Date | string {
-    return this.options?.obfuscateDates ? this.strategy.execute(value.toISOString()) : value;
+    return this.options?.values?.dates
+      ? this.strategy.execute(value.toISOString())
+      : value;
   }
 
   private handleBoolean(value: boolean) {
-    return this.options?.obfuscateBooleans ? this.strategy.execute(String(value)) : value;
+    return this.options?.values?.booleans
+      ? this.strategy.execute(String(value))
+      : value;
   }
 
   private obfuscateObjectValuesInPlace(object: any): void {

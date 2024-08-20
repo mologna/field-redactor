@@ -51,10 +51,12 @@ describe('dataObfuscator', () => {
   beforeAll(() => {
     standardDataObfuscator = new DataObfuscatorImpl(mockStrategy);
     optionedDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
-      obfuscateBooleans: true,
-      obfuscateDates: true,
-      obfuscateFunctions: true
-    })
+      values: {
+        booleans: true,
+        dates: true,
+        functions: true
+      }
+    });
   });
 
   beforeEach(() => {
@@ -81,19 +83,27 @@ describe('dataObfuscator', () => {
   });
 
   it('Obfuscates functions when specified in options', () => {
-    expect(optionedDataObfuscator.obfuscateValues(mockFunc)).toBe(MOCK_OBFUSCATED);
+    expect(optionedDataObfuscator.obfuscateValues(mockFunc)).toBe(
+      MOCK_OBFUSCATED
+    );
   });
 
   it('Obfuscates a string value in place', () => {
-    expect(standardDataObfuscator.obfuscateValues(mockString)).toBe(MOCK_OBFUSCATED);
+    expect(standardDataObfuscator.obfuscateValues(mockString)).toBe(
+      MOCK_OBFUSCATED
+    );
   });
 
   it('Obfuscates a number value in place', () => {
-    expect(standardDataObfuscator.obfuscateValues(mockNum)).toBe(MOCK_OBFUSCATED);
+    expect(standardDataObfuscator.obfuscateValues(mockNum)).toBe(
+      MOCK_OBFUSCATED
+    );
   });
 
   it('Obfuscates a BigInt value in place', () => {
-    expect(standardDataObfuscator.obfuscateValues(mockBigInt)).toBe(MOCK_OBFUSCATED);
+    expect(standardDataObfuscator.obfuscateValues(mockBigInt)).toBe(
+      MOCK_OBFUSCATED
+    );
   });
 
   it('Ignores datas when not specified in options', () => {
@@ -161,7 +171,9 @@ describe('dataObfuscator', () => {
       expect(item).toStrictEqual(expectedArrayInputWithAllResult[index]);
     });
     Object.keys(result.b.b2.b3).forEach((key: string) => {
-      expect(result.b.b2.b3[key]).toStrictEqual(expectedObjectInputWithAllResult[key]);
+      expect(result.b.b2.b3[key]).toStrictEqual(
+        expectedObjectInputWithAllResult[key]
+      );
     });
     const { array, ...rest } = result.b.b21;
     array.forEach((item: any, index: number) => {
