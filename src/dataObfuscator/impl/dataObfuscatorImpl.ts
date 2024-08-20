@@ -9,6 +9,11 @@ export class DataObfuscatorImpl implements DataObfuscator {
   constructor(protected strategy: Strategy) {}
 
   public obfuscateValues(value: any): any {
+    const copy = this.deepCopy(value);
+    return this.obfuscateValuesInPlace(copy);
+  }
+
+  private obfuscateValuesInPlace(value: any): any {
     if (value === null || value === undefined) {
       return value;
     } else if (this.isSpecificType(value)) {
@@ -19,13 +24,12 @@ export class DataObfuscatorImpl implements DataObfuscator {
       return this.obfuscateArray(value);
     }
 
-    const copy = this.deepCopy(value);
-    this.obfuscateObjectValuesInPlace(copy);
-    return copy;
+    this.obfuscateObjectValuesInPlace(value);
+    return value;
   }
 
   private obfuscateArray(array: Array<any>) {
-    return array.map(this.obfuscateValues.bind(this));
+    return array.map(this.obfuscateValuesInPlace.bind(this));
   }
 
   private isSpecificType(value: any): boolean {
@@ -50,7 +54,7 @@ export class DataObfuscatorImpl implements DataObfuscator {
 
   private obfuscateObjectValuesInPlace(object: any): void {
     for (const key of Object.keys(object)) {
-      object[key] = this.obfuscateValues(object[key]);
+      object[key] = this.obfuscateValuesInPlace(object[key]);
     }
   }
 }
