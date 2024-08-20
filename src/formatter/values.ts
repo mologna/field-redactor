@@ -1,5 +1,5 @@
 export enum FormatterValues {
-  value = "value",
-  strategy = "strategy",
-  shortStrategy = "shortStrategy"
+  value = 'value',
+  strategy = 'strategy',
+  shortStrategy = 'shortStrategy'
 }

@@ -3,6 +3,14 @@ import { HashMocks } from '../mocks';
 import { CalculatedHash, ENCODINGS } from '../mocks/hashes';
 
 describe('HashStrategy', () => {
+  const commonlySupportedAlgos = [
+    'md5',
+    'sha256',
+    'sha512',
+    'sha3-256',
+    'sha3-512'
+  ];
+
   it('Throws an exception when an invalid hashing algorithm provided in constructor', () => {
     expect(() => {
       new HashStrategy('foobar');
@@ -10,16 +18,19 @@ describe('HashStrategy', () => {
   });
 
   it('Can create a HashStrategy with a variety of supported algorithms', () => {
-    const commonlySupportedAlgos = [
-      'md5',
-      'sha256',
-      'sha512',
-      'sha3-256',
-      'sha3-512'
-    ];
+
 
     commonlySupportedAlgos.forEach((algo: string) => {
       expect(() => new HashStrategy(algo)).not.toThrow();
+    });
+  });
+
+  it('Can get the name of the hash strategy', () => {
+    commonlySupportedAlgos.forEach((algo) => {
+      ENCODINGS.forEach((encoding) => {
+        const strategy = new HashStrategy(algo, encoding);
+        expect(strategy.getName()).toBe(`${algo}_${encoding}`);
+      });
     });
   });
 

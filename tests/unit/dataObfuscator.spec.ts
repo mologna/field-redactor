@@ -1,6 +1,11 @@
 import { DataObfuscator } from '../../src/dataObfuscator';
 import { DataObfuscatorImpl } from '../../src/dataObfuscator/impl/dataObfuscatorImpl';
-import { mockStrategy, MOCK_OBFUSCATED } from '../mocks/mockStrategy';
+import { Formatter } from '../../src/formatter';
+import {
+  mockStrategy,
+  MOCK_OBFUSCATED,
+  MOCK_SHORT_STRATEGY_NAME
+} from '../mocks/mockStrategy';
 
 describe('dataObfuscator', () => {
   const mockDateIso = '2024-08-20T12:12:12.000Z';
@@ -130,6 +135,47 @@ describe('dataObfuscator', () => {
     Object.keys(result).forEach((key: string) => {
       expect(result[key]).toStrictEqual(expectedObjectInputWithAllResult[key]);
     });
+  });
+
+  it('Can obfuscate values with standard string format', () => {
+    const format: string = '{{shortStrategy}}[{{value}}]';
+    const formatterDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
+      format
+    });
+
+    expect(formatterDataObfuscator.obfuscateValues(mockString)).toBe(
+      `${MOCK_SHORT_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
+    );
+
+    expect(formatterDataObfuscator.obfuscateValues(mockNum)).toBe(
+      `${MOCK_SHORT_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
+    );
+
+    expect(formatterDataObfuscator.obfuscateValues(mockDate)).toStrictEqual(
+      mockDate
+    );
+  });
+
+  it('Can obfuscate values with custom formatter', () => {
+    const format: Formatter = {
+      format: (value: string) => `foobar~${value}`
+    };
+
+    const formatterDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
+      format
+    });
+
+    expect(formatterDataObfuscator.obfuscateValues(mockString)).toBe(
+      `foobar~${MOCK_OBFUSCATED}`
+    );
+
+    expect(formatterDataObfuscator.obfuscateValues(mockNum)).toBe(
+      `foobar~${MOCK_OBFUSCATED}`
+    );
+
+    expect(formatterDataObfuscator.obfuscateValues(mockDate)).toStrictEqual(
+      mockDate
+    );
   });
 
   it('Can obfuscate arrays nested in objects', () => {

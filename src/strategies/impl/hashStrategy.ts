@@ -19,4 +19,8 @@ export class HashStrategy implements Strategy {
       .update(value)
       .digest(this.encoding);
   }
+
+  public getName(): string {
+    return `${this.algorithm}_${this.encoding}`;
+  }
 }

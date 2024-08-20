@@ -2,15 +2,21 @@ import rfdc from 'rfdc';
 import { Strategy } from '../../strategies';
 import { DataObfuscator } from '../dataObfuscator';
 import { DataObfuscatorOptions } from '../dataObfuscatorOptions';
-
-// TODO - Add config parameter to allow for things like formatting, conditionally ignoring booleans, etc
+import { Formatter, FormatterImpl } from '../../formatter';
 
 export class DataObfuscatorImpl implements DataObfuscator {
   private deepCopy = rfdc({ proto: true, circles: true });
+  private formatter?: Formatter;
   constructor(
     private strategy: Strategy,
     private readonly options?: DataObfuscatorOptions
-  ) {}
+  ) {
+    if (typeof options?.format === 'string') {
+      this.formatter = new FormatterImpl(options.format, strategy.getName());
+    } else if (options?.format !== null) {
+      this.formatter = options?.format;
+    }
+  }
 
   public obfuscateValues(value: any): any {
     const copy = this.deepCopy(value);
@@ -27,7 +33,7 @@ export class DataObfuscatorImpl implements DataObfuscator {
     } else if (value instanceof Date) {
       return this.handleDate(value);
     } else if (typeof value !== 'object') {
-      return this.strategy.execute(String(value));
+      return this.obfuscate(String(value));
     } else if (Array.isArray(value)) {
       return this.obfuscateArray(value);
     }
@@ -42,25 +48,34 @@ export class DataObfuscatorImpl implements DataObfuscator {
 
   private handleFunction(value: Function): Function | string {
     return this.options?.values?.functions
-      ? this.strategy.execute(value.toString())
+      ? this.obfuscate(value)
       : value;
   }
 
   private handleDate(value: Date): Date | string {
     return this.options?.values?.dates
-      ? this.strategy.execute(value.toISOString())
+      ? this.obfuscate(value.toISOString())
       : value;
   }
 
   private handleBoolean(value: boolean) {
     return this.options?.values?.booleans
-      ? this.strategy.execute(String(value))
+      ? this.obfuscate(value)
       : value;
   }
 
   private obfuscateObjectValuesInPlace(object: any): void {
     for (const key of Object.keys(object)) {
       object[key] = this.obfuscateValuesInPlace(object[key]);
+    }
+  }
+
+  private obfuscate(value: any): string {
+    const obfuscated = this.strategy.execute(String(value));
+    if (this.formatter) {
+      return this.formatter.format(obfuscated);
+    } else {
+      return obfuscated;
     }
   }
 }
