@@ -1,6 +1,7 @@
 import { DataObfuscator } from '../../src/dataObfuscator';
+import { DataObfuscatorOptions } from '../../src/dataObfuscator/dataObfuscatorOptions';
 import { DataObfuscatorImpl } from '../../src/dataObfuscator/impl/dataObfuscatorImpl';
-import { Formatter } from '../../src/formatter';
+import { Formatter, FormatterImpl } from '../../src/formatter';
 import {
   mockStrategy,
   MOCK_OBFUSCATED,
@@ -50,11 +51,17 @@ describe('dataObfuscator', () => {
     f: mockDate,
     g: mockFunc
   };
-
+  const standardOpts: DataObfuscatorOptions = {
+    values: {
+      booleans: false,
+      dates: false,
+      functions: false
+    }
+  };
   let standardDataObfuscator: DataObfuscator;
   let optionedDataObfuscator: DataObfuscator;
   beforeAll(() => {
-    standardDataObfuscator = new DataObfuscatorImpl(mockStrategy);
+    standardDataObfuscator = new DataObfuscatorImpl(mockStrategy, standardOpts);
     optionedDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
       values: {
         booleans: true,
@@ -137,10 +144,14 @@ describe('dataObfuscator', () => {
     });
   });
 
-  it('Can obfuscate values with standard string format', () => {
-    const format: string = '{{shortStrategy}}[{{value}}]';
+  it('Can obfuscate values with standard format', () => {
+    const formatter: Formatter = new FormatterImpl(
+      '{{shortStrategy}}[{{value}}]',
+      mockStrategy.getName()
+    );
     const formatterDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
-      format
+      ...standardOpts,
+      formatter
     });
 
     expect(formatterDataObfuscator.obfuscateValues(mockString)).toBe(
@@ -157,12 +168,13 @@ describe('dataObfuscator', () => {
   });
 
   it('Can obfuscate values with custom formatter', () => {
-    const format: Formatter = {
+    const formatter: Formatter = {
       format: (value: string) => `foobar~${value}`
     };
 
     const formatterDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
-      format
+      ...standardOpts,
+      formatter
     });
 
     expect(formatterDataObfuscator.obfuscateValues(mockString)).toBe(

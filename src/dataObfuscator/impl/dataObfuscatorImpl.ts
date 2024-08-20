@@ -2,19 +2,17 @@ import rfdc from 'rfdc';
 import { Strategy } from '../../strategies';
 import { DataObfuscator } from '../dataObfuscator';
 import { DataObfuscatorOptions } from '../dataObfuscatorOptions';
-import { Formatter, FormatterImpl } from '../../formatter';
+import { Formatter } from '../../formatter';
 
 export class DataObfuscatorImpl implements DataObfuscator {
   private deepCopy = rfdc({ proto: true, circles: true });
   private formatter?: Formatter;
   constructor(
     private strategy: Strategy,
-    private readonly options?: DataObfuscatorOptions
+    private readonly options: DataObfuscatorOptions
   ) {
-    if (typeof options?.format === 'string') {
-      this.formatter = new FormatterImpl(options.format, strategy.getName());
-    } else if (options?.format !== null) {
-      this.formatter = options?.format;
+    if (options.formatter) {
+      this.formatter = options.formatter;
     }
   }
 
@@ -47,21 +45,17 @@ export class DataObfuscatorImpl implements DataObfuscator {
   }
 
   private handleFunction(value: Function): Function | string {
-    return this.options?.values?.functions
-      ? this.obfuscate(value)
-      : value;
+    return this.options.values.functions ? this.obfuscate(value) : value;
   }
 
   private handleDate(value: Date): Date | string {
-    return this.options?.values?.dates
+    return this.options.values.dates
       ? this.obfuscate(value.toISOString())
       : value;
   }
 
   private handleBoolean(value: boolean) {
-    return this.options?.values?.booleans
-      ? this.obfuscate(value)
-      : value;
+    return this.options.values.booleans ? this.obfuscate(value) : value;
   }
 
   private obfuscateObjectValuesInPlace(object: any): void {
