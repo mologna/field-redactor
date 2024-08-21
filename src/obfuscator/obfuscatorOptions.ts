@@ -8,6 +8,9 @@ export type ObfuscatorOptions = {
     booleans: boolean;
   };
   formatter?: Formatter;
-  secret?: Secret;
+  secrets?: {
+    parser: Secret,
+    shouldNotFollow?: boolean
+  }
 };
 

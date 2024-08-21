@@ -77,9 +77,17 @@ export class ObfuscatorImpl implements Obfuscator {
 
   private obfuscateObjectValuesInPlace(object: any, parentKey?: string | boolean): void {
       for (const key of Object.keys(object)) {
-        const obfuscateAllNestedValues = parentKey === true || this.shouldObfuscateKey(key);
+        const obfuscateAllNestedValues = this.shouldObfuscateAllNestedValues(key, parentKey);
         object[key] = this.obfuscateValuesInPlace(object[key], obfuscateAllNestedValues || key);
       }
+  }
+
+  private shouldObfuscateAllNestedValues(key: string, parentKey?: string | boolean) {
+    if (this.options.secrets?.shouldNotFollow) {
+      return false;
+    } else {
+      return parentKey === true || this.shouldObfuscateKey(key)
+    }
   }
 
   private obfuscateValue(value: any, key?: string | boolean): any {
@@ -96,12 +104,12 @@ export class ObfuscatorImpl implements Obfuscator {
   }
 
   private shouldObfuscateKey(key?: string | boolean): boolean {
-    if (!this.options.secret) {
+    if (!this.options.secrets) {
       return true;
     } else if (typeof key === 'boolean') {
       return key;
     } else {
-      return key ? this.options.secret.isSecretKey(key) : false;
+      return key ? this.options.secrets.parser.isSecretKey(key) : false;
     }
   }
 }
