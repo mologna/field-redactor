@@ -1,46 +1,55 @@
+import * as crypto from 'crypto';
 import { BinaryToTextEncoding } from "crypto";
+import { HASH_STRATEGIES } from '../../src/strategies';
 
-export const ENCODINGS: BinaryToTextEncoding[] = ['hex', 'base64', 'base64url', 'binary'];
+export const ENCODINGS: BinaryToTextEncoding[] = ['hex', 'base64', 'base64url', 'binary'] as const;
+export const algorithmsToCheck = ['md5', 'sha256', 'sha3-256', 'RSA-MD5', 'RSA-SHA3-256', 'RSA-SHA256'] as const;
+export type Algorithms = typeof algorithmsToCheck[number];
+type CalculatedHashResult = Record<typeof ENCODINGS[number], string>;
+type CalculatedHashResults = Record<typeof algorithmsToCheck[number], CalculatedHashResult>;
 
-export type CalculatedHash = {
+export type CalculatedHash = CalculatedHashResults & {
   original: string;
-  md5: {
-    hex: string;
-    base64: string;
-    base64url: string;
-    binary: string;
-  };
 };
 
-export const foobarHashes: CalculatedHash = {
-  original: 'foobar', 
-  md5: {
-    hex: '3858f62230ac3c915f300c664312c63f',
-    base64: 'OFj2IjCsPJFfMAxmQxLGPw==',
-    base64url: 'OFj2IjCsPJFfMAxmQxLGPw',
-    binary: '8Xö"0¬<\x91_0\ffC\x12Æ?'
-  }
-};
+const foobarOriginal = 'foobar';
+const helloWorldOriginal = 'Hello, World';
+const stringifiedObjectOriginal = '{"foo":"bar","biz":["baz",1,"bop"]}';
 
-export const helloWorldHashes: CalculatedHash = {
-  original: 'Hello, World',
-  md5: {
-    hex: '82bb413746aee42f89dea2b59614f9ef',
-    base64: 'grtBN0au5C+J3qK1lhT57w==',
-    base64url: 'grtBN0au5C-J3qK1lhT57w',
-    binary: '\x82»A7F®ä/\x89Þ¢µ\x96\x14ùï'
-  }
-};
-
-export const stringifiedObjectHashes: CalculatedHash = {
-  original: '{"foo":"bar","biz":["baz",1,"bop"]}',
-  md5: {
-    hex: 'ad23987c3042d261a27fc19cb9a3fcb7',
-    base64: 'rSOYfDBC0mGif8GcuaP8tw==',
-    base64url:'rSOYfDBC0mGif8GcuaP8tw',
-    binary: '­#\x98|0BÒa¢\x7FÁ\x9C¹£ü·'
-  }
+/**
+ * Generates hashes with all encodings for the given text and algorithm. Used as a utility 
+ * for generating test output.
+ * @param text The text to generate hashes for
+ * @param algorithm The algorithm to use
+ */
+const hashGenerator = (text: string, algorithm: HASH_STRATEGIES) => {
+  return ENCODINGS.reduce((prev: Partial<CalculatedHashResult>, encoding: BinaryToTextEncoding) => {
+    return {
+      ...prev,
+      [encoding]: crypto.createHash(algorithm).update(text).digest(encoding)
+    }
+  }, {})
 }
+
+/**
+ * 
+ * @param text The text to generate hashes for
+ * @returns Generates hashes for all algorithms we wish to test for.
+ */
+const calculatedHashGenerator = (text: string): CalculatedHash => {
+  return algorithmsToCheck.reduce((prev: any, algorithm: Algorithms) => {
+    return {
+      ...prev,
+      [algorithm]: hashGenerator(text, algorithm)
+    }
+  }, {original: text});
+}
+
+
+
+export const foobarHashes: CalculatedHash = calculatedHashGenerator(foobarOriginal);
+export const helloWorldHashes: CalculatedHash = calculatedHashGenerator(helloWorldOriginal);
+export const stringifiedObjectHashes: CalculatedHash = calculatedHashGenerator(stringifiedObjectOriginal);
 
 export const calculatedHashes: CalculatedHash[] = [
   foobarHashes,
