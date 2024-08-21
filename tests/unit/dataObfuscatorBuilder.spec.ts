@@ -1,7 +1,7 @@
 import { Obfuscator } from '../../src/obfuscator';
 import { ObfuscatorBuilder } from '../../src/obfuscator/builder/obfuscatorBuilder';
 import { Formatter } from '../../src/formatter';
-import { STRATEGIES } from '../../src/strategies';
+import { HASH_STRATEGIES } from '../../src/strategies';
 import { foobarHashes } from '../mocks/hashes';
 import {
   MOCK_OBFUSCATED,
@@ -16,6 +16,7 @@ describe('DataObfuscatorBuilder', () => {
   const mockString = 'foobar';
   const mockNum = 12345;
   const mockFunc = () => {};
+  const strategy: HASH_STRATEGIES = 'md5';
 
   it('Throws an exception if user does not set strategy before building', () => {
     expect(() => new ObfuscatorBuilder().build()).toThrow('Must set strategy before building.');
@@ -23,7 +24,7 @@ describe('DataObfuscatorBuilder', () => {
 
   it('can build a data obfuscator with a defined strategy', () => {
     const result: Obfuscator = new ObfuscatorBuilder()
-      .setStrategy(STRATEGIES.MD5_HEX)
+      .setStrategy(strategy)
       .build();
     expect(result.obfuscate(foobarHashes.original)).toBe(
       foobarHashes.md5.hex

@@ -1,10 +1,10 @@
 import { Formatter, FormatterImpl } from '../../formatter';
-import { Strategy, STRATEGIES, HashStrategy } from '../../strategies';
+import { Strategy, HASH_STRATEGIES, HashStrategy } from '../../strategies';
 import { Obfuscator } from '../obfuscator';
 import { ObfuscatorImpl } from '../impl/obfuscatorImpl';
 
 export class ObfuscatorBuilder {
-  private strategy?: Strategy | STRATEGIES = undefined;
+  private strategy?: Strategy | HASH_STRATEGIES = undefined;
   private formatter?: Formatter | string = undefined;
   private obfuscateBooleans: boolean = false;
   private obfuscateDates: boolean = false;
@@ -12,7 +12,7 @@ export class ObfuscatorBuilder {
 
   constructor() {}
 
-  public setStrategy(strategy: STRATEGIES | Strategy): ObfuscatorBuilder {
+  public setStrategy(strategy: HASH_STRATEGIES | Strategy): ObfuscatorBuilder {
     this.strategy = strategy;
     return this;
   }
@@ -70,7 +70,7 @@ export class ObfuscatorBuilder {
     return format;
   }
 
-  private getStrategy(strategy: STRATEGIES | Strategy): Strategy {
+  private getStrategy(strategy: HASH_STRATEGIES | Strategy): Strategy {
     if (this.instanceOfStrategy(strategy)) {
       return strategy;
     } else {
@@ -85,10 +85,10 @@ export class ObfuscatorBuilder {
     );
   }
 
-  private internalStrategyFactory(strategy: STRATEGIES): Strategy {
+  private internalStrategyFactory(strategy: HASH_STRATEGIES): Strategy {
     switch (strategy) {
       default: {
-        return new HashStrategy('md5', 'hex');
+        return new HashStrategy(strategy, 'hex');
       }
     }
   }

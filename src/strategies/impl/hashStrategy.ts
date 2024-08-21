@@ -21,6 +21,6 @@ export class HashStrategy implements Strategy {
   }
 
   public getName(): string {
-    return `${this.algorithm}_${this.encoding}`;
+    return this.algorithm;
   }
 }

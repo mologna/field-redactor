@@ -1,17 +1,18 @@
 import { FormatterImpl } from '../../src/formatter';
-import { STRATEGIES } from '../../src/strategies';
+import { HASH_STRATEGIES } from '../../src/strategies';
 
 describe('Formatter', () => {
   const strategyFormat = '{{strategy}}[{{value}}]';
+  const strategy: HASH_STRATEGIES = 'md5';
 
   it('Can create a formatter with valid formats', () => {
     expect(
-      () => new FormatterImpl(strategyFormat, STRATEGIES.MD5_HEX)
+      () => new FormatterImpl(strategyFormat, strategy)
     ).not.toThrow();
   });
 
   it('Can get the current format', () => {
-    const formatter = new FormatterImpl(strategyFormat, STRATEGIES.MD5_HEX);
+    const formatter = new FormatterImpl(strategyFormat, strategy);
     expect(formatter.getFormat()).toBe(strategyFormat);
   });
 
@@ -24,26 +25,25 @@ describe('Formatter', () => {
     const missingValueError = '{{value}} is required for formatting.';
     const qStrategyError = '{{qStrategy}} is not a valid formatter field.';
     const xStrategyError = '{{xStrategy}} is not a valid formatter field.';
-    expect(() => new FormatterImpl(noFormat, STRATEGIES.MD5_HEX)).toThrow(
+    expect(() => new FormatterImpl(noFormat, strategy)).toThrow(
       missingValueError
     );
-    expect(() => new FormatterImpl(missingValue, STRATEGIES.MD5_HEX)).toThrow(
+    expect(() => new FormatterImpl(missingValue, strategy)).toThrow(
       missingValueError
     );
-    expect(() => new FormatterImpl(invalidFormat, STRATEGIES.MD5_HEX)).toThrow(
+    expect(() => new FormatterImpl(invalidFormat, strategy)).toThrow(
       qStrategyError
     );
-    expect(() => new FormatterImpl(missingValue, STRATEGIES.MD5_HEX)).toThrow(
+    expect(() => new FormatterImpl(missingValue, strategy)).toThrow(
       missingValueError
     );
-    expect(() => new FormatterImpl(multipleBadFormats, STRATEGIES.MD5_HEX)).toThrow(
+    expect(() => new FormatterImpl(multipleBadFormats, strategy)).toThrow(
       `${missingValueError} ${qStrategyError} ${xStrategyError}`
     );
   });
 
   it('Can format a strategy with value', () => {
-    const strategy = STRATEGIES.MD5_HEX;
-    const formatter = new FormatterImpl(strategyFormat, STRATEGIES.MD5_HEX);
+    const formatter = new FormatterImpl(strategyFormat, strategy);
     const value = 'foobar';
     const expected = `${strategy}[${value}]`;
     expect(formatter.format(value)).toBe(expected);
