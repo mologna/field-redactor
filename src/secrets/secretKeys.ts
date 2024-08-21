@@ -36,8 +36,8 @@ export const SECRET_KEYS = [
   /acc?tNumber/i,
   /accountNumber/i,
   /identifier/i,
-  /ban/i,
-  /pin/i,
+  /\bban\b/i,
+  /\bpin\b/i,
   /principal/i,
   // specific
   /^connect\.sid$/, // https://github.com/expressjs/session

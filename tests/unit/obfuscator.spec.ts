@@ -280,17 +280,18 @@ describe('Obfuscator', () => {
       biz: 12345,
       baz: BigInt(99999999),
       biff: false,
-      baff: true
+      baff: true,
+      bang: ["foo", "bar"]
     };
     const mixedBag = {
       ...commonSecretKeys,
       ...nonSecretKeys
     };
 
-    const result = secretPiiDataObfuscator.obfuscate(commonSecretKeys);
+    const result = secretPiiDataObfuscator.obfuscate(mixedBag);
     Object.keys(result).forEach((key) => {
-      if (key in Object.keys(nonSecretKeys)) {
-        expect(result[key]).toBe(nonSecretKeys[key])
+      if (Object.keys(nonSecretKeys).includes(key)) {
+        expect(result[key]).toStrictEqual(nonSecretKeys[key])
       } else {
         expect(result[key]).toBe(MOCK_OBFUSCATED);
       }

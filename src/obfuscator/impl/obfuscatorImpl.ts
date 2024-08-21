@@ -32,7 +32,7 @@ export class ObfuscatorImpl implements Obfuscator {
     } else if (value instanceof Date) {
       return this.obfuscateDate(value, key);
     } else if (typeof value !== 'object') {
-      return this.obfuscateValue(String(value), key);
+      return this.obfuscateValue(value, key);
     } else if (Array.isArray(value)) {
       return this.obfuscateArray(value, key);
     }
@@ -41,7 +41,7 @@ export class ObfuscatorImpl implements Obfuscator {
     return value;
   }
 
-  private obfuscateArray(array: Array<any>, key?: string | boolean) {
+  private obfuscateArray(array: Array<any>, key?: string | boolean): Array<any> {
     if (this.shouldObfuscateKey(key)) {
       return array.map((val) => this.obfuscateValuesInPlace(val, key));
     } else {
@@ -67,7 +67,7 @@ export class ObfuscatorImpl implements Obfuscator {
     return value;
   }
 
-  private handleBoolean(value: boolean, key?: string | boolean) {
+  private handleBoolean(value: boolean, key?: string | boolean): string | boolean {
     if (this.shouldObfuscateKey(key)) {
       return this.options.values.booleans ? this.obfuscateValue(value) : value;
     }
@@ -82,7 +82,7 @@ export class ObfuscatorImpl implements Obfuscator {
       }
   }
 
-  private obfuscateValue(value: any, key?: string | boolean): string {
+  private obfuscateValue(value: any, key?: string | boolean): any {
     if (!this.shouldObfuscateKey(key)) {
       return value;
     }
