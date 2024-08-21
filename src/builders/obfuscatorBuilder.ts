@@ -1,28 +1,38 @@
 import { Formatter } from '../formatter';
-import { Strategy, HASH_STRATEGIES, HashStrategy } from '../strategies';
+import { Strategy, STRATEGIES } from '../strategies';
 import { Obfuscator } from '../obfuscator/obfuscator';
 import { ObfuscatorImpl } from '../obfuscator/impl/obfuscatorImpl';
 import { FormatterBuilder } from './formatterBuilder';
+import { StrategyBuilder } from './strategyBuilder';
 
 export class ObfuscatorBuilder {
-  private strategy?: Strategy | HASH_STRATEGIES = undefined;
+  private strategy?: Strategy;
+  private strategyBuilder = new StrategyBuilder();
+
   private shouldUseFormatter: boolean = false;
   private formatter?: Formatter = undefined;
   private formatterBuilder = new FormatterBuilder();
+
   private obfuscateBooleans: boolean = false;
   private obfuscateDates: boolean = false;
   private obfuscateFuncs: boolean = false;
 
   constructor() {}
+  public useStrategy(strategy: STRATEGIES): ObfuscatorBuilder;
+  public useStrategy(strategy: Strategy): ObfuscatorBuilder;
+  public useStrategy(strategy: STRATEGIES | Strategy): ObfuscatorBuilder {
+    if (this.instanceOfStrategy(strategy)) {
+      this.strategy = strategy;
+    } else {
+      this.strategyBuilder.setStrategy(strategy);
+    }
 
-  public setStrategy(strategy: HASH_STRATEGIES | Strategy): ObfuscatorBuilder {
-    this.strategy = strategy;
     return this;
   }
 
-  public useFormat(): ObfuscatorBuilder
-  public useFormat(formatter: string): ObfuscatorBuilder
-  public useFormat(formatter: Formatter): ObfuscatorBuilder
+  public useFormat(): ObfuscatorBuilder;
+  public useFormat(formatter: string): ObfuscatorBuilder;
+  public useFormat(formatter: Formatter): ObfuscatorBuilder;
   public useFormat(formatter?: string | Formatter): ObfuscatorBuilder {
     this.shouldUseFormatter = true;
     if (typeof formatter === 'string') {
@@ -50,11 +60,8 @@ export class ObfuscatorBuilder {
   }
 
   public build(): Obfuscator {
-    if (!this.strategy) {
-      throw new Error('Must set strategy before building.');
-    }
-    const strategy = this.getStrategy(this.strategy);
-    const formatter = this.buildFormatter(strategy);
+    const strategy = this.buildStrategy();
+    const formatter = this.getFormatter(strategy);
 
     const options = {
       values: {
@@ -68,7 +75,15 @@ export class ObfuscatorBuilder {
     return new ObfuscatorImpl(strategy, options);
   }
 
-  private buildFormatter(strategy: Strategy): Formatter | undefined {
+  private buildStrategy(): Strategy {
+    if (this.strategy) {
+      return this.strategy;
+    }
+
+    return this.strategyBuilder.build();
+  }
+
+  private getFormatter(strategy: Strategy): Formatter | undefined {
     if (!this.shouldUseFormatter) {
       return;
     } else if (this.formatter) {
@@ -78,26 +93,10 @@ export class ObfuscatorBuilder {
     return this.formatterBuilder.setFormatStrategy(strategy.getName()).build();
   }
 
-  private getStrategy(strategy: HASH_STRATEGIES | Strategy): Strategy {
-    if (this.instanceOfStrategy(strategy)) {
-      return strategy;
-    } else {
-      return this.internalStrategyFactory(strategy);
-    }
-  }
-
   private instanceOfStrategy(object: any): object is Strategy {
     return (
       typeof object.execute === 'function' &&
       typeof object.getName === 'function'
     );
-  }
-
-  private internalStrategyFactory(strategy: HASH_STRATEGIES): Strategy {
-    switch (strategy) {
-      default: {
-        return new HashStrategy(strategy, 'hex');
-      }
-    }
   }
 }
