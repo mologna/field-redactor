@@ -1,5 +1,5 @@
 import { Obfuscator } from '../../src/obfuscator';
-import { ObfuscatorBuilder } from '../../src/builder/obfuscatorBuilder';
+import { ObfuscatorBuilder } from '../../src/builders/obfuscatorBuilder';
 import { Formatter } from '../../src/formatter';
 import { HASH_STRATEGIES } from '../../src/strategies';
 import { foobarHashes } from '../mocks/hashes';

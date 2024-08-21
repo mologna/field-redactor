@@ -1,4 +1,4 @@
-import { FormatterBuilder } from '../../src/builder/formatterBuilder';
+import { FormatterBuilder } from '../../src/builders/formatterBuilder';
 import { Formatter } from '../../src/formatter';
 
 describe('FormatterBuilder', () => {
