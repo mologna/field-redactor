@@ -1,6 +1,11 @@
 import { Formatter } from '../formatter/formatter';
 import { SecretParser } from '../secrets';
 
+export type SecretObfuscatorOptions = {
+  parser: SecretParser,
+  shouldNotFollow?: boolean
+}
+
 export type ObfuscatorOptions = {
   values: {
     dates: boolean;
@@ -8,9 +13,6 @@ export type ObfuscatorOptions = {
     booleans: boolean;
   };
   formatter?: Formatter;
-  secrets?: {
-    parser: SecretParser,
-    shouldNotFollow?: boolean
-  }
+  secrets?: SecretObfuscatorOptions;
 };
 

@@ -5,6 +5,15 @@ import { ObfuscatorImpl } from '../obfuscator/impl/obfuscatorImpl';
 import { FormatterBuilder } from './formatterBuilder';
 import { StrategyBuilder } from './strategyBuilder';
 import { BinaryToTextEncoding } from 'crypto';
+import { SecretParser, SecretParserImpl } from '../secrets';
+import { SECRET_KEYS } from '../secrets/secretKeys';
+import { SecretObfuscatorOptions } from '../obfuscator/obfuscatorOptions';
+
+export type UseSecretParserConfig = {
+  secretKeys?: RegExp[];
+  ignoredSecretKeys?: RegExp[];
+  shouldNotFollow?: boolean;
+}
 
 export class ObfuscatorBuilder {
   private strategy?: Strategy;
@@ -13,6 +22,9 @@ export class ObfuscatorBuilder {
   private shouldUseFormatter: boolean = false;
   private formatter?: Formatter = undefined;
   private formatterBuilder = new FormatterBuilder();
+
+  private secretParser?: SecretParser;
+  private shouldNotFollow: boolean = false;
 
   private obfuscateBooleans: boolean = false;
   private obfuscateDates: boolean = false;
@@ -60,6 +72,31 @@ export class ObfuscatorBuilder {
     return this;
   }
 
+  public useCustomSecretParser(parser: SecretParser, shouldNotFollow: boolean = false): ObfuscatorBuilder {
+    this.secretParser = parser;
+    this.shouldNotFollow = shouldNotFollow;
+    return this;
+  }
+
+  public useSecretParser(config?: UseSecretParserConfig): ObfuscatorBuilder {
+    let keys = SECRET_KEYS;
+    let ignoredKeys: RegExp[] = [];
+    if (config?.secretKeys) {
+      keys = config.secretKeys;
+    }
+
+    if (config?.ignoredSecretKeys) {
+      ignoredKeys = config.ignoredSecretKeys
+    }
+
+    if (config?.shouldNotFollow) {
+      this.shouldNotFollow = config.shouldNotFollow;
+    }
+
+    this.secretParser = new SecretParserImpl(keys, ignoredKeys)
+    return this;
+  }
+
   public setObfuscateBooleans(value: boolean): ObfuscatorBuilder {
     this.obfuscateBooleans = value;
     return this;
@@ -76,8 +113,9 @@ export class ObfuscatorBuilder {
   }
 
   public build(): Obfuscator {
-    const strategy = this.buildStrategy();
+    const strategy = this.getStrategy();
     const formatter = this.getFormatter(strategy);
+    const secrets = this.getSecrets();
 
     const options = {
       values: {
@@ -85,13 +123,14 @@ export class ObfuscatorBuilder {
         functions: this.obfuscateFuncs,
         booleans: this.obfuscateBooleans
       },
-      formatter
+      formatter,
+      secrets
     };
 
     return new ObfuscatorImpl(strategy, options);
   }
 
-  private buildStrategy(): Strategy {
+  private getStrategy(): Strategy {
     if (this.strategy) {
       return this.strategy;
     }
@@ -109,5 +148,16 @@ export class ObfuscatorBuilder {
     }
 
     return this.formatterBuilder.setFormatStrategy(strategy.getName()).build();
+  }
+
+  private getSecrets(): SecretObfuscatorOptions | undefined {
+    if (!this.secretParser) {
+      return;
+    }
+
+    return {
+      parser: this.secretParser,
+      shouldNotFollow: this.shouldNotFollow
+    }
   }
 }
