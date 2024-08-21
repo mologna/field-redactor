@@ -23,78 +23,85 @@ export class ObfuscatorImpl implements Obfuscator {
   }
 
   private obfuscateValuesInPlace(value: any, key?: string | boolean): any {
+    const shouldObfuscate = this.shouldObfuscateKey(key);
     if (value === null || value === undefined) {
       return value;
     } else if (typeof value === 'boolean') {
-      return this.handleBoolean(value, key);
+      return this.obfuscateBoolean(value, shouldObfuscate);
     } else if (typeof value === 'function') {
-      return this.obfuscateFunction(value, key);
+      return this.obfuscateFunction(value, shouldObfuscate);
     } else if (value instanceof Date) {
-      return this.obfuscateDate(value, key);
+      return this.obfuscateDate(value, shouldObfuscate);
     } else if (typeof value !== 'object') {
-      return this.obfuscateValue(value, key);
+      return this.obfuscateGeneric(value, shouldObfuscate);
     } else if (Array.isArray(value)) {
       return this.obfuscateArray(value, key);
     }
 
-    this.obfuscateObjectValuesInPlace(value, key);
+    this.obfuscateObject(value, key);
     return value;
   }
 
-  private obfuscateArray(array: Array<any>, key?: string | boolean): Array<any> {
-    if (this.shouldObfuscateKey(key)) {
-      return array.map((val) => this.obfuscateValuesInPlace(val, key));
-    } else {
-      return array;
-    }
+  private obfuscateArray(
+    array: Array<any>,
+    key?: string | boolean
+  ): Array<any> {
+    return array.map((val) => this.obfuscateValuesInPlace(val, key));
   }
 
-  private obfuscateFunction(value: Function, key?: string | boolean): Function | string {
-    if (this.shouldObfuscateKey(key)) {
-      return this.options.values.functions ? this.obfuscateValue(value) : value;
-    }
-
-    return value;
+  private obfuscateFunction(
+    value: Function,
+    shouldObfuscate: boolean
+  ): Function | string {
+    return shouldObfuscate && this.options.values.functions
+      ? this.obfuscateValue(value)
+      : value;
   }
 
-  private obfuscateDate(value: Date, key?: string | boolean): Date | string {
-    if (this.shouldObfuscateKey(key)) {
-      return this.options.values.dates
+  private obfuscateDate(value: Date, shouldObfuscate: boolean): Date | string {
+    return this.options.values.dates && shouldObfuscate
       ? this.obfuscateValue(value.toISOString())
-      : value; 
+      : value;
+  }
+
+  private obfuscateBoolean(
+    value: boolean,
+    shouldObfuscate: boolean
+  ): string | boolean {
+    return shouldObfuscate && this.options.values.booleans
+      ? this.obfuscateValue(value)
+      : value;
+  }
+
+  private obfuscateObject(object: any, parentKey?: string | boolean): void {
+    for (const key of Object.keys(object)) {
+      const obfuscateAllNestedValues = this.shouldObfuscateAllNestedValues(
+        key,
+        parentKey
+      );
+      object[key] = this.obfuscateValuesInPlace(
+        object[key],
+        obfuscateAllNestedValues || key
+      );
     }
-
-    return value;
   }
 
-  private handleBoolean(value: boolean, key?: string | boolean): string | boolean {
-    if (this.shouldObfuscateKey(key)) {
-      return this.options.values.booleans ? this.obfuscateValue(value) : value;
-    }
-
-    return value;
-  }
-
-  private obfuscateObjectValuesInPlace(object: any, parentKey?: string | boolean): void {
-      for (const key of Object.keys(object)) {
-        const obfuscateAllNestedValues = this.shouldObfuscateAllNestedValues(key, parentKey);
-        object[key] = this.obfuscateValuesInPlace(object[key], obfuscateAllNestedValues || key);
-      }
-  }
-
-  private shouldObfuscateAllNestedValues(key: string, parentKey?: string | boolean) {
+  private shouldObfuscateAllNestedValues(
+    key: string,
+    parentKey?: string | boolean
+  ) {
     if (this.options.secrets?.shouldNotFollow) {
       return false;
     } else {
-      return parentKey === true || this.shouldObfuscateKey(key)
+      return parentKey === true || this.shouldObfuscateKey(key);
     }
   }
 
-  private obfuscateValue(value: any, key?: string | boolean): any {
-    if (!this.shouldObfuscateKey(key)) {
-      return value;
-    }
+  private obfuscateGeneric(value: any, shouldObfuscate: boolean) {
+    return shouldObfuscate ? this.obfuscateValue(value) : value;
+  }
 
+  private obfuscateValue(value: any): any {
     const obfuscated = this.strategy.execute(String(value));
     if (this.formatter) {
       return this.formatter.format(obfuscated);
