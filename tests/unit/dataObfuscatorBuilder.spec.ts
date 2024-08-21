@@ -5,7 +5,7 @@ import { STRATEGIES } from '../../src/strategies';
 import { foobarHashes } from '../mocks/hashes';
 import {
   MOCK_OBFUSCATED,
-  MOCK_SHORT_STRATEGY_NAME,
+  MOCK_STRATEGY_NAME,
   mockStrategy
 } from '../mocks/mockStrategy';
 
@@ -65,13 +65,13 @@ describe('DataObfuscatorBuilder', () => {
   });
 
   it('builds a data obfuscator with a formatter string', () => {
-    const formatter: string = '{{shortStrategy}}[{{value}}]';
+    const formatter: string = '{{strategy}}[{{value}}]';
     const result: Obfuscator = new ObfuscatorBuilder()
       .setStrategy(mockStrategy)
       .setFormat(formatter)
       .build();
     expect(result.obfuscate(mockString)).toBe(
-      `${MOCK_SHORT_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
+      `${MOCK_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
     );
   });
 

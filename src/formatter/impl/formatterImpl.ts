@@ -24,10 +24,6 @@ export class FormatterImpl implements Formatter {
     let finalString = this.formatString;
     finalString = finalString.replace('{{value}}', value);
     finalString = finalString.replace('{{strategy}}', this.strategy);
-    finalString = finalString.replace(
-      '{{shortStrategy}}',
-      this.strategy.split('_')[0]
-    );
     return finalString;
   }
 

@@ -5,7 +5,7 @@ import { Formatter, FormatterImpl } from '../../src/formatter';
 import {
   mockStrategy,
   MOCK_OBFUSCATED,
-  MOCK_SHORT_STRATEGY_NAME
+  MOCK_STRATEGY_NAME
 } from '../mocks/mockStrategy';
 import { commonSecretKeys } from '../mocks/secrets';
 import { Secret } from '../../src/secrets/secret';
@@ -157,7 +157,7 @@ describe('Obfuscator', () => {
 
   it('Can obfuscate values with standard format', () => {
     const formatter: Formatter = new FormatterImpl(
-      '{{shortStrategy}}[{{value}}]',
+      '{{strategy}}[{{value}}]',
       mockStrategy.getName()
     );
     const formatterDataObfuscator = new ObfuscatorImpl(mockStrategy, {
@@ -166,11 +166,11 @@ describe('Obfuscator', () => {
     });
 
     expect(formatterDataObfuscator.obfuscate(mockString)).toBe(
-      `${MOCK_SHORT_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
+      `${MOCK_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
     );
 
     expect(formatterDataObfuscator.obfuscate(mockNum)).toBe(
-      `${MOCK_SHORT_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
+      `${MOCK_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
     );
 
     expect(formatterDataObfuscator.obfuscate(mockDate)).toStrictEqual(mockDate);
