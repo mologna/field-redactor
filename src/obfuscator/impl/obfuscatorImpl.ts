@@ -115,8 +115,13 @@ export class ObfuscatorImpl implements Obfuscator {
       return true;
     } else if (typeof key === 'boolean') {
       return key;
+    } else if (!key) {
+      return false;
     } else {
-      return key ? this.options.secrets.parser.isSecret(key) : false;
+      const { parser } = this.options.secrets;
+      if (parser.isIgnored(key)) return false;
+      if (parser.isSecret(key)) return true;
+      return false;
     }
   }
 }

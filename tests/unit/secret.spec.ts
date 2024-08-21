@@ -19,15 +19,10 @@ describe('secret', () => {
     });
   });
 
-  it('Allows users to specify ignored keys which override the secret keys', () => {
-    const secret: SecretParser = new SecretParserImpl(DEFAULT_SECRET_KEYS, [/fullname/]);
-
-    Object.keys(commonSecretKeys).forEach((key) => {
-      if (secret.isIgnored(key)) {
-        expect(secret.isSecret(key)).toBeFalsy();
-      } else {
-        expect(secret.isSecret(key)).toBeTruthy();
-      }
-    });
+  it('Allows users to specify ignored keys', () => {
+    const secret: SecretParser = new SecretParserImpl(DEFAULT_SECRET_KEYS, [
+      /fullname/
+    ]);
+    expect(secret.isIgnored('fullname')).toBeTruthy();
   });
 });

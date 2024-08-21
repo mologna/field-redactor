@@ -9,9 +9,7 @@ export class SecretParserImpl implements SecretParser {
   }
 
   public isSecret(str: string): boolean {
-    return this.isIgnored(str)
-      ? false
-      : this.testStringAgainstList(str, this.keys);
+    return this.testStringAgainstList(str, this.keys);
   }
 
   public isIgnored(str: string): boolean {
