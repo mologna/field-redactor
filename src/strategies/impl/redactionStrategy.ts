@@ -1,7 +1,10 @@
 import { Strategy } from '../strategy';
 
 export class RedactionStrategy implements Strategy {
-  constructor(private readonly redactionText: string = 'REDACTED') {}
+  public static DEFAULT_REDACTION_TEXT = 'REDACTED';
+  constructor(
+    private readonly redactionText: string = RedactionStrategy.DEFAULT_REDACTION_TEXT
+  ) {}
 
   public execute(value: string): string {
     return this.redactionText;
