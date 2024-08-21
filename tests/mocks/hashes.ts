@@ -2,10 +2,10 @@ import * as crypto from 'crypto';
 import { BinaryToTextEncoding } from "crypto";
 import { HASH_STRATEGIES } from '../../src/strategies';
 
-export const ENCODINGS: BinaryToTextEncoding[] = ['hex', 'base64', 'base64url', 'binary'] as const;
+export const encodings: BinaryToTextEncoding[] = ['hex', 'base64', 'base64url', 'binary'] as const;
 export const algorithmsToCheck = ['md5', 'sha256', 'sha3-256', 'RSA-MD5', 'RSA-SHA3-256', 'RSA-SHA256'] as const;
 export type Algorithms = typeof algorithmsToCheck[number];
-type CalculatedHashResult = Record<typeof ENCODINGS[number], string>;
+type CalculatedHashResult = Record<typeof encodings[number], string>;
 type CalculatedHashResults = Record<typeof algorithmsToCheck[number], CalculatedHashResult>;
 
 export type CalculatedHash = CalculatedHashResults & {
@@ -23,7 +23,7 @@ const stringifiedObjectOriginal = '{"foo":"bar","biz":["baz",1,"bop"]}';
  * @param algorithm The algorithm to use
  */
 const hashGenerator = (text: string, algorithm: HASH_STRATEGIES) => {
-  return ENCODINGS.reduce((prev: Partial<CalculatedHashResult>, encoding: BinaryToTextEncoding) => {
+  return encodings.reduce((prev: Partial<CalculatedHashResult>, encoding: BinaryToTextEncoding) => {
     return {
       ...prev,
       [encoding]: crypto.createHash(algorithm).update(text).digest(encoding)

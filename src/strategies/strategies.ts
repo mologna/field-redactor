@@ -54,4 +54,5 @@ export const hashStrategies = [
 ] as const;
 
 export type HASH_STRATEGIES = typeof hashStrategies[number];
-
+export type REDACTION_STRATEGY = 'redaction';
+export type STRATEGIES = HASH_STRATEGIES & REDACTION_STRATEGY;
