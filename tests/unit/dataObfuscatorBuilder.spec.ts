@@ -10,6 +10,7 @@ import {
 } from '../mocks/mockStrategy';
 import { commonSecretKeys } from '../mocks/secrets';
 import { HASH_STRATEGIES } from '../../src/types';
+import { SecretParser } from '../../src';
 
 describe('DataObfuscatorBuilder', () => {
   const mockDateIso = '2024-08-20T12:12:12.000Z';
@@ -110,7 +111,9 @@ describe('DataObfuscatorBuilder', () => {
   });
 
   it('Builds a data obfuscator with the default secret parser', () => {
-    const obfuscator: Obfuscator = new ObfuscatorBuilder().useSecretParser().build();
+    const obfuscator: Obfuscator = new ObfuscatorBuilder()
+      .useSecretParser()
+      .build();
     const keys = {
       ...commonSecretKeys,
       foo: 'bar'
@@ -120,14 +123,14 @@ describe('DataObfuscatorBuilder', () => {
       if (key === 'foo') {
         expect(result[key]).toBe('bar');
       } else {
-        expect(result[key]).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT)
+        expect(result[key]).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT);
       }
-    })
+    });
   });
 
   it('Builds a data obfuscator with custom secret parser', () => {
     const obfuscator: Obfuscator = new ObfuscatorBuilder()
-      .useSecretParser({secretKeys: [/\bfoo\b/]})
+      .useSecretParser({ secretKeys: [/\bfoo\b/] })
       .build();
     const keys = {
       ...commonSecretKeys,
@@ -136,42 +139,62 @@ describe('DataObfuscatorBuilder', () => {
     const result = obfuscator.obfuscate(keys);
     Object.keys(result).forEach((key) => {
       if (key === 'foo') {
-        expect(result[key]).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT)
+        expect(result[key]).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT);
       } else {
         expect(result[key]).toBe(commonSecretKeys[key]);
       }
-    })
+    });
   });
 
   it('Builds a data obfuscator with custom ignores', () => {
     const obfuscator: Obfuscator = new ObfuscatorBuilder()
-      .useSecretParser({ignoredSecretKeys: [/\bfullname\b/i]})
+      .useSecretParser({ ignoredSecretKeys: [/\bfullname\b/i] })
       .build();
     const result = obfuscator.obfuscate(commonSecretKeys);
     Object.keys(result).forEach((key: string) => {
       if (key.toLowerCase().localeCompare('fullname') === 0) {
-        expect(result[key]).toBe(commonSecretKeys[key])
+        expect(result[key]).toBe(commonSecretKeys[key]);
       } else {
-        expect(result[key]).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT)
+        expect(result[key]).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT);
       }
-    })
+    });
   });
 
   it('Builds a data obfuscator with custom followSecrets rule', () => {
     const obfuscator: Obfuscator = new ObfuscatorBuilder()
-    .useSecretParser({shouldNotFollow: true})
-    .build();
+      .useSecretParser({ shouldNotFollow: true })
+      .build();
     const sut = {
-      authkey: "1234",
+      authkey: '1234',
       password: {
         foo: {
-          bar: "test"
+          bar: 'test'
         }
       }
     };
     const result = obfuscator.obfuscate(sut);
     console.log(result);
     expect(result.authkey).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT);
-    expect(result.password.foo.bar).toBe("test");
+    expect(result.password.foo.bar).toBe('test');
+  });
+
+  it('Builds a data obfuscator with a custom secret parser', () => {
+    const customSecretParser: SecretParser = {
+      isSecret: (str: string) => true,
+      isIgnored: (str: string) => str === 'ignoreme'
+    };
+
+    const obfuscator: Obfuscator = new ObfuscatorBuilder()
+      .useCustomSecretParser(customSecretParser)
+      .build();
+    const sut = {
+      foo: 'bar',
+      pick: 'me',
+      ignoreme: 'please'
+    };
+    const result = obfuscator.obfuscate(sut);
+    expect(result.foo).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT);
+    expect(result.pick).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT);
+    expect(result.ignoreme).toBe(sut.ignoreme);
   });
 });
