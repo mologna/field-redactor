@@ -1,19 +1,16 @@
 import { Formatter } from '../formatter';
-import { Strategy, HASH_STRATEGIES, REDACTION_STRATEGY } from '../strategies';
+import { Strategy } from '../strategies';
+import { HASH_STRATEGIES } from '../types/hashStrategies';
+import { REDACTION_STRATEGY } from '../types/redactionStrategies';
 import { Obfuscator } from '../obfuscator/obfuscator';
 import { ObfuscatorImpl } from '../obfuscator/impl/obfuscatorImpl';
 import { FormatterBuilder } from './formatterBuilder';
 import { StrategyBuilder } from './strategyBuilder';
-import { BinaryToTextEncoding } from 'crypto';
 import { SecretParser, SecretParserImpl } from '../secrets';
-import { SECRET_KEYS } from '../secrets/secretKeys';
+import { DEFAULT_SECRET_KEYS } from '../values/secretKeys';
 import { SecretObfuscatorOptions } from '../obfuscator/obfuscatorOptions';
-
-export type UseSecretParserConfig = {
-  secretKeys?: RegExp[];
-  ignoredSecretKeys?: RegExp[];
-  shouldNotFollow?: boolean;
-}
+import { SecretParserConfig } from './types';
+import { BinaryToTextEncoding } from '../types';
 
 export class ObfuscatorBuilder {
   private strategy?: Strategy;
@@ -78,8 +75,8 @@ export class ObfuscatorBuilder {
     return this;
   }
 
-  public useSecretParser(config?: UseSecretParserConfig): ObfuscatorBuilder {
-    let keys = SECRET_KEYS;
+  public useSecretParser(config?: SecretParserConfig): ObfuscatorBuilder {
+    let keys = DEFAULT_SECRET_KEYS;
     let ignoredKeys: RegExp[] = [];
     if (config?.secretKeys) {
       keys = config.secretKeys;

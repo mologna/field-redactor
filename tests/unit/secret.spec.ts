@@ -1,10 +1,10 @@
 import { SecretParserImpl, SecretParser } from '../../src/secrets';
-import { SECRET_KEYS } from '../../src/secrets/secretKeys';
+import { DEFAULT_SECRET_KEYS } from '../../src/values/secretKeys';
 import { commonSecretKeys } from '../mocks/secrets';
 
 describe('secret', () => {
   it('Default secret list redacts against common secret keys', () => {
-    const secret: SecretParser = new SecretParserImpl(SECRET_KEYS);
+    const secret: SecretParser = new SecretParserImpl(DEFAULT_SECRET_KEYS);
     Object.keys(commonSecretKeys).forEach((key) => {
       expect(secret.isSecret(key)).toBeTruthy();
     });
@@ -20,7 +20,7 @@ describe('secret', () => {
   });
 
   it('Allows users to specify ignored keys which override the secret keys', () => {
-    const secret: SecretParser = new SecretParserImpl(SECRET_KEYS, [/fullname/]);
+    const secret: SecretParser = new SecretParserImpl(DEFAULT_SECRET_KEYS, [/fullname/]);
 
     Object.keys(commonSecretKeys).forEach((key) => {
       if (secret.isIgnored(key)) {

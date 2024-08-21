@@ -56,16 +56,3 @@ export const hashStrategies = [
 export const redactionStrategies = [
   'redaction'
 ] as const;
-
-export type HASH_STRATEGIES = typeof hashStrategies[number];
-export type REDACTION_STRATEGY = typeof redactionStrategies[number];
-
-export const isHashStrategy = (val: any): val is HASH_STRATEGIES => {
-  return hashStrategies.includes(val);
-}
-
-export const isRedactionStrategy = (val: any): val is REDACTION_STRATEGY => {
-  return redactionStrategies.includes(val); 
-}
-
-export type STRATEGIES = HASH_STRATEGIES | REDACTION_STRATEGY;

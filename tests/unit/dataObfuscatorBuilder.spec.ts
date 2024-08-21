@@ -1,7 +1,7 @@
 import { Obfuscator } from '../../src/obfuscator';
 import { ObfuscatorBuilder } from '../../src/builders/obfuscatorBuilder';
 import { Formatter } from '../../src/formatter';
-import { HASH_STRATEGIES, RedactionStrategy } from '../../src/strategies';
+import { RedactionStrategy } from '../../src/strategies';
 import { foobarHashes } from '../mocks/hashes';
 import {
   MOCK_OBFUSCATED,
@@ -9,6 +9,7 @@ import {
   mockStrategy
 } from '../mocks/mockStrategy';
 import { commonSecretKeys } from '../mocks/secrets';
+import { HASH_STRATEGIES } from '../../src/types';
 
 describe('DataObfuscatorBuilder', () => {
   const mockDateIso = '2024-08-20T12:12:12.000Z';

@@ -1,5 +1,5 @@
 import { FormatterImpl } from '../../src/formatter';
-import { HASH_STRATEGIES } from '../../src/strategies';
+import { HASH_STRATEGIES } from '../../src/types';
 
 describe('Formatter', () => {
   const strategyFormat = '{{strategy}}[{{value}}]';

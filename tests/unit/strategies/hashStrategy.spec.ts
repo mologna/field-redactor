@@ -1,6 +1,7 @@
 import { HashStrategy, Strategy, hashStrategies } from '../../../src/strategies';
 import { HashMocks } from '../../mocks';
-import { Algorithms, CalculatedHash, encodings, algorithmsToCheck } from '../../mocks/hashes';
+import { binaryToTextEncoding } from '../../../src/types';
+import { Algorithms, CalculatedHash, algorithmsToCheck } from '../../mocks/hashes';
 
 describe('HashStrategy', () => {
   it('Throws an exception when an invalid hashing algorithm provided in constructor', () => {
@@ -17,7 +18,7 @@ describe('HashStrategy', () => {
 
   it('Can get the name of the hash strategy', () => {
     hashStrategies.forEach((algo) => {
-      encodings.forEach((encoding) => {
+      binaryToTextEncoding.forEach((encoding) => {
         const strategy = new HashStrategy(algo, encoding);
         expect(strategy.getName()).toBe(algo);
       });
@@ -25,7 +26,7 @@ describe('HashStrategy', () => {
   });
 
   const checkAllEncodingsForAlgorithm = (algorithm: Algorithms) => {
-    encodings.forEach((encoding) => {
+    binaryToTextEncoding.forEach((encoding) => {
       const strategy: Strategy = new HashStrategy(algorithm, encoding);
       HashMocks.calculatedHashes.forEach((calculatedHash: CalculatedHash) => {
         const result = strategy.execute(calculatedHash.original);

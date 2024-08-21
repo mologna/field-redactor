@@ -1,4 +1,4 @@
-export const SECRET_KEYS = [
+export const DEFAULT_SECRET_KEYS = [
   // generic
   /passw(or)?d/i,
   /^pw$/,

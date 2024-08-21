@@ -1,5 +1,6 @@
 import { StrategyBuilder } from '../../src/builders/strategyBuilder';
-import { RedactionStrategy, STRATEGIES } from '../../src/strategies';
+import { RedactionStrategy } from '../../src/strategies';
+import { HASH_STRATEGIES } from '../../src/types';
 import { HashMocks } from '../mocks';
 
 describe('StrategyBuilder', () => {
@@ -57,7 +58,7 @@ describe('StrategyBuilder', () => {
   it('Throws an exception if unknown strategy provided', () => {
     const builder = new StrategyBuilder();
     expect(() => {
-      builder.setStrategy('foobar' as unknown as STRATEGIES).build();
+      builder.setStrategy('foobar' as unknown as HASH_STRATEGIES).build();
     }).toThrow('Unknown strategy specified.');
   });
 });

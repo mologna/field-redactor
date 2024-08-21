@@ -1,21 +1,16 @@
-import { BinaryToTextEncoding } from 'crypto';
 import {
-  HASH_STRATEGIES,
   HashStrategy,
-  isHashStrategy,
-  isRedactionStrategy,
   RedactionStrategy,
-  STRATEGIES,
   Strategy
 } from '../strategies';
-import { isBinaryToTextEncoding } from '../strategies/encodings';
+import { BinaryToTextEncoding, HASH_STRATEGIES, isHashStrategy, isRedactionStrategy, isBinaryToTextEncoding, REDACTION_STRATEGY } from '../types';
 
 export class StrategyBuilder {
-  private strategy: STRATEGIES = 'redaction';
+  private strategy: HASH_STRATEGIES | REDACTION_STRATEGY = 'redaction';
   private encoding?: string;
   public DEFAULT_HASH_ENCODING: BinaryToTextEncoding = 'hex';
 
-  public setStrategy(strategy: STRATEGIES): StrategyBuilder {
+  public setStrategy(strategy: HASH_STRATEGIES | REDACTION_STRATEGY): StrategyBuilder {
     this.strategy = strategy;
     return this;
   }
