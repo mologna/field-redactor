@@ -20,16 +20,16 @@ describe('DataObfuscatorBuilder', () => {
 
   it('Uses a default redaction strategy if no strategy specified', () => {
     const result: Obfuscator = new ObfuscatorBuilder().build();
-    expect(result.obfuscate(foobarHashes.original)).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT);
+    expect(result.obfuscate(foobarHashes.original)).toBe(
+      RedactionStrategy.DEFAULT_REDACTION_TEXT
+    );
   });
 
   it('can build a data obfuscator with a defined strategy', () => {
     const result: Obfuscator = new ObfuscatorBuilder()
       .useStrategy(strategy)
       .build();
-    expect(result.obfuscate(foobarHashes.original)).toBe(
-      foobarHashes.md5.hex
-    );
+    expect(result.obfuscate(foobarHashes.original)).toBe(foobarHashes.md5.hex);
   });
 
   it('Can buidl a data obfuscator with a defined strategy and encoding', () => {
@@ -102,10 +102,8 @@ describe('DataObfuscatorBuilder', () => {
     };
     const result: Obfuscator = new ObfuscatorBuilder()
       .useCustomStrategy(mockStrategy)
-      .useFormat(formatter)
+      .useCustomFormatter(formatter)
       .build();
-    expect(result.obfuscate(mockString)).toBe(
-      `foobar~${MOCK_OBFUSCATED}`
-    );
+    expect(result.obfuscate(mockString)).toBe(`foobar~${MOCK_OBFUSCATED}`);
   });
 });

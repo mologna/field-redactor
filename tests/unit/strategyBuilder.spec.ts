@@ -1,5 +1,5 @@
 import { StrategyBuilder } from '../../src/builders/strategyBuilder';
-import { HashStrategy, RedactionStrategy } from '../../src/strategies';
+import { RedactionStrategy, STRATEGIES } from '../../src/strategies';
 import { HashMocks } from '../mocks';
 
 describe('StrategyBuilder', () => {
@@ -45,5 +45,19 @@ describe('StrategyBuilder', () => {
     expect(strategy.execute(HashMocks.foobarHashes.original)).toBe(
       HashMocks.foobarHashes.md5.base64
     );
+  });
+
+  it('Throws an exeption if invalid encoding provided to hash strategy', () => {
+    const builder = new StrategyBuilder();
+    expect(() =>
+      builder.setStrategy('md5').setEncoding('foobar').build()
+    ).toThrow('Invalid encoding supplied for hash strategy.');
+  });
+
+  it('Throws an exception if unknown strategy provided', () => {
+    const builder = new StrategyBuilder();
+    expect(() => {
+      builder.setStrategy('foobar' as unknown as STRATEGIES).build();
+    }).toThrow('Unknown strategy specified.');
   });
 });

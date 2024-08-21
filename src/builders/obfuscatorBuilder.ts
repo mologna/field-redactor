@@ -1,10 +1,5 @@
 import { Formatter } from '../formatter';
-import {
-  Strategy,
-  STRATEGIES,
-  HASH_STRATEGIES,
-  REDACTION_STRATEGY
-} from '../strategies';
+import { Strategy, HASH_STRATEGIES, REDACTION_STRATEGY } from '../strategies';
 import { Obfuscator } from '../obfuscator/obfuscator';
 import { ObfuscatorImpl } from '../obfuscator/impl/obfuscatorImpl';
 import { FormatterBuilder } from './formatterBuilder';
@@ -49,15 +44,17 @@ export class ObfuscatorBuilder {
     return this;
   }
 
+  public useCustomFormatter(formatter: Formatter): ObfuscatorBuilder {
+    this.formatter = formatter;
+    return this;
+  }
+
   public useFormat(): ObfuscatorBuilder;
   public useFormat(formatter: string): ObfuscatorBuilder;
-  public useFormat(formatter: Formatter): ObfuscatorBuilder;
-  public useFormat(formatter?: string | Formatter): ObfuscatorBuilder {
+  public useFormat(formatter?: string): ObfuscatorBuilder {
     this.shouldUseFormatter = true;
-    if (typeof formatter === 'string') {
+    if (formatter) {
       this.formatterBuilder.setFormatStrategy(formatter);
-    } else if (!!formatter) {
-      this.formatter = formatter;
     }
 
     return this;
@@ -103,19 +100,14 @@ export class ObfuscatorBuilder {
   }
 
   private getFormatter(strategy: Strategy): Formatter | undefined {
-    if (!this.shouldUseFormatter) {
-      return;
-    } else if (this.formatter) {
+    if (this.formatter) {
       return this.formatter;
     }
 
-    return this.formatterBuilder.setFormatStrategy(strategy.getName()).build();
-  }
+    if (!this.shouldUseFormatter) {
+      return;
+    }
 
-  private instanceOfStrategy(object: any): object is Strategy {
-    return (
-      typeof object.execute === 'function' &&
-      typeof object.getName === 'function'
-    );
+    return this.formatterBuilder.setFormatStrategy(strategy.getName()).build();
   }
 }
