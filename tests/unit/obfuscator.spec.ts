@@ -8,7 +8,8 @@ import {
   MOCK_STRATEGY_NAME
 } from '../mocks/mockStrategy';
 import { commonSecretKeys } from '../mocks/secrets';
-import { Secret } from '../../src/secrets/secret';
+import { SecretParserImpl } from '../../src/secrets';
+import { SECRET_KEYS } from '../../src/secrets/secretKeys';
 
 describe('Obfuscator', () => {
   const mockDateIso = '2024-08-20T12:12:12.000Z';
@@ -76,16 +77,14 @@ describe('Obfuscator', () => {
     emptyPiiDataObfuscator = new ObfuscatorImpl(mockStrategy, {
       ...standardOpts,
       secrets: {
-        parser: new Secret({
-          keys: []
-        })
+        parser: new SecretParserImpl([])
       }
     });
 
     secretPiiDataObfuscator = new ObfuscatorImpl(mockStrategy, {
       ...standardOpts,
       secrets: {
-        parser: new Secret()
+        parser: new SecretParserImpl(SECRET_KEYS)
       }
     });
   });
@@ -335,7 +334,7 @@ describe('Obfuscator', () => {
     const shouldNotFollowParser = new ObfuscatorImpl(mockStrategy, {
       ...standardOpts,
       secrets: {
-        parser: new Secret(),
+        parser: new SecretParserImpl(SECRET_KEYS),
         shouldNotFollow: true
       }
     });

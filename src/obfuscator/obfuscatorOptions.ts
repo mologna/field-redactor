@@ -1,5 +1,5 @@
 import { Formatter } from '../formatter/formatter';
-import { Secret } from '../secrets/secret';
+import { SecretParser } from '../secrets';
 
 export type ObfuscatorOptions = {
   values: {
@@ -9,7 +9,7 @@ export type ObfuscatorOptions = {
   };
   formatter?: Formatter;
   secrets?: {
-    parser: Secret,
+    parser: SecretParser,
     shouldNotFollow?: boolean
   }
 };

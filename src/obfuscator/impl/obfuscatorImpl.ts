@@ -116,7 +116,7 @@ export class ObfuscatorImpl implements Obfuscator {
     } else if (typeof key === 'boolean') {
       return key;
     } else {
-      return key ? this.options.secrets.parser.isSecretKey(key) : false;
+      return key ? this.options.secrets.parser.isSecret(key) : false;
     }
   }
 }

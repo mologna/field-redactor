@@ -1,35 +1,32 @@
-import { Secret } from '../../src/secrets/secret';
+import { SecretParserImpl, SecretParser } from '../../src/secrets';
+import { SECRET_KEYS } from '../../src/secrets/secretKeys';
 import { commonSecretKeys } from '../mocks/secrets';
 
 describe('secret', () => {
   it('Default secret list redacts against common secret keys', () => {
-    const secret: Secret = new Secret();
+    const secret: SecretParser = new SecretParserImpl(SECRET_KEYS);
     Object.keys(commonSecretKeys).forEach((key) => {
-      expect(secret.isSecretKey(key)).toBeTruthy();
+      expect(secret.isSecret(key)).toBeTruthy();
     });
   });
 
   it('Allows users to specify their own secret keys', () => {
-    const secret: Secret = new Secret({
-      keys: [/foobar/]
-    });
+    const secret: SecretParser = new SecretParserImpl([/foobar/]);
 
-    expect(secret.isSecretKey('foobar')).toBeTruthy();
+    expect(secret.isSecret('foobar')).toBeTruthy();
     Object.keys(commonSecretKeys).forEach((key) => {
-      expect(secret.isSecretKey(key)).toBeFalsy();
+      expect(secret.isSecret(key)).toBeFalsy();
     });
   });
 
   it('Allows users to specify ignored keys which override the secret keys', () => {
-    const secret: Secret = new Secret({
-      ignoredKeys: [/fullname/]
-    });
+    const secret: SecretParser = new SecretParserImpl(SECRET_KEYS, [/fullname/]);
 
     Object.keys(commonSecretKeys).forEach((key) => {
-      if (secret.isIgnoredKey(key)) {
-        expect(secret.isSecretKey(key)).toBeFalsy();
+      if (secret.isIgnored(key)) {
+        expect(secret.isSecret(key)).toBeFalsy();
       } else {
-        expect(secret.isSecretKey(key)).toBeTruthy();
+        expect(secret.isSecret(key)).toBeTruthy();
       }
     });
   });
