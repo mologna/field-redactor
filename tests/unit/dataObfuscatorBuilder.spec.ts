@@ -32,16 +32,25 @@ describe('DataObfuscatorBuilder', () => {
     );
   });
 
+  it('Can buidl a data obfuscator with a defined strategy and encoding', () => {
+    const result: Obfuscator = new ObfuscatorBuilder()
+      .useStrategy(strategy, 'base64')
+      .build();
+    expect(result.obfuscate(foobarHashes.original)).toBe(
+      foobarHashes.md5.base64
+    );
+  });
+
   it('can build a data obfuscator with a user-supplied strategy', () => {
     const result: Obfuscator = new ObfuscatorBuilder()
-      .useStrategy(mockStrategy)
+      .useCustomStrategy(mockStrategy)
       .build();
     expect(result.obfuscate(foobarHashes.original)).toBe(MOCK_OBFUSCATED);
   });
 
   it('builds a data obfuscator with the correct defaults', () => {
     const result: Obfuscator = new ObfuscatorBuilder()
-      .useStrategy(mockStrategy)
+      .useCustomStrategy(mockStrategy)
       .build();
     expect(result.obfuscate(mockDate)).toStrictEqual(mockDate);
     expect(result.obfuscate(false)).toBe(false);
@@ -53,7 +62,7 @@ describe('DataObfuscatorBuilder', () => {
 
   it('builds a data obfuscator with the overridden defaults', () => {
     const result: Obfuscator = new ObfuscatorBuilder()
-      .useStrategy(mockStrategy)
+      .useCustomStrategy(mockStrategy)
       .setObfuscateBooleans(true)
       .setObfuscateDates(true)
       .setObfuscateFuncs(true)
@@ -69,7 +78,7 @@ describe('DataObfuscatorBuilder', () => {
   it('builds a data obfuscator with a formatter string', () => {
     const formatter: string = '{{strategy}}[{{value}}]';
     const result: Obfuscator = new ObfuscatorBuilder()
-      .useStrategy(mockStrategy)
+      .useCustomStrategy(mockStrategy)
       .useFormat(formatter)
       .build();
     expect(result.obfuscate(mockString)).toBe(
@@ -79,7 +88,7 @@ describe('DataObfuscatorBuilder', () => {
 
   it('builds a data obfuscator with a the default format', () => {
     const result: Obfuscator = new ObfuscatorBuilder()
-      .useStrategy(mockStrategy)
+      .useCustomStrategy(mockStrategy)
       .useFormat()
       .build();
     expect(result.obfuscate(mockString)).toBe(
@@ -92,7 +101,7 @@ describe('DataObfuscatorBuilder', () => {
       format: (value: string) => `foobar~${value}`
     };
     const result: Obfuscator = new ObfuscatorBuilder()
-      .useStrategy(mockStrategy)
+      .useCustomStrategy(mockStrategy)
       .useFormat(formatter)
       .build();
     expect(result.obfuscate(mockString)).toBe(

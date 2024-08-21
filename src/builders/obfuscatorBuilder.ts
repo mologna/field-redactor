@@ -1,9 +1,15 @@
 import { Formatter } from '../formatter';
-import { Strategy, STRATEGIES } from '../strategies';
+import {
+  Strategy,
+  STRATEGIES,
+  HASH_STRATEGIES,
+  REDACTION_STRATEGY
+} from '../strategies';
 import { Obfuscator } from '../obfuscator/obfuscator';
 import { ObfuscatorImpl } from '../obfuscator/impl/obfuscatorImpl';
 import { FormatterBuilder } from './formatterBuilder';
 import { StrategyBuilder } from './strategyBuilder';
+import { BinaryToTextEncoding } from 'crypto';
 
 export class ObfuscatorBuilder {
   private strategy?: Strategy;
@@ -18,13 +24,26 @@ export class ObfuscatorBuilder {
   private obfuscateFuncs: boolean = false;
 
   constructor() {}
-  public useStrategy(strategy: STRATEGIES): ObfuscatorBuilder;
-  public useStrategy(strategy: Strategy): ObfuscatorBuilder;
-  public useStrategy(strategy: STRATEGIES | Strategy): ObfuscatorBuilder {
-    if (this.instanceOfStrategy(strategy)) {
-      this.strategy = strategy;
-    } else {
-      this.strategyBuilder.setStrategy(strategy);
+  public useCustomStrategy(strategy: Strategy): ObfuscatorBuilder {
+    this.strategy = strategy;
+    return this;
+  }
+
+  public useStrategy(
+    strategy: HASH_STRATEGIES,
+    encoding?: BinaryToTextEncoding
+  ): ObfuscatorBuilder;
+  public useStrategy(
+    strategy: REDACTION_STRATEGY,
+    encoding?: string
+  ): ObfuscatorBuilder;
+  public useStrategy(
+    strategy: HASH_STRATEGIES | REDACTION_STRATEGY,
+    encoding?: string
+  ): ObfuscatorBuilder {
+    this.strategyBuilder.setStrategy(strategy);
+    if (encoding) {
+      this.strategyBuilder.setEncoding(encoding);
     }
 
     return this;
