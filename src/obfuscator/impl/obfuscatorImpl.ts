@@ -1,16 +1,16 @@
 import rfdc from 'rfdc';
 import { Strategy } from '../../strategies';
 import { Obfuscator } from '../obfuscator';
-import { PiiObfuscatorOptions } from '../obfuscatorOptions';
+import { ObfuscatorOptions } from '../obfuscatorOptions';
 import { Formatter } from '../../formatter';
 
-export class PiiObfuscatorImpl implements Obfuscator {
+export class ObfuscatorImpl implements Obfuscator {
   private deepCopy = rfdc({ proto: true, circles: true });
   private formatter?: Formatter;
 
   constructor(
     private strategy: Strategy,
-    private readonly options: PiiObfuscatorOptions
+    private readonly options: ObfuscatorOptions
   ) {
     if (options.formatter) {
       this.formatter = options.formatter;
@@ -75,9 +75,9 @@ export class PiiObfuscatorImpl implements Obfuscator {
     return value;
   }
 
-  private obfuscateObjectValuesInPlace(object: any, key?: string | boolean): void {
+  private obfuscateObjectValuesInPlace(object: any, parentKey?: string | boolean): void {
       for (const key of Object.keys(object)) {
-        const obfuscateAllNestedValues = this.shouldObfuscateKey(key);
+        const obfuscateAllNestedValues = parentKey === true || this.shouldObfuscateKey(key);
         object[key] = this.obfuscateValuesInPlace(object[key], obfuscateAllNestedValues || key);
       }
   }
@@ -96,9 +96,12 @@ export class PiiObfuscatorImpl implements Obfuscator {
   }
 
   private shouldObfuscateKey(key?: string | boolean): boolean {
-    if (typeof key === 'boolean') {
+    if (!this.options.secret) {
+      return true;
+    } else if (typeof key === 'boolean') {
       return key;
+    } else {
+      return key ? this.options.secret.isSecretKey(key) : false;
     }
-    return key ? this.options.secret.isSecretKey(key) : false;
   }
 }

@@ -1,14 +1,16 @@
 import { Obfuscator } from '../../src/obfuscator';
 import { ObfuscatorOptions } from '../../src/obfuscator/obfuscatorOptions';
-import { DataObfuscatorImpl } from '../../src/obfuscator/impl/dataObfuscatorImpl';
+import { ObfuscatorImpl } from '../../src/obfuscator/impl/obfuscatorImpl';
 import { Formatter, FormatterImpl } from '../../src/formatter';
 import {
   mockStrategy,
   MOCK_OBFUSCATED,
   MOCK_SHORT_STRATEGY_NAME
 } from '../mocks/mockStrategy';
+import { commonSecretKeys } from "../mocks/secrets";
+import { Secret } from '../../src/secrets/secret';
 
-describe('dataObfuscator', () => {
+describe('Obfuscator', () => {
   const mockDateIso = '2024-08-20T12:12:12.000Z';
   const mockDate = new Date(mockDateIso);
   const mockBigInt = BigInt(Number.MAX_SAFE_INTEGER);
@@ -60,14 +62,27 @@ describe('dataObfuscator', () => {
   };
   let standardDataObfuscator: Obfuscator;
   let optionedDataObfuscator: Obfuscator;
+  let emptyPiiDataObfuscator: Obfuscator;
+  let secretPiiDataObfuscator: Obfuscator;
   beforeAll(() => {
-    standardDataObfuscator = new DataObfuscatorImpl(mockStrategy, standardOpts);
-    optionedDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
+    standardDataObfuscator = new ObfuscatorImpl(mockStrategy, standardOpts);
+    optionedDataObfuscator = new ObfuscatorImpl(mockStrategy, {
       values: {
         booleans: true,
         dates: true,
         functions: true
       }
+    });
+    emptyPiiDataObfuscator = new ObfuscatorImpl(mockStrategy, {
+      ...standardOpts,
+      secret: new Secret({
+        keys: []
+      })
+    });
+
+    secretPiiDataObfuscator =  new ObfuscatorImpl(mockStrategy, {
+      ...standardOpts,
+      secret: new Secret()
     });
   });
 
@@ -149,7 +164,7 @@ describe('dataObfuscator', () => {
       '{{shortStrategy}}[{{value}}]',
       mockStrategy.getName()
     );
-    const formatterDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
+    const formatterDataObfuscator = new ObfuscatorImpl(mockStrategy, {
       ...standardOpts,
       formatter
     });
@@ -172,7 +187,7 @@ describe('dataObfuscator', () => {
       format: (value: string) => `foobar~${value}`
     };
 
-    const formatterDataObfuscator = new DataObfuscatorImpl(mockStrategy, {
+    const formatterDataObfuscator = new ObfuscatorImpl(mockStrategy, {
       ...standardOpts,
       formatter
     });
@@ -243,4 +258,83 @@ describe('dataObfuscator', () => {
 
     expect(deeplyNested.a.a2.a3.a4.includes(MOCK_OBFUSCATED)).toBeFalsy();
   });
+
+  it('Does not obfuscate secret keys and values when keys are not specified', () => {
+    const result = emptyPiiDataObfuscator.obfuscate(commonSecretKeys);
+    Object.keys(result).forEach((key) => {
+      expect(result[key]).toBe(commonSecretKeys[key]);
+    })
+  });
+
+  it('Obfuscates secret keys and values', () => {
+    const result = secretPiiDataObfuscator.obfuscate(commonSecretKeys);
+    Object.keys(result).forEach((key) => {
+      expect(result[key]).toBe(MOCK_OBFUSCATED);
+    })
+  });
+
+  it('Can obfuscate secret keys and values and ignore others', () => {
+    const nonSecretKeys: any = {
+      foo: undefined,
+      bar: null,
+      biz: 12345,
+      baz: BigInt(99999999),
+      biff: false,
+      baff: true
+    };
+    const mixedBag = {
+      ...commonSecretKeys,
+      ...nonSecretKeys
+    };
+
+    const result = secretPiiDataObfuscator.obfuscate(commonSecretKeys);
+    Object.keys(result).forEach((key) => {
+      if (key in Object.keys(nonSecretKeys)) {
+        expect(result[key]).toBe(nonSecretKeys[key])
+      } else {
+        expect(result[key]).toBe(MOCK_OBFUSCATED);
+      }
+    })
+  });
+
+  it('Can obfuscate deeply nested secret values', () => {
+    const deeplyNested: any = {
+      a: {
+        a1: {
+          a2: {
+            pass: "word"
+          }
+        }
+      },
+      b: {
+        ssn: ["12345678", "12345678"]
+      }
+    };
+
+    const result: any = secretPiiDataObfuscator.obfuscate(deeplyNested);
+    expect(result.a.a1.a2.pass).toBe(MOCK_OBFUSCATED);
+    const arr = result.b.ssn;
+    expect(arr[0]).toBe(MOCK_OBFUSCATED);
+    expect(arr[1]).toBe(MOCK_OBFUSCATED);
+  });
+
+  it("Obfuscates deeply nested secret values even if they are not the direct child of their secret key", () => {
+    const deeplyNested: any = {
+      a: {
+        pass: {
+          b: {
+            c: "word",
+            d: "foo",
+            e: "bar"
+          }
+        }
+      },
+    };
+
+    const result: any = secretPiiDataObfuscator.obfuscate(deeplyNested);
+    const nested = result.a.pass.b;
+    Object.keys(nested).forEach((key) => {
+      expect(nested[key]).toBe(MOCK_OBFUSCATED);
+    })
+  })
 });

@@ -8,8 +8,6 @@ export type ObfuscatorOptions = {
     booleans: boolean;
   };
   formatter?: Formatter;
+  secret?: Secret;
 };
 
-export type PiiObfuscatorOptions = ObfuscatorOptions & {
-  secret: Secret
-}

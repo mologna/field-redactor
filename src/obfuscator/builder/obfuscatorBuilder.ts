@@ -1,7 +1,7 @@
 import { Formatter, FormatterImpl } from '../../formatter';
 import { Strategy, STRATEGIES, HashStrategy } from '../../strategies';
 import { Obfuscator } from '../obfuscator';
-import { DataObfuscatorImpl } from '../impl/dataObfuscatorImpl';
+import { ObfuscatorImpl } from '../impl/obfuscatorImpl';
 
 export class ObfuscatorBuilder {
   private strategy?: Strategy | STRATEGIES = undefined;
@@ -56,7 +56,7 @@ export class ObfuscatorBuilder {
       formatter
     };
 
-    return new DataObfuscatorImpl(strategy, options);
+    return new ObfuscatorImpl(strategy, options);
   }
 
   private getFormatter(
