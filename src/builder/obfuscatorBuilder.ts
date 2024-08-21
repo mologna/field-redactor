@@ -1,11 +1,14 @@
-import { Formatter, FormatterImpl } from '../../formatter';
-import { Strategy, HASH_STRATEGIES, HashStrategy } from '../../strategies';
-import { Obfuscator } from '../obfuscator';
-import { ObfuscatorImpl } from '../impl/obfuscatorImpl';
+import { Formatter } from '../formatter';
+import { Strategy, HASH_STRATEGIES, HashStrategy } from '../strategies';
+import { Obfuscator } from '../obfuscator/obfuscator';
+import { ObfuscatorImpl } from '../obfuscator/impl/obfuscatorImpl';
+import { FormatterBuilder } from './formatterBuilder';
 
 export class ObfuscatorBuilder {
   private strategy?: Strategy | HASH_STRATEGIES = undefined;
-  private formatter?: Formatter | string = undefined;
+  private shouldUseFormatter: boolean = false;
+  private formatter?: Formatter = undefined;
+  private formatterBuilder = new FormatterBuilder();
   private obfuscateBooleans: boolean = false;
   private obfuscateDates: boolean = false;
   private obfuscateFuncs: boolean = false;
@@ -17,8 +20,16 @@ export class ObfuscatorBuilder {
     return this;
   }
 
-  public setFormat(format: string | Formatter): ObfuscatorBuilder {
-    this.formatter = format;
+  public useFormat(): ObfuscatorBuilder
+  public useFormat(formatter: string): ObfuscatorBuilder
+  public useFormat(formatter: Formatter): ObfuscatorBuilder
+  public useFormat(formatter?: string | Formatter): ObfuscatorBuilder {
+    this.shouldUseFormatter = true;
+    if (typeof formatter === 'string') {
+      this.formatterBuilder.setFormatStrategy(formatter);
+    } else if (!!formatter) {
+      this.formatter = formatter;
+    }
 
     return this;
   }
@@ -43,9 +54,7 @@ export class ObfuscatorBuilder {
       throw new Error('Must set strategy before building.');
     }
     const strategy = this.getStrategy(this.strategy);
-    const formatter = this.formatter
-      ? this.getFormatter(this.formatter, strategy)
-      : undefined;
+    const formatter = this.buildFormatter(strategy);
 
     const options = {
       values: {
@@ -59,15 +68,14 @@ export class ObfuscatorBuilder {
     return new ObfuscatorImpl(strategy, options);
   }
 
-  private getFormatter(
-    format: string | Formatter,
-    strategy: Strategy
-  ): Formatter {
-    if (typeof format === 'string') {
-      return new FormatterImpl(format, strategy.getName());
+  private buildFormatter(strategy: Strategy): Formatter | undefined {
+    if (!this.shouldUseFormatter) {
+      return;
+    } else if (this.formatter) {
+      return this.formatter;
     }
 
-    return format;
+    return this.formatterBuilder.setFormatStrategy(strategy.getName()).build();
   }
 
   private getStrategy(strategy: HASH_STRATEGIES | Strategy): Strategy {

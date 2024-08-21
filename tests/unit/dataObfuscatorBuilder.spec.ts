@@ -1,5 +1,5 @@
 import { Obfuscator } from '../../src/obfuscator';
-import { ObfuscatorBuilder } from '../../src/obfuscator/builder/obfuscatorBuilder';
+import { ObfuscatorBuilder } from '../../src/builder/obfuscatorBuilder';
 import { Formatter } from '../../src/formatter';
 import { HASH_STRATEGIES } from '../../src/strategies';
 import { foobarHashes } from '../mocks/hashes';
@@ -69,7 +69,17 @@ describe('DataObfuscatorBuilder', () => {
     const formatter: string = '{{strategy}}[{{value}}]';
     const result: Obfuscator = new ObfuscatorBuilder()
       .setStrategy(mockStrategy)
-      .setFormat(formatter)
+      .useFormat(formatter)
+      .build();
+    expect(result.obfuscate(mockString)).toBe(
+      `${MOCK_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
+    );
+  });
+
+  it('builds a data obfuscator with a the default format', () => {
+    const result: Obfuscator = new ObfuscatorBuilder()
+      .setStrategy(mockStrategy)
+      .useFormat()
       .build();
     expect(result.obfuscate(mockString)).toBe(
       `${MOCK_STRATEGY_NAME}[${MOCK_OBFUSCATED}]`
@@ -82,7 +92,7 @@ describe('DataObfuscatorBuilder', () => {
     };
     const result: Obfuscator = new ObfuscatorBuilder()
       .setStrategy(mockStrategy)
-      .setFormat(formatter)
+      .useFormat(formatter)
       .build();
     expect(result.obfuscate(mockString)).toBe(
       `foobar~${MOCK_OBFUSCATED}`
