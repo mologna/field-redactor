@@ -1,3 +1,5 @@
+import { SecretParser } from "../secrets";
+import { Strategy } from "../strategies";
 import { BinaryToTextEncoding } from "./encodings";
 import { HASH_STRATEGIES } from "./hashStrategies";
 
@@ -43,7 +45,8 @@ export type Values = {
 export type ValuesConfig = Partial<Values>;
 
 export type RedactorConfig = {
-  strategy?: StrategyConfig;
-  values?: ValuesConfig;
-  secrets?: SecretConfig;
+  strategy: Strategy;
+  secretParser: SecretParser;
+  values: Values;
+  deepRedactSecrets: boolean;
 }
