@@ -16,6 +16,7 @@ export class TypeCheckers {
     config: any
   ): config is HashStrategyConfig {
     const { type, algorithm, encoding, shouldFormat } = config;
+    console.log(type, algorithm, encoding, shouldFormat);
     if (typeof type !== 'string' || type.localeCompare('hash') !== 0) {
       return false;
     } else if (!this.isHashStrategy(algorithm)) {

@@ -33,7 +33,9 @@ export class ConfigObfuscatorImpl implements Obfuscator {
   private obfuscateValuesInPlace(value: any, key?: string, hasParentSecret?: boolean) {
     if (value === null || value === undefined) {
       return value;
-    } else if (typeof value === 'boolean') {
+    } 
+    
+    else if (typeof value === 'boolean') {
       return this.obfuscateBoolean(value, key, hasParentSecret);
     } else if (typeof value === 'function') {
       return this.obfuscateFunction(value, key, hasParentSecret);
@@ -54,8 +56,14 @@ export class ConfigObfuscatorImpl implements Obfuscator {
     }
   }
 
+  // private obfuscateItem<T>(type: string, value: string, key?: string, secretParentKey?: boolean) {
+  //   if (!this.values[type] || !this.shouldRedactValue(key, secretParentKey)) {
+
+  //   }
+  // }
+
   private obfuscateBoolean(value: boolean, key?: string, secretParentKey?: boolean) {
-    if (!this.values.booleans || !this.shouldRedactValue(key, secretParentKey)) {
+    if (!this.values.boolean || !this.shouldRedactValue(key, secretParentKey)) {
       return value;
     }
 
@@ -63,14 +71,14 @@ export class ConfigObfuscatorImpl implements Obfuscator {
   }
 
   private obfuscateDate(value: Date, key?: string, secretParentKey?: boolean) {
-    if (!this.values.dates || !this.shouldRedactValue(key, secretParentKey)) {
+    if (!this.values.date || !this.shouldRedactValue(key, secretParentKey)) {
       return value;
     }
     return this.strategy.execute(value.toISOString()); 
   }
 
   private obfuscateFunction(value: Function, key?: string, secretParentKey?: boolean) {
-    if (!this.values.functions || !this.shouldRedactValue(key, secretParentKey)) {
+    if (!this.values.function || !this.shouldRedactValue(key, secretParentKey)) {
       return value;
     }
 
