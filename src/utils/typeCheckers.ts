@@ -52,15 +52,26 @@ export class TypeCheckers {
       return false;
     }
 
-    if (keys !== undefined && !Array.isArray(keys)) {
+    if (keys !== undefined && !TypeCheckers.isArrayOfRegExp(keys)) {
       return false;
     }
 
-    if (ignoredKeys !== undefined && !Array.isArray(ignoredKeys)) {
+    if (
+      ignoredKeys !== undefined &&
+      !TypeCheckers.isArrayOfRegExp(ignoredKeys)
+    ) {
       return false;
     }
 
     return true;
+  }
+
+  private static isArrayOfRegExp(value: any): boolean {
+    if (!Array.isArray(value)) {
+      return false;
+    }
+
+    return !value.some((item) => !(item instanceof RegExp));
   }
 
   public static isValuesConfig(config: any): config is ValuesConfig {
