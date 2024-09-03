@@ -1,4 +1,3 @@
-export { ObfuscatorBuilder } from './builders/obfuscatorBuilder';
 export { Formatter } from './formatter';
 export { Obfuscator } from './obfuscator';
 export { SecretParser } from './secrets';
