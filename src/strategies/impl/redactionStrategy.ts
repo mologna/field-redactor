@@ -18,8 +18,4 @@ export class RedactionStrategy implements Strategy {
   public execute(value: string): string {
     return this.replacementText;
   }
-
-  public getName(): string {
-    return 'redaction';
-  }
 }

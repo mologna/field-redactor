@@ -37,8 +37,4 @@ export class HashStrategy implements Strategy {
 
     return `${this.algorithm}[${hash}]`;
   }
-
-  public getName(): string {
-    return this.algorithm;
-  }
 }
