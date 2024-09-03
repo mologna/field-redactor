@@ -1,9 +1,10 @@
-import { ConfigObfuscatorImpl } from '../obfuscator/impl/configObfuscatorImpl';
+import { FieldRedactor } from '../fieldRedactor';
+import { FieldRedactorImpl } from '../fieldRedactor/impl/fieldRedactorImpl';
 import { SecretParser } from '../secrets';
-import { ConfigSecretParserImpl } from '../secrets/impl/configSecretParserImpl';
+import { secretParserImpl } from '../secrets/impl/secretParserImpl';
 import { Strategy } from '../strategies';
-import { ConfigHashStrategy } from '../strategies/impl/configHashStrategy';
-import { ConfigRedactionStrategy } from '../strategies/impl/configRedactionStrategy';
+import { HashStrategy } from '../strategies/impl/hashStrategy';
+import { RedactionStrategy } from '../strategies/impl/redactionStrategy';
 import { GetRedactorConfig, RedactorConfig, Values } from '../types/config';
 import { TypeCheckers } from '../utils/typeCheckers';
 
@@ -12,7 +13,7 @@ const getStrategy = (config: GetRedactorConfig): Strategy => {
   switch (type) {
     case 'hash': {
       const { algorithm, encoding, shouldFormat } = config;
-      return new ConfigHashStrategy({
+      return new HashStrategy({
         type,
         algorithm,
         encoding,
@@ -21,7 +22,7 @@ const getStrategy = (config: GetRedactorConfig): Strategy => {
     }
     default: {
       const { replacementText } = config;
-      return new ConfigRedactionStrategy({
+      return new RedactionStrategy({
         type: 'redaction',
         replacementText
       });
@@ -31,7 +32,7 @@ const getStrategy = (config: GetRedactorConfig): Strategy => {
 
 const getSecretParser = (config: GetRedactorConfig): SecretParser => {
   const { redactAll, keys, ignoredKeys } = config;
-  return new ConfigSecretParserImpl({ redactAll, keys, ignoredKeys });
+  return new secretParserImpl({ redactAll, keys, ignoredKeys });
 };
 
 const getValuesConfig = (config: GetRedactorConfig): Values => {
@@ -57,7 +58,7 @@ const getValuesConfig = (config: GetRedactorConfig): Values => {
   };
 };
 
-export const getReadactor = (input?: GetRedactorConfig) => {
+export const getReadactor = (input?: GetRedactorConfig): FieldRedactor => {
   const config: GetRedactorConfig = input || {
     type: 'redaction'
   };
@@ -68,5 +69,5 @@ export const getReadactor = (input?: GetRedactorConfig) => {
     deepRedactSecrets: !!config.deepRedactSecrets
   };
 
-  return new ConfigObfuscatorImpl(redactorConfig);
+  return new FieldRedactorImpl(redactorConfig);
 };

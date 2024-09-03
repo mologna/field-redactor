@@ -2,7 +2,7 @@ import { RedactionStrategyConfig } from '../../types/config';
 import { TypeCheckers } from '../../utils/typeCheckers';
 import { Strategy } from '../strategy';
 
-export class ConfigRedactionStrategy implements Strategy {
+export class RedactionStrategy implements Strategy {
   public static DEFAULT_REDACTION_TEXT = 'REDACTED';
   private readonly replacementText: string;
   constructor(config: RedactionStrategyConfig) {
@@ -12,7 +12,7 @@ export class ConfigRedactionStrategy implements Strategy {
     const { replacementText } = config;
     this.replacementText = replacementText
       ? replacementText
-      : ConfigRedactionStrategy.DEFAULT_REDACTION_TEXT;
+      : RedactionStrategy.DEFAULT_REDACTION_TEXT;
   }
 
   public execute(value: string): string {

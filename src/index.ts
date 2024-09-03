@@ -1,5 +1,5 @@
 export { Formatter } from './formatter';
-export { Obfuscator } from './obfuscator';
+export { FieldRedactor as Obfuscator } from './fieldRedactor';
 export { SecretParser } from './secrets';
 export { Strategy } from './strategies';
 export { BinaryToTextEncoding, HASH_STRATEGIES, REDACTION_STRATEGY } from './types';

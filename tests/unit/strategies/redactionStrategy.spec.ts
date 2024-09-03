@@ -1,5 +1,5 @@
 import { Strategy } from '../../../src/strategies';
-import { ConfigRedactionStrategy } from '../../../src/strategies/impl/configRedactionStrategy';
+import { RedactionStrategy } from '../../../src/strategies/impl/redactionStrategy';
 import { TypeCheckers } from '../../../src/utils/typeCheckers';
 
 describe('ConfigRedactionStrategy', () => {
@@ -7,13 +7,13 @@ describe('ConfigRedactionStrategy', () => {
     const spy = jest
       .spyOn(TypeCheckers, 'isRedactionStrategyConfig')
       .mockReturnValueOnce(false);
-    expect(() => new ConfigRedactionStrategy({ type: 'redaction' })).toThrow(
+    expect(() => new RedactionStrategy({ type: 'redaction' })).toThrow(
       'Invalid configuration provided for Redaction Strategy.'
     );
     spy.mockRestore();
   });
   it('Defaults to using REDACTED text', () => {
-    const strategy: Strategy = new ConfigRedactionStrategy({
+    const strategy: Strategy = new RedactionStrategy({
       type: 'redaction'
     });
     const result = strategy.execute('foobar');
@@ -22,7 +22,7 @@ describe('ConfigRedactionStrategy', () => {
 
   it('Allows user to set the redaction text', () => {
     const myText = 'lets redact!';
-    const strategy: Strategy = new ConfigRedactionStrategy({
+    const strategy: Strategy = new RedactionStrategy({
       type: 'redaction',
       replacementText: myText
     });

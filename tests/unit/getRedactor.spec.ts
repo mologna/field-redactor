@@ -1,13 +1,13 @@
-import { getReadactor } from '../../src/builders/getRedactor';
-import { ConfigHashStrategy } from '../../src/strategies/impl/configHashStrategy';
-import { ConfigRedactionStrategy } from '../../src/strategies/impl/configRedactionStrategy';
-import { ConfigSecretParserImpl } from '../../src/secrets/impl/configSecretParserImpl';
-import { ConfigObfuscatorImpl } from '../../src/obfuscator/impl/configObfuscatorImpl';
+import { getReadactor } from '../../src/builders';
+import { HashStrategy } from '../../src/strategies/impl/hashStrategy';
+import { RedactionStrategy } from '../../src/strategies/impl/redactionStrategy';
+import { secretParserImpl } from '../../src/secrets/impl/secretParserImpl';
+import { FieldRedactorImpl } from '../../src/fieldRedactor/impl/fieldRedactorImpl';
 
-jest.mock('../../src/strategies/impl/configHashStrategy');
-jest.mock('../../src/strategies/impl/configRedactionStrategy');
-jest.mock('../../src/secrets/impl/configSecretParserImpl');
-jest.mock('../../src/obfuscator/impl/configObfuscatorImpl');
+jest.mock('../../src/strategies/impl/hashStrategy');
+jest.mock('../../src/strategies/impl/redactionStrategy');
+jest.mock('../../src/secrets/impl/secretParserImpl');
+jest.mock('../../src/fieldRedactor/impl/fieldRedactorImpl');
 
 describe('getRedactor', () => {
   beforeEach(() => {
@@ -18,8 +18,8 @@ describe('getRedactor', () => {
       type: 'hash',
       algorithm: 'md5'
     });
-    expect(ConfigHashStrategy).toHaveBeenCalledTimes(1);
-    expect(ConfigHashStrategy).toHaveBeenCalledWith({
+    expect(HashStrategy).toHaveBeenCalledTimes(1);
+    expect(HashStrategy).toHaveBeenCalledWith({
       type: 'hash',
       algorithm: 'md5'
     });
@@ -29,8 +29,8 @@ describe('getRedactor', () => {
       algorithm: 'md5',
       shouldFormat: true
     });
-    expect(ConfigHashStrategy).toHaveBeenCalledTimes(2);
-    expect(ConfigHashStrategy).toHaveBeenCalledWith({
+    expect(HashStrategy).toHaveBeenCalledTimes(2);
+    expect(HashStrategy).toHaveBeenCalledWith({
       type: 'hash',
       algorithm: 'md5',
       shouldFormat: true
@@ -41,8 +41,8 @@ describe('getRedactor', () => {
       algorithm: 'md5',
       encoding: 'base64'
     });
-    expect(ConfigHashStrategy).toHaveBeenCalledTimes(3);
-    expect(ConfigHashStrategy).toHaveBeenCalledWith({
+    expect(HashStrategy).toHaveBeenCalledTimes(3);
+    expect(HashStrategy).toHaveBeenCalledWith({
       type: 'hash',
       algorithm: 'md5',
       encoding: 'base64'
@@ -51,16 +51,16 @@ describe('getRedactor', () => {
 
   it('Can get a redactor with redaction strategy and correct arguments', () => {
     getReadactor();
-    expect(ConfigRedactionStrategy).toHaveBeenCalledTimes(1);
-    expect(ConfigRedactionStrategy).toHaveBeenCalledWith({ type: 'redaction' });
+    expect(RedactionStrategy).toHaveBeenCalledTimes(1);
+    expect(RedactionStrategy).toHaveBeenCalledWith({ type: 'redaction' });
 
     getReadactor({ type: 'redaction' });
-    expect(ConfigRedactionStrategy).toHaveBeenCalledTimes(2);
-    expect(ConfigRedactionStrategy).toHaveBeenCalledWith({ type: 'redaction' });
+    expect(RedactionStrategy).toHaveBeenCalledTimes(2);
+    expect(RedactionStrategy).toHaveBeenCalledWith({ type: 'redaction' });
 
     getReadactor({ type: 'redaction', replacementText: 'foobar' });
-    expect(ConfigRedactionStrategy).toHaveBeenCalledTimes(3);
-    expect(ConfigRedactionStrategy).toHaveBeenCalledWith({
+    expect(RedactionStrategy).toHaveBeenCalledTimes(3);
+    expect(RedactionStrategy).toHaveBeenCalledWith({
       type: 'redaction',
       replacementText: 'foobar'
     });
@@ -68,8 +68,8 @@ describe('getRedactor', () => {
 
   it('Creates the secret parser with the common correct configurations', () => {
     getReadactor();
-    expect(ConfigSecretParserImpl).toHaveBeenCalledTimes(1);
-    expect(ConfigSecretParserImpl).toHaveBeenCalledWith({
+    expect(secretParserImpl).toHaveBeenCalledTimes(1);
+    expect(secretParserImpl).toHaveBeenCalledWith({
       redactAll: undefined,
       deepRedactSecrets: undefined,
       keys: undefined,
@@ -79,8 +79,8 @@ describe('getRedactor', () => {
     getReadactor({
       redactAll: true
     });
-    expect(ConfigSecretParserImpl).toHaveBeenCalledTimes(2);
-    expect(ConfigSecretParserImpl).toHaveBeenCalledWith({
+    expect(secretParserImpl).toHaveBeenCalledTimes(2);
+    expect(secretParserImpl).toHaveBeenCalledWith({
       redactAll: true,
       deepRedactSecrets: undefined,
       keys: undefined,
@@ -90,8 +90,8 @@ describe('getRedactor', () => {
     getReadactor({
       keys: [/foobar/]
     });
-    expect(ConfigSecretParserImpl).toHaveBeenCalledTimes(3);
-    expect(ConfigSecretParserImpl).toHaveBeenCalledWith({
+    expect(secretParserImpl).toHaveBeenCalledTimes(3);
+    expect(secretParserImpl).toHaveBeenCalledWith({
       redactAll: undefined,
       keys: [/foobar/],
       ignoredKeys: undefined
@@ -100,8 +100,8 @@ describe('getRedactor', () => {
     getReadactor({
       ignoredKeys: [/foobar/]
     });
-    expect(ConfigSecretParserImpl).toHaveBeenCalledTimes(4);
-    expect(ConfigSecretParserImpl).toHaveBeenCalledWith({
+    expect(secretParserImpl).toHaveBeenCalledTimes(4);
+    expect(secretParserImpl).toHaveBeenCalledWith({
       redactAll: undefined,
       ignoredKeys: [/foobar/],
       keys: undefined
@@ -110,8 +110,8 @@ describe('getRedactor', () => {
 
   it('Creates the redactor with the correct config', () => {
     getReadactor();
-    expect(ConfigObfuscatorImpl).toHaveBeenCalledTimes(1);
-    expect(ConfigObfuscatorImpl).toHaveBeenCalledWith({
+    expect(FieldRedactorImpl).toHaveBeenCalledTimes(1);
+    expect(FieldRedactorImpl).toHaveBeenCalledWith({
       strategy: expect.anything(),
       secretParser: expect.anything(),
       values: {
@@ -130,8 +130,8 @@ describe('getRedactor', () => {
       },
       deepRedactSecrets: true
     });
-    expect(ConfigObfuscatorImpl).toHaveBeenCalledTimes(2);
-    expect(ConfigObfuscatorImpl).toHaveBeenCalledWith({
+    expect(FieldRedactorImpl).toHaveBeenCalledTimes(2);
+    expect(FieldRedactorImpl).toHaveBeenCalledWith({
       strategy: expect.anything(),
       secretParser: expect.anything(),
       values: {

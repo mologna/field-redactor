@@ -1,10 +1,10 @@
 import rfdc from 'rfdc';
 import { Strategy } from '../../strategies';
-import { Obfuscator } from '../obfuscator';
+import { FieldRedactor } from '../fieldRedactor';
 import { SecretParser } from '../../secrets';
 import { RedactorConfig, Values } from '../../types/config';
 
-export class ConfigObfuscatorImpl implements Obfuscator {
+export class FieldRedactorImpl implements FieldRedactor {
   private readonly strategy: Strategy;
   private readonly secretParser: SecretParser;
   private readonly values: Values;

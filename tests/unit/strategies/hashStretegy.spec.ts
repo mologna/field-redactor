@@ -1,5 +1,5 @@
 import { Strategy, hashStrategies } from '../../../src/strategies';
-import { ConfigHashStrategy } from '../../../src/strategies/impl/configHashStrategy';
+import { HashStrategy } from '../../../src/strategies/impl/hashStrategy';
 import { HashMocks } from '../../mocks';
 import { binaryToTextEncoding, HASH_STRATEGIES } from '../../../src/types';
 import {
@@ -19,7 +19,7 @@ describe('configHashStrategy', () => {
       type: 'hash',
       algorithm: 'md5'
     };
-    expect(() => new ConfigHashStrategy(config)).toThrow(
+    expect(() => new HashStrategy(config)).toThrow(
       'Invalid configuration provided for Hash Strategy.'
     );
     spy.mockRestore();
@@ -35,7 +35,7 @@ describe('configHashStrategy', () => {
       algorithm
     };
     expect(() => {
-      new ConfigHashStrategy(config);
+      new HashStrategy(config);
     }).toThrow(
       `Hashing algorithm ${algorithm} is not supported by Node.js crypto.`
     );
@@ -45,7 +45,7 @@ describe('configHashStrategy', () => {
   it('Can create a HashStrategy with a variety of supported algorithms', () => {
     hashStrategies.forEach((algorithm: HASH_STRATEGIES) => {
       const config: HashStrategyConfig = { type: 'hash', algorithm };
-      expect(() => new ConfigHashStrategy(config)).not.toThrow();
+      expect(() => new HashStrategy(config)).not.toThrow();
     });
   });
 
@@ -56,7 +56,7 @@ describe('configHashStrategy', () => {
         algorithm,
         encoding
       };
-      const strategy: Strategy = new ConfigHashStrategy(config);
+      const strategy: Strategy = new HashStrategy(config);
       HashMocks.calculatedHashes.forEach((calculatedHash: CalculatedHash) => {
         const result = strategy.execute(calculatedHash.original);
         expect(result).toBe(calculatedHash[algorithm][encoding]);
@@ -76,7 +76,7 @@ describe('configHashStrategy', () => {
       algorithm: 'md5',
       shouldFormat: true
     };
-    const strategy: Strategy = new ConfigHashStrategy(config);
+    const strategy: Strategy = new HashStrategy(config);
     const result = strategy.execute(HashMocks.foobarHashes.original);
     expect(result).toBe(`md5[${HashMocks.foobarHashes.md5.hex}]`);
   });

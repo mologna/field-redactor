@@ -4,7 +4,7 @@ import { BinaryToTextEncoding, HASH_STRATEGIES } from '../../types';
 import { HashStrategyConfig } from '../../types/config';
 import { TypeCheckers } from '../../utils/typeCheckers';
 
-export class ConfigHashStrategy implements Strategy {
+export class HashStrategy implements Strategy {
   public static DEFAULT_HASH_ENCODING: BinaryToTextEncoding = 'hex';
   private readonly algorithm: HASH_STRATEGIES;
   private readonly encoding: BinaryToTextEncoding;
@@ -16,7 +16,7 @@ export class ConfigHashStrategy implements Strategy {
 
     const { algorithm, encoding, shouldFormat } = config;
     this.algorithm = algorithm;
-    this.encoding = encoding || ConfigHashStrategy.DEFAULT_HASH_ENCODING;
+    this.encoding = encoding || HashStrategy.DEFAULT_HASH_ENCODING;
     this.shouldFormat = shouldFormat || false;
 
     if (!crypto.getHashes().includes(algorithm)) {

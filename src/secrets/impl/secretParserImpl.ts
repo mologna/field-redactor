@@ -2,7 +2,7 @@ import { SecretConfig } from '../../types/config';
 import { TypeCheckers } from '../../utils/typeCheckers';
 import { SecretParser } from '../secretParser';
 
-export class ConfigSecretParserImpl implements SecretParser {
+export class secretParserImpl implements SecretParser {
   private keys: RegExp[];
   private ignoredKeys: RegExp[];
   private redactAll: boolean;

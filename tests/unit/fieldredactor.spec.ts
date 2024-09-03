@@ -1,5 +1,5 @@
 import { mockStrategy, MOCK_OBFUSCATED } from '../mocks/mockStrategy';
-import { ConfigObfuscatorImpl } from '../../src/obfuscator/impl/configObfuscatorImpl';
+import { FieldRedactorImpl } from '../../src/fieldRedactor/impl/fieldRedactorImpl';
 import {
   redactAllSecretParser,
   redactAllWithFoobarExceptionSecretsParser,
@@ -24,31 +24,31 @@ describe('ConfigObfuscatorImpl', () => {
   const string = 'string';
   const bool = true;
 
-  const redactAllWithoutValuesRedactor = new ConfigObfuscatorImpl({
+  const redactAllWithoutValuesRedactor = new FieldRedactorImpl({
     strategy: mockStrategy,
     secretParser: redactAllSecretParser,
     values: redactNoValues,
     deepRedactSecrets: false
   });
-  const redactAllWithValuesRedactor = new ConfigObfuscatorImpl({
+  const redactAllWithValuesRedactor = new FieldRedactorImpl({
     strategy: mockStrategy,
     secretParser: redactAllSecretParser,
     values: redactAllValues,
     deepRedactSecrets: false
   });
-  const redactDefaultSecretsRedactor = new ConfigObfuscatorImpl({
+  const redactDefaultSecretsRedactor = new FieldRedactorImpl({
     strategy: mockStrategy,
     secretParser: redactNormalSecretsParser,
     values: redactNoValues,
     deepRedactSecrets: false
   });
-  const deepRedactDefaultSecretsRedactor = new ConfigObfuscatorImpl({
+  const deepRedactDefaultSecretsRedactor = new FieldRedactorImpl({
     strategy: mockStrategy,
     secretParser: redactNormalSecretsParser,
     values: redactNoValues,
     deepRedactSecrets: true
   });
-  const redactAllWithFoobarExceptionSecretsRedactor = new ConfigObfuscatorImpl({
+  const redactAllWithFoobarExceptionSecretsRedactor = new FieldRedactorImpl({
     strategy: mockStrategy,
     secretParser: redactAllWithFoobarExceptionSecretsParser,
     values: redactNoValues,

@@ -1,2 +1,2 @@
-export * from './configHashStrategy';
-export * from './configRedactionStrategy';
+export * from './hashStrategy';
+export * from './redactionStrategy';
