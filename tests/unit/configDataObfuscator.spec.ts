@@ -9,15 +9,15 @@ import { Values } from '../../src/types/config';
 import { commonSecretKeys } from '../mocks/secrets';
 describe('ConfigObfuscatorImpl', () => {
   const redactNoValues: Values = {
-    boolean: false,
-    function: false,
-    date: false
+    booleans: false,
+    functions: false,
+    dates: false
   };
 
   const redactAllValues: Values = {
-    boolean: true,
-    function: true,
-    date: true
+    booleans: true,
+    functions: true,
+    dates: true
   };
   const date = new Date();
   const func = () => {};

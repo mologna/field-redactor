@@ -173,7 +173,6 @@ describe('DataObfuscatorBuilder', () => {
       }
     };
     const result = obfuscator.obfuscate(sut);
-    console.log(result);
     expect(result.authkey).toBe(RedactionStrategy.DEFAULT_REDACTION_TEXT);
     expect(result.password.foo.bar).toBe('test');
   });

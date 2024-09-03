@@ -11,9 +11,7 @@ export class ConfigObfuscatorImpl implements Obfuscator {
   private readonly deepRedactSecrets: boolean;
   private deepCopy = rfdc({ proto: true, circles: true });
 
-  constructor(
-    config: RedactorConfig
-  ) {
+  constructor(config: RedactorConfig) {
     const { strategy, secretParser, values, deepRedactSecrets } = config;
     this.strategy = strategy;
     this.secretParser = secretParser;
@@ -30,12 +28,14 @@ export class ConfigObfuscatorImpl implements Obfuscator {
     return copy;
   }
 
-  private obfuscateValuesInPlace(value: any, key?: string, hasParentSecret?: boolean) {
+  private obfuscateValuesInPlace(
+    value: any,
+    key?: string,
+    hasParentSecret?: boolean
+  ) {
     if (value === null || value === undefined) {
       return value;
-    } 
-    
-    else if (typeof value === 'boolean') {
+    } else if (typeof value === 'boolean') {
       return this.obfuscateBoolean(value, key, hasParentSecret);
     } else if (typeof value === 'function') {
       return this.obfuscateFunction(value, key, hasParentSecret);
@@ -51,8 +51,14 @@ export class ConfigObfuscatorImpl implements Obfuscator {
 
   private obfuscateObject(object: any, secretParentKey?: boolean): void {
     for (const key of Object.keys(object)) {
-      const redactAllChildren = secretParentKey || this.secretParser.isSecret(key) && !this.secretParser.isIgnored(key);
-      object[key] = this.obfuscateValuesInPlace(object[key], key, redactAllChildren);
+      const redactAllChildren =
+        secretParentKey ||
+        (this.secretParser.isSecret(key) && !this.secretParser.isIgnored(key));
+      object[key] = this.obfuscateValuesInPlace(
+        object[key],
+        key,
+        redactAllChildren
+      );
     }
   }
 
@@ -62,8 +68,15 @@ export class ConfigObfuscatorImpl implements Obfuscator {
   //   }
   // }
 
-  private obfuscateBoolean(value: boolean, key?: string, secretParentKey?: boolean) {
-    if (!this.values.boolean || !this.shouldRedactValue(key, secretParentKey)) {
+  private obfuscateBoolean(
+    value: boolean,
+    key?: string,
+    secretParentKey?: boolean
+  ) {
+    if (
+      !this.values.booleans ||
+      !this.shouldRedactValue(key, secretParentKey)
+    ) {
       return value;
     }
 
@@ -71,21 +84,32 @@ export class ConfigObfuscatorImpl implements Obfuscator {
   }
 
   private obfuscateDate(value: Date, key?: string, secretParentKey?: boolean) {
-    if (!this.values.date || !this.shouldRedactValue(key, secretParentKey)) {
+    if (!this.values.dates || !this.shouldRedactValue(key, secretParentKey)) {
       return value;
     }
-    return this.strategy.execute(value.toISOString()); 
+    return this.strategy.execute(value.toISOString());
   }
 
-  private obfuscateFunction(value: Function, key?: string, secretParentKey?: boolean) {
-    if (!this.values.function || !this.shouldRedactValue(key, secretParentKey)) {
+  private obfuscateFunction(
+    value: Function,
+    key?: string,
+    secretParentKey?: boolean
+  ) {
+    if (
+      !this.values.functions ||
+      !this.shouldRedactValue(key, secretParentKey)
+    ) {
       return value;
     }
 
     return this.strategy.execute(String(value));
   }
 
-  private obfuscateValue(value: any, key?: string, secretParentKey?: boolean): any {
+  private obfuscateValue(
+    value: any,
+    key?: string,
+    secretParentKey?: boolean
+  ): any {
     if (!this.shouldRedactValue(key, secretParentKey)) {
       return value;
     }
@@ -97,8 +121,11 @@ export class ConfigObfuscatorImpl implements Obfuscator {
       return true;
     } else if (this.secretParser.isIgnored(key)) {
       return false;
-    } 
-    
-    return (this.deepRedactSecrets && hasParentSecret) || this.secretParser.isSecret(key);
+    }
+
+    return (
+      (this.deepRedactSecrets && hasParentSecret) ||
+      this.secretParser.isSecret(key)
+    );
   }
 }
