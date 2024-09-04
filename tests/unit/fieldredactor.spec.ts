@@ -3,11 +3,12 @@ import { FieldRedactorImpl } from '../../src/fieldRedactor/impl/fieldRedactorImp
 import {
   redactAllSecretParser,
   redactAllWithFoobarExceptionSecretsParser,
-  redactNormalSecretsParser
+  redactNormalSecretsParser,
+  redactNoSecretsParser
 } from '../mocks/mockSecretParsers';
 import { Values } from '../../src/types/config';
 import { commonSecretKeys } from '../mocks/secrets';
-describe('ConfigObfuscatorImpl', () => {
+describe('FieldRedactor', () => {
   const redactNoValues: Values = {
     booleans: false,
     functions: false,
@@ -265,5 +266,82 @@ describe('ConfigObfuscatorImpl', () => {
       expect(result.a.authkey.arr[1]).toBe(MOCK_OBFUSCATED);
       expect(result.a.authkey.foobar).toBe('foobar');
     });
+  });
+
+  describe('Special object redaction', () => {
+    const redactSpecialSecretsRedactor = new FieldRedactorImpl({
+      strategy: mockStrategy,
+      secretParser: redactNoSecretsParser,
+      values: redactNoValues,
+      deepRedactSecrets: false,
+      specialObjects: {
+        mySpecialObject: {
+          foo: true,
+          bar: false
+        },
+        mySpecialDeeplyNestedObject: {
+          foo: true,
+          bar: false,
+          biz: {
+            baz: {
+              foobar: true,
+              fizbuzz: false
+            }
+          }
+        }
+      }
+    });
+
+    it('Can redact correct fields in a special object but does not redact other fields', () => {
+      const shouldBeHere: string = 'shouldBeHere';
+      const objectToRedact = {
+        mySpecialObject: {
+          foo: 'shouldBeGone',
+          bar: shouldBeHere,
+          biz: shouldBeHere,
+          baz: shouldBeHere
+        },
+        foo: shouldBeHere,
+        bar: shouldBeHere
+      };
+      const result = redactSpecialSecretsRedactor.obfuscate(objectToRedact);
+      expect(result.foo).toBe(shouldBeHere);
+      expect(result.bar).toBe(shouldBeHere);
+      expect(result.mySpecialObject.foo).toBe(MOCK_OBFUSCATED);
+      expect(result.mySpecialObject.bar).toBe(shouldBeHere);
+      expect(result.mySpecialObject.biz).toBe(shouldBeHere);
+      expect(result.mySpecialObject.baz).toBe(shouldBeHere);
+    });
+
+    it('Can handle deeply nested secret objects', () => {
+      const shouldBeHere: string = 'shouldBeHere';
+      const objectToRedact = {
+        mySpecialDeeplyNestedObject: {
+          foo: 'shouldBeGone',
+          bar: shouldBeHere,
+          biz: {
+            baz: {
+              foobar: 'sholdBeGone',
+              fizbuzz: shouldBeHere
+            }
+          }
+        },
+        foo: shouldBeHere,
+        bar: shouldBeHere
+      };
+      const result = redactSpecialSecretsRedactor.obfuscate(objectToRedact);
+      expect(result.foo).toBe(shouldBeHere);
+      expect(result.bar).toBe(shouldBeHere);
+      expect(result.mySpecialDeeplyNestedObject.foo).toBe(MOCK_OBFUSCATED);
+      expect(result.mySpecialDeeplyNestedObject.bar).toBe(shouldBeHere);
+      expect(result.mySpecialDeeplyNestedObject.biz.baz.foobar).toBe(
+        MOCK_OBFUSCATED
+      );
+      expect(result.mySpecialDeeplyNestedObject.biz.baz.fizbuzz).toBe(
+        shouldBeHere
+      );
+    });
+    // todo add tests and code for when format does not wholly match input
+    // todo add tests and code to handle array types
   });
 });

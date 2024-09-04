@@ -2,21 +2,29 @@ import rfdc from 'rfdc';
 import { Strategy } from '../../strategies';
 import { FieldRedactor } from '../fieldRedactor';
 import { SecretParser } from '../../secrets';
-import { RedactorConfig, Values } from '../../types/config';
+import { RedactorConfig, SpecialObjects, Values } from '../../types/config';
 
 export class FieldRedactorImpl implements FieldRedactor {
   private readonly strategy: Strategy;
   private readonly secretParser: SecretParser;
   private readonly values: Values;
   private readonly deepRedactSecrets: boolean;
+  private readonly specialObjects: SpecialObjects;
   private deepCopy = rfdc({ proto: true, circles: true });
 
   constructor(config: RedactorConfig) {
-    const { strategy, secretParser, values, deepRedactSecrets } = config;
+    const {
+      strategy,
+      secretParser,
+      values,
+      deepRedactSecrets,
+      specialObjects
+    } = config;
     this.strategy = strategy;
     this.secretParser = secretParser;
     this.values = values;
     this.deepRedactSecrets = deepRedactSecrets;
+    this.specialObjects = specialObjects || {};
   }
 
   obfuscate(value: any) {
@@ -43,10 +51,21 @@ export class FieldRedactorImpl implements FieldRedactor {
       return this.obfuscateDate(value, key, hasParentSecret);
     } else if (typeof value !== 'object') {
       return this.obfuscateValue(value, key, hasParentSecret);
+    } else if (this.isSpecialObject(key)) {
+      this.obfuscateSpecialObject(value, key!);
+      return value;
     }
 
     this.obfuscateObject(value, hasParentSecret);
     return value;
+  }
+
+  private isSpecialObject(key?: string): boolean {
+    if (!key) {
+      return false;
+    }
+
+    return Object.keys(this.specialObjects).includes(key);
   }
 
   private obfuscateObject(object: any, secretParentKey?: boolean): void {
@@ -62,11 +81,23 @@ export class FieldRedactorImpl implements FieldRedactor {
     }
   }
 
-  // private obfuscateItem<T>(type: string, value: string, key?: string, secretParentKey?: boolean) {
-  //   if (!this.values[type] || !this.shouldRedactValue(key, secretParentKey)) {
+  private obfuscateSpecialObject(object: any, key: string): void {
+    const format: any = this.specialObjects[key];
+    this.obfuscateSpecialObjectInternal(format, object);
+  }
 
-  //   }
-  // }
+  private obfuscateSpecialObjectInternal(format: any, object: any): void {
+    Object.keys(format).forEach((key) => {
+      const shouldObfuscate = format[key];
+      if (typeof shouldObfuscate === 'boolean') {
+        object[key] = shouldObfuscate
+          ? this.strategy.execute(String(object[key]))
+          : object[key];
+      } else {
+        this.obfuscateSpecialObjectInternal(format[key], object[key]);
+      }
+    });
+  }
 
   private obfuscateBoolean(
     value: boolean,

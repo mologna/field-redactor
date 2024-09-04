@@ -20,12 +20,6 @@ export type RedactionStrategyConfig = {
 
 export type StrategyConfig = HashStrategyConfig | RedactionStrategyConfig;
 
-export type SecretKeysConfig = {
-  deep: boolean;
-  keys: RegExp[];
-  ignoreKeys: RegExp[];
-};
-
 export type SecretConfig = Partial<{
   redactAll: boolean;
   keys: RegExp[];
@@ -40,15 +34,19 @@ export type Values = {
 
 export type ValuesConfig = Partial<Values>;
 
-export type RedactorConfig = {
-  strategy: Strategy;
-  secretParser: SecretParser;
+export type SpecialObjects = Record<string, any>;
+
+type RedactorConfigValues = {
   values: Values;
   deepRedactSecrets: boolean;
+  specialObjects?: SpecialObjects;
+};
+
+export type RedactorConfig = RedactorConfigValues & {
+  strategy: Strategy;
+  secretParser: SecretParser;
 };
 
 export type GetRedactorConfig = StrategyConfig &
-  SecretConfig & {
-    values?: ValuesConfig;
-    deepRedactSecrets?: boolean;
-  };
+  SecretConfig &
+  Partial<RedactorConfigValues>;
