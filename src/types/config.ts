@@ -40,6 +40,7 @@ type RedactorConfigValues = {
   values: Values;
   deepRedactSecrets: boolean;
   specialObjects?: SpecialObjects;
+  strictMatchSpecialObjects?: boolean;
 };
 
 export type RedactorConfig = RedactorConfigValues & {

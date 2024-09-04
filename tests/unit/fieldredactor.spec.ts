@@ -269,31 +269,32 @@ describe('FieldRedactor', () => {
   });
 
   describe('Special object redaction', () => {
+    const specialObjects = {
+      mySpecialObject: {
+        foo: true,
+        bar: false
+      },
+      mySpecialDeeplyNestedObject: {
+        foo: true,
+        bar: false,
+        biz: {
+          baz: {
+            foobar: true,
+            fizbuzz: false
+          }
+        }
+      }
+    };
     const redactSpecialSecretsRedactor = new FieldRedactorImpl({
       strategy: mockStrategy,
       secretParser: redactNoSecretsParser,
       values: redactNoValues,
       deepRedactSecrets: false,
-      specialObjects: {
-        mySpecialObject: {
-          foo: true,
-          bar: false
-        },
-        mySpecialDeeplyNestedObject: {
-          foo: true,
-          bar: false,
-          biz: {
-            baz: {
-              foobar: true,
-              fizbuzz: false
-            }
-          }
-        }
-      }
+      specialObjects
     });
+    const shouldBeHere: string = 'shouldBeHere';
 
     it('Can redact correct fields in a special object but does not redact other fields', () => {
-      const shouldBeHere: string = 'shouldBeHere';
       const objectToRedact = {
         mySpecialObject: {
           foo: 'shouldBeGone',
@@ -314,7 +315,6 @@ describe('FieldRedactor', () => {
     });
 
     it('Can handle deeply nested secret objects', () => {
-      const shouldBeHere: string = 'shouldBeHere';
       const objectToRedact = {
         mySpecialDeeplyNestedObject: {
           foo: 'shouldBeGone',
@@ -341,7 +341,95 @@ describe('FieldRedactor', () => {
         shouldBeHere
       );
     });
-    // todo add tests and code for when format does not wholly match input
+
+    it('Can perform partial matching', () => {
+      const objectToRedact = {
+        mySpecialDeeplyNestedObject: {
+          foo: 'shouldBeGone',
+          biz: {
+            baz: {
+              foobar: 'sholdBeGone'
+            }
+          }
+        },
+        bar: shouldBeHere
+      };
+
+      const result = redactSpecialSecretsRedactor.obfuscate(objectToRedact);
+      expect(result.bar).toBe(shouldBeHere);
+      expect(result.mySpecialDeeplyNestedObject.foo).toBe(MOCK_OBFUSCATED);
+      expect(result.mySpecialDeeplyNestedObject.biz.baz.foobar).toBe(
+        MOCK_OBFUSCATED
+      );
+    });
+
+    it('Does not perform partial matching when strict match flag is passed', () => {
+      const strictMatchSpecialSecretsRedactor = new FieldRedactorImpl({
+        strategy: mockStrategy,
+        secretParser: redactNoSecretsParser,
+        values: redactNoValues,
+        deepRedactSecrets: false,
+        specialObjects,
+        strictMatchSpecialObjects: true
+      });
+
+      // Missing data from format
+      const missingDataObject = {
+        mySpecialDeeplyNestedObject: {
+          foo: 'shouldBeGone',
+          biz: {
+            baz: {
+              foobar: 'shouldBeGone'
+            }
+          }
+        },
+        bar: shouldBeHere
+      };
+      const missingDataResult =
+        strictMatchSpecialSecretsRedactor.obfuscate(missingDataObject);
+      expect(missingDataResult.bar).toBe(shouldBeHere);
+      expect(missingDataResult.mySpecialDeeplyNestedObject.foo).toBe(
+        'shouldBeGone'
+      );
+      expect(missingDataResult.mySpecialDeeplyNestedObject.biz.baz.foobar).toBe(
+        'shouldBeGone'
+      );
+
+      // Extra data included
+      const extraDataObject = {
+        mySpecialDeeplyNestedObject: {
+          foo: 'shouldBeGone',
+          bar: shouldBeHere,
+          biz: {
+            baz: {
+              foobar: 'sholdBeGone',
+              fizbuzz: shouldBeHere,
+              foosball: 'biff'
+            }
+          }
+        },
+        foo: shouldBeHere,
+        bar: shouldBeHere
+      };
+
+      const extraDataResult =
+        redactSpecialSecretsRedactor.obfuscate(extraDataObject);
+      expect(extraDataResult.foo).toBe(shouldBeHere);
+      expect(extraDataResult.bar).toBe(shouldBeHere);
+      expect(extraDataResult.mySpecialDeeplyNestedObject.foo).toBe(
+        MOCK_OBFUSCATED
+      );
+      expect(extraDataResult.mySpecialDeeplyNestedObject.bar).toBe(
+        shouldBeHere
+      );
+      expect(extraDataResult.mySpecialDeeplyNestedObject.biz.baz.foobar).toBe(
+        MOCK_OBFUSCATED
+      );
+      expect(extraDataResult.mySpecialDeeplyNestedObject.biz.baz.fizbuzz).toBe(
+        shouldBeHere
+      );
+    });
+
     // todo add tests and code to handle array types
   });
 });

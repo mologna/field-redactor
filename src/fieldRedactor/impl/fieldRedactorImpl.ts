@@ -10,6 +10,7 @@ export class FieldRedactorImpl implements FieldRedactor {
   private readonly values: Values;
   private readonly deepRedactSecrets: boolean;
   private readonly specialObjects: SpecialObjects;
+  private readonly strictMatchSpecialObjects: boolean;
   private deepCopy = rfdc({ proto: true, circles: true });
 
   constructor(config: RedactorConfig) {
@@ -18,13 +19,15 @@ export class FieldRedactorImpl implements FieldRedactor {
       secretParser,
       values,
       deepRedactSecrets,
-      specialObjects
+      specialObjects,
+      strictMatchSpecialObjects
     } = config;
     this.strategy = strategy;
     this.secretParser = secretParser;
     this.values = values;
     this.deepRedactSecrets = deepRedactSecrets;
     this.specialObjects = specialObjects || {};
+    this.strictMatchSpecialObjects = strictMatchSpecialObjects || false;
   }
 
   obfuscate(value: any) {
@@ -51,7 +54,7 @@ export class FieldRedactorImpl implements FieldRedactor {
       return this.obfuscateDate(value, key, hasParentSecret);
     } else if (typeof value !== 'object') {
       return this.obfuscateValue(value, key, hasParentSecret);
-    } else if (this.isSpecialObject(key)) {
+    } else if (this.isSpecialObject(value, key)) {
       this.obfuscateSpecialObject(value, key!);
       return value;
     }
@@ -60,12 +63,36 @@ export class FieldRedactorImpl implements FieldRedactor {
     return value;
   }
 
-  private isSpecialObject(key?: string): boolean {
-    if (!key) {
+  private isSpecialObject(value: any, key?: string): boolean {
+    if (!key || !Object.keys(this.specialObjects).includes(key)) {
       return false;
     }
 
-    return Object.keys(this.specialObjects).includes(key);
+    if (!this.strictMatchSpecialObjects) {
+      return true;
+    }
+
+    const format = this.specialObjects[key];
+    return (
+      this.formatMatchesObject(value, format) &&
+      this.formatMatchesObject(format, value)
+    );
+  }
+
+  private formatMatchesObject(object: any, format: any): boolean {
+    console.log(object);
+    console.log(format);
+    for (const key of Object.keys(format)) {
+      console.log(key);
+      console.log(object[key]);
+      if (object[key] === undefined) return false;
+      if (typeof object[key] === 'object') {
+        if (!this.formatMatchesObject(object[key], format[key])) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   private obfuscateObject(object: any, secretParentKey?: boolean): void {
