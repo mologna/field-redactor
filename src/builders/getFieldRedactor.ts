@@ -62,8 +62,9 @@ export const getReadactor = (input?: GetRedactorConfig): FieldRedactor => {
   const config: GetRedactorConfig = input || {
     type: 'redaction'
   };
+  const strategy = getStrategy(config);
   const redactorConfig: RedactorConfig = {
-    strategy: getStrategy(config),
+    redactor: strategy.execute.bind(strategy),
     secretParser: getSecretParser(config),
     values: getValuesConfig(config),
     deepRedactSecrets: !!config.deepRedactSecrets

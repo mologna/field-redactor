@@ -112,7 +112,7 @@ describe('getRedactor', () => {
     getReadactor();
     expect(FieldRedactorImpl).toHaveBeenCalledTimes(1);
     expect(FieldRedactorImpl).toHaveBeenCalledWith({
-      strategy: expect.anything(),
+      redactor: expect.anything(),
       secretParser: expect.anything(),
       values: {
         booleans: false,
@@ -132,7 +132,7 @@ describe('getRedactor', () => {
     });
     expect(FieldRedactorImpl).toHaveBeenCalledTimes(2);
     expect(FieldRedactorImpl).toHaveBeenCalledWith({
-      strategy: expect.anything(),
+      redactor: expect.anything(),
       secretParser: expect.anything(),
       values: {
         booleans: true,

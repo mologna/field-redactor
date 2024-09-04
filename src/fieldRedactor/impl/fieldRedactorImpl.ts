@@ -1,11 +1,11 @@
 import rfdc from 'rfdc';
-import { Strategy } from '../../strategies';
+import { FunctionalStrategy } from '../../strategies';
 import { FieldRedactor } from '../fieldRedactor';
 import { SecretParser } from '../../secrets';
 import { RedactorConfig, SpecialObjects, Values } from '../../types/config';
 
 export class FieldRedactorImpl implements FieldRedactor {
-  private readonly strategy: Strategy;
+  private readonly redactor: FunctionalStrategy;
   private readonly secretParser: SecretParser;
   private readonly values: Values;
   private readonly deepRedactSecrets: boolean;
@@ -14,20 +14,12 @@ export class FieldRedactorImpl implements FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
 
   constructor(config: RedactorConfig) {
-    const {
-      strategy,
-      secretParser,
-      values,
-      deepRedactSecrets,
-      specialObjects,
-      strictMatchSpecialObjects
-    } = config;
-    this.strategy = strategy;
-    this.secretParser = secretParser;
-    this.values = values;
-    this.deepRedactSecrets = deepRedactSecrets;
-    this.specialObjects = specialObjects || {};
-    this.strictMatchSpecialObjects = strictMatchSpecialObjects || false;
+    this.redactor = config.redactor;
+    this.secretParser = config.secretParser;
+    this.values = config.values;
+    this.deepRedactSecrets = config.deepRedactSecrets;
+    this.specialObjects = config.specialObjects || {};
+    this.strictMatchSpecialObjects = config.strictMatchSpecialObjects || false;
   }
 
   obfuscate(value: any) {
@@ -118,7 +110,7 @@ export class FieldRedactorImpl implements FieldRedactor {
       const shouldObfuscate = format[key];
       if (typeof shouldObfuscate === 'boolean') {
         object[key] = shouldObfuscate
-          ? this.strategy.execute(String(object[key]))
+          ? this.redactor(String(object[key]))
           : object[key];
       } else {
         this.obfuscateSpecialObjectInternal(format[key], object[key]);
@@ -138,14 +130,14 @@ export class FieldRedactorImpl implements FieldRedactor {
       return value;
     }
 
-    return this.strategy.execute(String(value));
+    return this.redactor(String(value));
   }
 
   private obfuscateDate(value: Date, key?: string, secretParentKey?: boolean) {
     if (!this.values.dates || !this.shouldRedactValue(key, secretParentKey)) {
       return value;
     }
-    return this.strategy.execute(value.toISOString());
+    return this.redactor(value.toISOString());
   }
 
   private obfuscateFunction(
@@ -160,7 +152,7 @@ export class FieldRedactorImpl implements FieldRedactor {
       return value;
     }
 
-    return this.strategy.execute(String(value));
+    return this.redactor(String(value));
   }
 
   private obfuscateValue(
@@ -171,7 +163,7 @@ export class FieldRedactorImpl implements FieldRedactor {
     if (!this.shouldRedactValue(key, secretParentKey)) {
       return value;
     }
-    return this.strategy.execute(String(value));
+    return this.redactor(String(value));
   }
 
   private shouldRedactValue(key?: string, hasParentSecret?: boolean) {

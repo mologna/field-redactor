@@ -26,31 +26,31 @@ describe('FieldRedactor', () => {
   const bool = true;
 
   const redactAllWithoutValuesRedactor = new FieldRedactorImpl({
-    strategy: mockStrategy,
+    redactor: mockStrategy.execute.bind(mockStrategy),
     secretParser: redactAllSecretParser,
     values: redactNoValues,
     deepRedactSecrets: false
   });
   const redactAllWithValuesRedactor = new FieldRedactorImpl({
-    strategy: mockStrategy,
+    redactor: mockStrategy.execute.bind(mockStrategy),
     secretParser: redactAllSecretParser,
     values: redactAllValues,
     deepRedactSecrets: false
   });
   const redactDefaultSecretsRedactor = new FieldRedactorImpl({
-    strategy: mockStrategy,
+    redactor: mockStrategy.execute.bind(mockStrategy),
     secretParser: redactNormalSecretsParser,
     values: redactNoValues,
     deepRedactSecrets: false
   });
   const deepRedactDefaultSecretsRedactor = new FieldRedactorImpl({
-    strategy: mockStrategy,
+    redactor: mockStrategy.execute.bind(mockStrategy),
     secretParser: redactNormalSecretsParser,
     values: redactNoValues,
     deepRedactSecrets: true
   });
   const redactAllWithFoobarExceptionSecretsRedactor = new FieldRedactorImpl({
-    strategy: mockStrategy,
+    redactor: mockStrategy.execute.bind(mockStrategy),
     secretParser: redactAllWithFoobarExceptionSecretsParser,
     values: redactNoValues,
     deepRedactSecrets: true
@@ -286,7 +286,7 @@ describe('FieldRedactor', () => {
       }
     };
     const redactSpecialSecretsRedactor = new FieldRedactorImpl({
-      strategy: mockStrategy,
+      redactor: mockStrategy.execute.bind(mockStrategy),
       secretParser: redactNoSecretsParser,
       values: redactNoValues,
       deepRedactSecrets: false,
@@ -365,7 +365,7 @@ describe('FieldRedactor', () => {
 
     it('Does not perform partial matching when strict match flag is passed', () => {
       const strictMatchSpecialSecretsRedactor = new FieldRedactorImpl({
-        strategy: mockStrategy,
+        redactor: mockStrategy.execute.bind(mockStrategy),
         secretParser: redactNoSecretsParser,
         values: redactNoValues,
         deepRedactSecrets: false,

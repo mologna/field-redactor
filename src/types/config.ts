@@ -1,5 +1,5 @@
 import { SecretParser } from '../secrets';
-import { Strategy } from '../strategies';
+import { FunctionalStrategy } from '../strategies';
 import { BinaryToTextEncoding } from './encodings';
 import { HASH_STRATEGIES } from './hashStrategies';
 
@@ -44,7 +44,7 @@ type RedactorConfigValues = {
 };
 
 export type RedactorConfig = RedactorConfigValues & {
-  strategy: Strategy;
+  redactor: FunctionalStrategy;
   secretParser: SecretParser;
 };
 
