@@ -1,16 +1,11 @@
 import { SecretConfig } from '../../types/config';
-import { TypeCheckers } from '../../utils/typeCheckers';
 import { SecretParser } from '../secretParser';
 
-export class secretParserImpl implements SecretParser {
+export class SecretParserImpl implements SecretParser {
   private keys: RegExp[];
   private ignoredKeys: RegExp[];
   private redactAll: boolean;
   constructor(config: SecretConfig) {
-    if (!TypeCheckers.isSecretConfig(config)) {
-      throw new Error('Invalid configuration provided for Secret Parser.');
-    }
-
     const { redactAll, keys, ignoredKeys } = config;
     this.keys = keys || [];
     this.redactAll = redactAll || false;

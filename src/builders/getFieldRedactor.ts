@@ -1,38 +1,24 @@
 import { FieldRedactor } from '../fieldRedactor';
 import { FieldRedactorImpl } from '../fieldRedactor/impl/fieldRedactorImpl';
 import { SecretParser } from '../secrets';
-import { secretParserImpl } from '../secrets/impl/secretParserImpl';
-import { Strategy } from '../strategies';
-import { HashStrategy } from '../strategies/impl/hashStrategy';
-import { RedactionStrategy } from '../strategies/impl/redactionStrategy';
+import { SecretParserImpl } from '../secrets/impl/secretParserImpl';
+import { FunctionalStrategy, getHashStrategy, getRedactionStrategy } from '../strategies';
 import { GetRedactorConfig, RedactorConfig, Values } from '../types/config';
 import { TypeCheckers } from '../utils/typeCheckers';
 
-const getStrategy = (config: GetRedactorConfig): Strategy => {
-  const { type } = config;
-  switch (type) {
-    case 'hash': {
-      const { algorithm, encoding, shouldFormat } = config;
-      return new HashStrategy({
-        type,
-        algorithm,
-        encoding,
-        shouldFormat
-      });
-    }
-    default: {
-      const { replacementText } = config;
-      return new RedactionStrategy({
-        type: 'redaction',
-        replacementText
-      });
-    }
+const getStrategy = (config: GetRedactorConfig): FunctionalStrategy => {
+  if (config.redactor !== undefined) {
+    return config.redactor;
+  } else if (config.algorithm) {
+    const { algorithm, encoding, shouldFormat } = config;
+    return getHashStrategy(algorithm, encoding, shouldFormat);
   }
+  return getRedactionStrategy();
 };
 
 const getSecretParser = (config: GetRedactorConfig): SecretParser => {
   const { redactAll, keys, ignoredKeys } = config;
-  return new secretParserImpl({ redactAll, keys, ignoredKeys });
+  return new SecretParserImpl({ redactAll, keys, ignoredKeys });
 };
 
 const getValuesConfig = (config: GetRedactorConfig): Values => {
@@ -58,13 +44,10 @@ const getValuesConfig = (config: GetRedactorConfig): Values => {
   };
 };
 
-export const getReadactor = (input?: GetRedactorConfig): FieldRedactor => {
-  const config: GetRedactorConfig = input || {
-    type: 'redaction'
-  };
-  const strategy = getStrategy(config);
+export const getFieldRedactor = (input?: GetRedactorConfig): FieldRedactor => {
+  const config: GetRedactorConfig = input || {};
   const redactorConfig: RedactorConfig = {
-    redactor: strategy.execute.bind(strategy),
+    redactor: getStrategy(config),
     secretParser: getSecretParser(config),
     values: getValuesConfig(config),
     deepRedactSecrets: !!config.deepRedactSecrets

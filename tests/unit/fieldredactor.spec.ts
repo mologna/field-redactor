@@ -58,35 +58,35 @@ describe('FieldRedactor', () => {
 
   describe('simple value obfuscation', () => {
     it('Does not obfuscate booleans, dates, or functions when not specified, but obfuscates other values', () => {
-      expect(redactAllWithoutValuesRedactor.obfuscate(true)).toBe(true);
-      expect(redactAllWithoutValuesRedactor.obfuscate(date)).toStrictEqual(
+      expect(redactAllWithoutValuesRedactor.redact(true)).toBe(true);
+      expect(redactAllWithoutValuesRedactor.redact(date)).toStrictEqual(
         date
       );
-      expect(redactAllWithoutValuesRedactor.obfuscate(func)).toStrictEqual(
+      expect(redactAllWithoutValuesRedactor.redact(func)).toStrictEqual(
         func
       );
-      expect(redactAllWithoutValuesRedactor.obfuscate('foobar')).toBe(
+      expect(redactAllWithoutValuesRedactor.redact('foobar')).toBe(
         MOCK_OBFUSCATED
       );
       // expect(redactAllWithoutValuesRedactor.obfuscate(BigInt(12345))).toBe(MOCK_OBFUSCATED);
-      expect(redactAllWithoutValuesRedactor.obfuscate(12345)).toBe(
+      expect(redactAllWithoutValuesRedactor.redact(12345)).toBe(
         MOCK_OBFUSCATED
       );
     });
 
     it('Obfuscates all values when specified', () => {
-      expect(redactAllWithValuesRedactor.obfuscate(true)).toBe(MOCK_OBFUSCATED);
-      expect(redactAllWithValuesRedactor.obfuscate(date)).toEqual(
+      expect(redactAllWithValuesRedactor.redact(true)).toBe(MOCK_OBFUSCATED);
+      expect(redactAllWithValuesRedactor.redact(date)).toEqual(
         MOCK_OBFUSCATED
       );
-      expect(redactAllWithValuesRedactor.obfuscate(func)).toEqual(
+      expect(redactAllWithValuesRedactor.redact(func)).toEqual(
         MOCK_OBFUSCATED
       );
-      expect(redactAllWithValuesRedactor.obfuscate('foobar')).toBe(
+      expect(redactAllWithValuesRedactor.redact('foobar')).toBe(
         MOCK_OBFUSCATED
       );
       // expect(redactAllWithValuesRedactor.obfuscate(BigInt(12345))).toBe(MOCK_OBFUSCATED);
-      expect(redactAllWithValuesRedactor.obfuscate(12345)).toBe(
+      expect(redactAllWithValuesRedactor.redact(12345)).toBe(
         MOCK_OBFUSCATED
       );
     });
@@ -102,7 +102,7 @@ describe('FieldRedactor', () => {
         // bigint
       };
 
-      const result = redactAllWithValuesRedactor.obfuscate(shouldBeRedacted);
+      const result = redactAllWithValuesRedactor.redact(shouldBeRedacted);
       Object.keys(result).forEach((key) => {
         expect(result[key]).toBe(MOCK_OBFUSCATED);
       });
@@ -115,7 +115,7 @@ describe('FieldRedactor', () => {
         bool
       };
 
-      const result = redactAllWithoutValuesRedactor.obfuscate(shouldBeRedacted);
+      const result = redactAllWithoutValuesRedactor.redact(shouldBeRedacted);
       Object.keys(result).forEach((key) => {
         expect(result[key]).not.toBe(MOCK_OBFUSCATED);
       });
@@ -123,7 +123,7 @@ describe('FieldRedactor', () => {
 
     it('Can redact array values', () => {
       const array = ['foo', 'bar', 12345, BigInt(12)];
-      const result = redactAllWithValuesRedactor.obfuscate(array);
+      const result = redactAllWithValuesRedactor.redact(array);
       result.forEach((item: any) => expect(item).toBe(MOCK_OBFUSCATED));
     });
 
@@ -140,7 +140,7 @@ describe('FieldRedactor', () => {
         }
       };
 
-      const result = redactAllWithValuesRedactor.obfuscate(nested);
+      const result = redactAllWithValuesRedactor.redact(nested);
       expect(result.a.b.c).toBe(MOCK_OBFUSCATED);
       expect(result.a.d).toBe(MOCK_OBFUSCATED);
       const arr = result.e.f;
@@ -160,7 +160,7 @@ describe('FieldRedactor', () => {
         }
       ];
 
-      const result = redactAllWithValuesRedactor.obfuscate(arrayNested);
+      const result = redactAllWithValuesRedactor.redact(arrayNested);
       expect(result[0].foo).toBe(MOCK_OBFUSCATED);
       expect(result[1].biz.baz).toBe(MOCK_OBFUSCATED);
     });
@@ -171,7 +171,7 @@ describe('FieldRedactor', () => {
         biz: null,
         baz: undefined
       };
-      const result = redactAllWithValuesRedactor.obfuscate(myObj);
+      const result = redactAllWithValuesRedactor.redact(myObj);
       expect(result.biz).toBeNull();
       expect(result.baz).toBeUndefined();
     });
@@ -204,7 +204,7 @@ describe('FieldRedactor', () => {
           ]
         }
       };
-      const result = redactAllWithoutValuesRedactor.obfuscate(sampleLog);
+      const result = redactAllWithoutValuesRedactor.redact(sampleLog);
       expect(result.message).toBe(MOCK_OBFUSCATED);
       expect(result.data.container).toBe(MOCK_OBFUSCATED);
     });
@@ -223,7 +223,7 @@ describe('FieldRedactor', () => {
     };
     it('Only redacts secret keys when specified', () => {
       const secretsResult =
-        redactDefaultSecretsRedactor.obfuscate(commonSecretKeys);
+        redactDefaultSecretsRedactor.redact(commonSecretKeys);
       Object.keys(secretsResult).forEach((key) => {
         expect(secretsResult[key]).toBe(MOCK_OBFUSCATED);
       });
@@ -235,14 +235,14 @@ describe('FieldRedactor', () => {
       };
 
       const nonSecretsResult =
-        redactDefaultSecretsRedactor.obfuscate(nonSecrets);
+        redactDefaultSecretsRedactor.redact(nonSecrets);
       Object.keys(nonSecretsResult).forEach((key: string) => {
         expect(nonSecretsResult[key]).toBe(nonSecrets[key]);
       });
     });
 
     it('Does not follow deeply nested secret values when not specified', () => {
-      const result = redactDefaultSecretsRedactor.obfuscate(nestedSecrets);
+      const result = redactDefaultSecretsRedactor.redact(nestedSecrets);
       expect(result.a.password).toBe(MOCK_OBFUSCATED);
       expect(result.a.authkey.foo).toBe('bar');
       expect(result.a.authkey.arr[0]).toBe('some');
@@ -250,7 +250,7 @@ describe('FieldRedactor', () => {
     });
 
     it('Follows nested secrets when specified', () => {
-      const result = deepRedactDefaultSecretsRedactor.obfuscate(nestedSecrets);
+      const result = deepRedactDefaultSecretsRedactor.redact(nestedSecrets);
       expect(result.a.password).toBe(MOCK_OBFUSCATED);
       expect(result.a.authkey.foo).toBe(MOCK_OBFUSCATED);
       expect(result.a.authkey.arr[0]).toBe(MOCK_OBFUSCATED);
@@ -259,7 +259,7 @@ describe('FieldRedactor', () => {
 
     it('Ignores values when specified in ignore list', () => {
       const result =
-        redactAllWithFoobarExceptionSecretsRedactor.obfuscate(nestedSecrets);
+        redactAllWithFoobarExceptionSecretsRedactor.redact(nestedSecrets);
       expect(result.a.password).toBe(MOCK_OBFUSCATED);
       expect(result.a.authkey.foo).toBe(MOCK_OBFUSCATED);
       expect(result.a.authkey.arr[0]).toBe(MOCK_OBFUSCATED);
@@ -305,7 +305,7 @@ describe('FieldRedactor', () => {
         foo: shouldBeHere,
         bar: shouldBeHere
       };
-      const result = redactSpecialSecretsRedactor.obfuscate(objectToRedact);
+      const result = redactSpecialSecretsRedactor.redact(objectToRedact);
       expect(result.foo).toBe(shouldBeHere);
       expect(result.bar).toBe(shouldBeHere);
       expect(result.mySpecialObject.foo).toBe(MOCK_OBFUSCATED);
@@ -329,7 +329,7 @@ describe('FieldRedactor', () => {
         foo: shouldBeHere,
         bar: shouldBeHere
       };
-      const result = redactSpecialSecretsRedactor.obfuscate(objectToRedact);
+      const result = redactSpecialSecretsRedactor.redact(objectToRedact);
       expect(result.foo).toBe(shouldBeHere);
       expect(result.bar).toBe(shouldBeHere);
       expect(result.mySpecialDeeplyNestedObject.foo).toBe(MOCK_OBFUSCATED);
@@ -355,7 +355,7 @@ describe('FieldRedactor', () => {
         bar: shouldBeHere
       };
 
-      const result = redactSpecialSecretsRedactor.obfuscate(objectToRedact);
+      const result = redactSpecialSecretsRedactor.redact(objectToRedact);
       expect(result.bar).toBe(shouldBeHere);
       expect(result.mySpecialDeeplyNestedObject.foo).toBe(MOCK_OBFUSCATED);
       expect(result.mySpecialDeeplyNestedObject.biz.baz.foobar).toBe(
@@ -386,7 +386,7 @@ describe('FieldRedactor', () => {
         bar: shouldBeHere
       };
       const missingDataResult =
-        strictMatchSpecialSecretsRedactor.obfuscate(missingDataObject);
+        strictMatchSpecialSecretsRedactor.redact(missingDataObject);
       expect(missingDataResult.bar).toBe(shouldBeHere);
       expect(missingDataResult.mySpecialDeeplyNestedObject.foo).toBe(
         'shouldBeGone'
@@ -398,13 +398,13 @@ describe('FieldRedactor', () => {
       // Extra data included
       const extraDataObject = {
         mySpecialDeeplyNestedObject: {
-          foo: 'shouldBeGone',
+          foo: shouldBeHere,
           bar: shouldBeHere,
           biz: {
             baz: {
-              foobar: 'sholdBeGone',
+              foobar: shouldBeHere,
               fizbuzz: shouldBeHere,
-              foosball: 'biff'
+              foosball: shouldBeHere
             }
           }
         },
@@ -413,17 +413,17 @@ describe('FieldRedactor', () => {
       };
 
       const extraDataResult =
-        redactSpecialSecretsRedactor.obfuscate(extraDataObject);
+        redactSpecialSecretsRedactor.redact(extraDataObject);
       expect(extraDataResult.foo).toBe(shouldBeHere);
       expect(extraDataResult.bar).toBe(shouldBeHere);
       expect(extraDataResult.mySpecialDeeplyNestedObject.foo).toBe(
-        MOCK_OBFUSCATED
+        shouldBeHere
       );
       expect(extraDataResult.mySpecialDeeplyNestedObject.bar).toBe(
         shouldBeHere
       );
       expect(extraDataResult.mySpecialDeeplyNestedObject.biz.baz.foobar).toBe(
-        MOCK_OBFUSCATED
+        shouldBeHere
       );
       expect(extraDataResult.mySpecialDeeplyNestedObject.biz.baz.fizbuzz).toBe(
         shouldBeHere

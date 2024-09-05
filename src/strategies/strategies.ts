@@ -52,7 +52,3 @@ export const hashStrategies = [
   'ssl3-md5',
   'ssl3-sha1'
 ] as const;
-
-export const redactionStrategies = [
-  'redaction'
-] as const;

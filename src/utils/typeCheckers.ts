@@ -5,43 +5,11 @@ import {
   HASH_STRATEGIES
 } from '../types';
 import {
-  HashStrategyConfig,
-  RedactionStrategyConfig,
   SecretConfig,
   ValuesConfig
 } from '../types/config';
 
 export class TypeCheckers {
-  public static isHashStrategyConfig(
-    config: any
-  ): config is HashStrategyConfig {
-    const { type, algorithm, encoding, shouldFormat } = config;
-    if (typeof type !== 'string' || type.localeCompare('hash') !== 0) {
-      return false;
-    } else if (!this.isHashStrategy(algorithm)) {
-      return false;
-    } else if (encoding && !this.isBinaryToTextEncoding(encoding)) {
-      return false;
-    } else if (!this.isBooleanOrUndefined(shouldFormat)) {
-      return false;
-    }
-
-    return true;
-  }
-
-  public static isRedactionStrategyConfig(
-    config: any
-  ): config is RedactionStrategyConfig {
-    const { type, replacementText } = config;
-    if (type !== 'redaction') {
-      return false;
-    } else if (replacementText && typeof replacementText !== 'string') {
-      return false;
-    }
-
-    return true;
-  }
-
   public static isSecretConfig(config: any): config is SecretConfig {
     const { redactAll, deep, keys, ignoredKeys } = config;
     if (

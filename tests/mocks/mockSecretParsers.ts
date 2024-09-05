@@ -1,5 +1,5 @@
 import { DEFAULT_SECRET_KEYS, SecretParser } from '../../src';
-import { secretParserImpl } from '../../src/secrets/impl/secretParserImpl';
+import { SecretParserImpl } from '../../src/secrets/impl/secretParserImpl';
 
 export const redactAllSecretParser: SecretParser = {
   isSecret: (value: string) => true,
@@ -11,12 +11,12 @@ export const redactAllWithFoobarExceptionSecretsParser: SecretParser = {
   isIgnored: (value: string) => /\bfoobar\b/i.test(value)
 };
 
-export const redactNormalSecretsParser: SecretParser = new secretParserImpl({
+export const redactNormalSecretsParser: SecretParser = new SecretParserImpl({
   redactAll: false,
   keys: DEFAULT_SECRET_KEYS
 });
 
-export const redactNoSecretsParser: SecretParser = new secretParserImpl({
+export const redactNoSecretsParser: SecretParser = new SecretParserImpl({
   redactAll: false,
   keys: []
 });

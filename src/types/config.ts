@@ -5,20 +5,12 @@ import { HASH_STRATEGIES } from './hashStrategies';
 
 export type STRATEGY_TYPES = 'hash' | 'config';
 
-export type HashStrategyConfig = {
-  type: 'hash';
-  algorithm: HASH_STRATEGIES;
+export type StrategyConfig = {
+  redactor?: FunctionalStrategy
+  algorithm?: HASH_STRATEGIES;
   encoding?: BinaryToTextEncoding;
   shouldFormat?: boolean;
 };
-
-// Redaction strategy is default so all values are optional
-export type RedactionStrategyConfig = {
-  type?: 'redaction';
-  replacementText?: string;
-};
-
-export type StrategyConfig = HashStrategyConfig | RedactionStrategyConfig;
 
 export type SecretConfig = Partial<{
   redactAll: boolean;
@@ -48,6 +40,6 @@ export type RedactorConfig = RedactorConfigValues & {
   secretParser: SecretParser;
 };
 
-export type GetRedactorConfig = StrategyConfig &
+export type GetRedactorConfig = Partial<StrategyConfig> &
   SecretConfig &
   Partial<RedactorConfigValues>;

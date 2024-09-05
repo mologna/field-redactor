@@ -22,7 +22,7 @@ export class FieldRedactorImpl implements FieldRedactor {
     this.strictMatchSpecialObjects = config.strictMatchSpecialObjects || false;
   }
 
-  obfuscate(value: any) {
+  redact(value: any) {
     if (typeof value !== 'object' || value instanceof Date) {
       return this.obfuscateValuesInPlace(value);
     }
@@ -72,11 +72,7 @@ export class FieldRedactorImpl implements FieldRedactor {
   }
 
   private formatMatchesObject(object: any, format: any): boolean {
-    console.log(object);
-    console.log(format);
     for (const key of Object.keys(format)) {
-      console.log(key);
-      console.log(object[key]);
       if (object[key] === undefined) return false;
       if (typeof object[key] === 'object') {
         if (!this.formatMatchesObject(object[key], format[key])) {

@@ -1,3 +1,3 @@
 export interface FieldRedactor {
-  obfuscate(value: any): any;
+  redact(value: any): any;
 }

@@ -1,8 +1,8 @@
-import { getReadactor } from '../../src/builders';
-import { HashStrategy } from '../../src/strategies/impl/hashStrategy';
-import { RedactionStrategy } from '../../src/strategies/impl/redactionStrategy';
-import { secretParserImpl } from '../../src/secrets/impl/secretParserImpl';
+import { getFieldRedactor } from '../../src/builders';
+import { getHashStrategy } from '../../src/strategies/impl/hashStrategy';
+import { SecretParserImpl } from '../../src/secrets/impl/secretParserImpl';
 import { FieldRedactorImpl } from '../../src/fieldRedactor/impl/fieldRedactorImpl';
+import { getRedactionStrategy } from '../../src/strategies';
 
 jest.mock('../../src/strategies/impl/hashStrategy');
 jest.mock('../../src/strategies/impl/redactionStrategy');
@@ -14,94 +14,66 @@ describe('getRedactor', () => {
     jest.resetAllMocks();
   });
   it('Can get a redactor with hash strategy and correct arguments', () => {
-    getReadactor({
-      type: 'hash',
+    getFieldRedactor({
       algorithm: 'md5'
     });
-    expect(HashStrategy).toHaveBeenCalledTimes(1);
-    expect(HashStrategy).toHaveBeenCalledWith({
-      type: 'hash',
-      algorithm: 'md5'
-    });
+    expect(getHashStrategy).toHaveBeenCalledTimes(1);
+    expect(getHashStrategy).toHaveBeenCalledWith('md5', undefined, undefined);
 
-    getReadactor({
-      type: 'hash',
+    getFieldRedactor({
       algorithm: 'md5',
       shouldFormat: true
     });
-    expect(HashStrategy).toHaveBeenCalledTimes(2);
-    expect(HashStrategy).toHaveBeenCalledWith({
-      type: 'hash',
-      algorithm: 'md5',
-      shouldFormat: true
-    });
-
-    getReadactor({
-      type: 'hash',
+    expect(getHashStrategy).toHaveBeenCalledTimes(2);
+    expect(getHashStrategy).toHaveBeenCalledWith('md5', undefined, true);
+    getFieldRedactor({
       algorithm: 'md5',
       encoding: 'base64'
     });
-    expect(HashStrategy).toHaveBeenCalledTimes(3);
-    expect(HashStrategy).toHaveBeenCalledWith({
-      type: 'hash',
-      algorithm: 'md5',
-      encoding: 'base64'
-    });
+    expect(getHashStrategy).toHaveBeenCalledTimes(3);
+    expect(getHashStrategy).toHaveBeenCalledWith('md5', 'base64', undefined);
   });
 
   it('Can get a redactor with redaction strategy and correct arguments', () => {
-    getReadactor();
-    expect(RedactionStrategy).toHaveBeenCalledTimes(1);
-    expect(RedactionStrategy).toHaveBeenCalledWith({ type: 'redaction' });
-
-    getReadactor({ type: 'redaction' });
-    expect(RedactionStrategy).toHaveBeenCalledTimes(2);
-    expect(RedactionStrategy).toHaveBeenCalledWith({ type: 'redaction' });
-
-    getReadactor({ type: 'redaction', replacementText: 'foobar' });
-    expect(RedactionStrategy).toHaveBeenCalledTimes(3);
-    expect(RedactionStrategy).toHaveBeenCalledWith({
-      type: 'redaction',
-      replacementText: 'foobar'
+    getFieldRedactor({
+      redactor: (foo: string) => "bar"
     });
+    expect(getRedactionStrategy).toHaveBeenCalledTimes(0);
+    expect(getHashStrategy).toHaveBeenCalledTimes(0);
+  });
+
+  it('Can get a redactor with a user-supplied strategy and correct arguments', () => {
+    getFieldRedactor();
+    expect(getRedactionStrategy).toHaveBeenCalledTimes(1);
   });
 
   it('Creates the secret parser with the common correct configurations', () => {
-    getReadactor();
-    expect(secretParserImpl).toHaveBeenCalledTimes(1);
-    expect(secretParserImpl).toHaveBeenCalledWith({
-      redactAll: undefined,
-      deepRedactSecrets: undefined,
-      keys: undefined,
-      ignoredKeys: undefined
-    });
-
-    getReadactor({
+    getFieldRedactor({
       redactAll: true
     });
-    expect(secretParserImpl).toHaveBeenCalledTimes(2);
-    expect(secretParserImpl).toHaveBeenCalledWith({
+    expect(SecretParserImpl).toHaveBeenCalledTimes(1);
+    expect(SecretParserImpl).toHaveBeenCalledWith({
       redactAll: true,
       deepRedactSecrets: undefined,
       keys: undefined,
       ignoredKeys: undefined
     });
 
-    getReadactor({
+    getFieldRedactor({
       keys: [/foobar/]
     });
-    expect(secretParserImpl).toHaveBeenCalledTimes(3);
-    expect(secretParserImpl).toHaveBeenCalledWith({
+    expect(SecretParserImpl).toHaveBeenCalledTimes(2);
+    expect(SecretParserImpl).toHaveBeenCalledWith({
       redactAll: undefined,
       keys: [/foobar/],
       ignoredKeys: undefined
     });
 
-    getReadactor({
+    getFieldRedactor({
       ignoredKeys: [/foobar/]
     });
-    expect(secretParserImpl).toHaveBeenCalledTimes(4);
-    expect(secretParserImpl).toHaveBeenCalledWith({
+    expect(SecretParserImpl).toHaveBeenCalledTimes(3);
+    expect(SecretParserImpl).toHaveBeenCalledWith({
       redactAll: undefined,
       ignoredKeys: [/foobar/],
       keys: undefined
@@ -109,10 +81,10 @@ describe('getRedactor', () => {
   });
 
   it('Creates the redactor with the correct config', () => {
-    getReadactor();
+    getFieldRedactor();
     expect(FieldRedactorImpl).toHaveBeenCalledTimes(1);
     expect(FieldRedactorImpl).toHaveBeenCalledWith({
-      redactor: expect.anything(),
+      redactor: undefined,
       secretParser: expect.anything(),
       values: {
         booleans: false,
@@ -122,7 +94,7 @@ describe('getRedactor', () => {
       deepRedactSecrets: false
     });
 
-    getReadactor({
+    getFieldRedactor({
       values: {
         booleans: true,
         dates: true,
@@ -132,7 +104,7 @@ describe('getRedactor', () => {
     });
     expect(FieldRedactorImpl).toHaveBeenCalledTimes(2);
     expect(FieldRedactorImpl).toHaveBeenCalledWith({
-      redactor: expect.anything(),
+      redactor: undefined, // note: mocking makes this undefined
       secretParser: expect.anything(),
       values: {
         booleans: true,
@@ -145,7 +117,7 @@ describe('getRedactor', () => {
 
   it('Throws an error if invalid values config provided', () => {
     expect(() => {
-      getReadactor({
+      getFieldRedactor({
         values: {
           booleans: 'bar'
         }

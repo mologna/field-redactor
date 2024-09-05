@@ -1,40 +1,25 @@
 import * as crypto from 'crypto';
-import { Strategy } from '../strategy';
+import { FunctionalStrategy } from '../functionalStrategy';
 import { BinaryToTextEncoding, HASH_STRATEGIES } from '../../types';
-import { HashStrategyConfig } from '../../types/config';
-import { TypeCheckers } from '../../utils/typeCheckers';
 
-export class HashStrategy implements Strategy {
-  public static DEFAULT_HASH_ENCODING: BinaryToTextEncoding = 'hex';
-  private readonly algorithm: HASH_STRATEGIES;
-  private readonly encoding: BinaryToTextEncoding;
-  private readonly shouldFormat: boolean;
-  constructor(config: HashStrategyConfig) {
-    if (!TypeCheckers.isHashStrategyConfig(config)) {
-      throw new Error('Invalid configuration provided for Hash Strategy.');
-    }
-
-    const { algorithm, encoding, shouldFormat } = config;
-    this.algorithm = algorithm;
-    this.encoding = encoding || HashStrategy.DEFAULT_HASH_ENCODING;
-    this.shouldFormat = shouldFormat || false;
-
-    if (!crypto.getHashes().includes(algorithm)) {
-      throw new Error(
-        `Hashing algorithm ${algorithm} is not supported by Node.js crypto.`
-      );
-    }
+export const getHashStrategy = (algorithm: HASH_STRATEGIES, encoding?: BinaryToTextEncoding, shouldFormat?: boolean): FunctionalStrategy => {
+  if (!crypto.getHashes().includes(algorithm)) {
+    throw new Error(
+      `Hashing algorithm ${algorithm} is not supported by Node.js crypto.`
+    );
   }
+  encoding = encoding || 'hex';
+  shouldFormat = !!shouldFormat
 
-  public execute(value: string): string {
+  return (value: string) => {
     const hash = crypto
-      .createHash(this.algorithm)
-      .update(value)
-      .digest(this.encoding);
-    if (!this.shouldFormat) {
+    .createHash(algorithm)
+    .update(value)
+    .digest(encoding);
+    if (!shouldFormat) {
       return hash;
     }
 
-    return `${this.algorithm}[${hash}]`;
+    return `${algorithm}[${hash}]`;  
   }
 }
