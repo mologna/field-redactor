@@ -6,14 +6,15 @@ import { Redactor } from '../redactor/redactor';
 
 export class FieldRedactorImpl implements FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
-  private DEFAULT_REDACTED_TEXT = 'REDACTED';
-  private redactedText: string;
+  private static DEFAULT_REDACTED_TEXT = 'REDACTED';
   private secretManager: SecretManager;
+  private redactNullOrUndefined: boolean;
   private redactor: Redactor
   constructor(config?: FieldRedactorConfig) {
-    this.redactedText = config?.replacementText || this.DEFAULT_REDACTED_TEXT;
+    this.redactNullOrUndefined = config?.redactNullOrUndefined || false;
     this.secretManager = new SecretManager(config?.secretKeys, config?.deepSecretKeys);
-    this.redactor = config?.redactor || ((val: any) => this.redactedText);
+    const replacementText = config?.replacementText || FieldRedactorImpl.DEFAULT_REDACTED_TEXT;
+    this.redactor = config?.redactor || ((val: any) => replacementText);
   } 
 
 
@@ -29,8 +30,8 @@ export class FieldRedactorImpl implements FieldRedactor {
 
   private redactObjectFieldsInPlace(object: any, isSecretObject: boolean = false): void {
     for (const key of Object.keys(object)) {
-      if (!object[key] && this.secretManager.isSecretKey(key)) {
-        object[key] = this.redactNullOrUndefined();
+      if (!object[key]) {
+        object[key] = this.redactNullOrUndefinedValue(key, isSecretObject);
       } else if (!object[key]) {
         continue;
       } else if (typeof object[key] !== 'object' || object[key] instanceof Date) { 
@@ -62,8 +63,10 @@ export class FieldRedactorImpl implements FieldRedactor {
     return this.redactAny(value);
   }
 
-  private redactNullOrUndefined(): any {
-    return this.redactor(null);
+  private redactNullOrUndefinedValue(key: string, isSecretObject: boolean): any {
+    if (isSecretObject || this.redactNullOrUndefined && this.secretManager.isSecretKey(key)) {
+      return this.redactor(null);
+    }
   }
 
   private redactBoolean(value: boolean): string {

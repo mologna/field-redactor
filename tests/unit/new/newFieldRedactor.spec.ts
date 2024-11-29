@@ -1,19 +1,23 @@
 import * as crypto from 'crypto';
 import { FieldRedactor, FieldRedactorImpl } from "../../../src/new/FieldRedactor";
 import { SecretManager } from "../../../src/new/secret/secretManager";
-import { validInputWithAllTypes, validNestedInputWithAllTypes } from "./mocks";
+import { validInputIncludingNullAndUndefined, validInputWithAllTypes, validNestedInputWithAllTypes } from "./mocks";
 import { Redactor } from '../../../src/new/redactor/redactor';
 
 describe('NewFieldRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
 
-  const validateRedactorOutput = (input: any, output: any, redactedText: string, secretKeys?: RegExp[]) => {
+  const validateRedactorOutput = (input: any, output: any, redactedText: string, redactNullOrUndefined?: boolean, secretKeys?: RegExp[]) => {
     const manager = new SecretManager(secretKeys);
     for (const key of Object.keys(output)) {
       if (typeof output[key] === 'object' && !!output[key]) {
         validateRedactorOutput(input[key], output[key], redactedText);
       } else if (!secretKeys || (secretKeys && manager.isSecretKey(key))) {
-        expect(output[key]).toBe(redactedText);
+        if ((output[key] === null || output[key] === undefined) && !redactNullOrUndefined) {
+          expect(output[key]).toBe(input[key]);
+        } else {
+          expect(output[key]).toBe(redactedText);
+        }
       } else {
         expect(output[key]).toBe(input[key]);
       }
@@ -46,6 +50,24 @@ describe('NewFieldRedactor', () => {
     validateRedactorOutput(validNestedInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
   });
 
+  it('Does not redact null or undefined by default', () => {
+    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const redacted = redactor.redact(validInputIncludingNullAndUndefined);
+    expect(redacted).not.toBe(validInputIncludingNullAndUndefined);
+    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, false);
+  });
+
+  it('Can redact null or undefined when specified', () => {
+    const redactor: FieldRedactor = new FieldRedactorImpl({
+      redactNullOrUndefined: true
+    });
+    const redacted = redactor.redact(validInputIncludingNullAndUndefined);
+    expect(redacted).not.toBe(validInputIncludingNullAndUndefined);
+    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, true);
+  });
+
+
+
   it('Can use custom redaction text', () => {
     const replacementText: string = "foobar";
     const redactor: FieldRedactor = new FieldRedactorImpl({ replacementText });
@@ -62,7 +84,7 @@ describe('NewFieldRedactor', () => {
     const redacted = redactor.redact(validInputWithAllTypes);
     console.log(redacted);
     expect(redacted).not.toBe(validInputWithAllTypes);
-    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, secretKeys);
+    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, false, secretKeys);
   });
 
   it('Redacts all values under a deeply nested key when specified', () => {

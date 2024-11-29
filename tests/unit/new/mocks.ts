@@ -6,8 +6,12 @@ export const validInputWithAllTypes = {
   isUserLoggedIn: true,
   userId: 12345,
   acctBalance: 100.00,
-  parentAccount: null,
-  children: undefined
+};
+
+export const validInputIncludingNullAndUndefined = {
+  ...validInputWithAllTypes,
+  nullValue: null,
+  undefinedValue: undefined
 };
 
 export const validNestedInputWithAllTypes = {
@@ -34,10 +38,6 @@ export const validNestedInputWithAllTypes = {
       isUserLoggedIn: true,
       userId: 12345,
       acctBalance: 100.00,
-      parentAccount: null,
-      children: undefined
     },
-    children: undefined
   },
-  children: undefined
 };
