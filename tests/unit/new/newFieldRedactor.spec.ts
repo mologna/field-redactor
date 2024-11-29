@@ -1,6 +1,8 @@
+import * as crypto from 'crypto';
 import { FieldRedactor, FieldRedactorImpl } from "../../../src/new/FieldRedactor";
 import { SecretManager } from "../../../src/new/secret/secretManager";
 import { validInputWithAllTypes, validNestedInputWithAllTypes } from "./mocks";
+import { Redactor } from '../../../src/new/redactor/redactor';
 
 describe('NewFieldRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
@@ -83,11 +85,30 @@ describe('NewFieldRedactor', () => {
       }
     }
     const redacted = redactor.redact(simpleNestedInputWithDeepSecret);
+    
     expect(redacted).not.toBe(simpleNestedInputWithDeepSecret);
     expect(redacted.password).toBe(DEFAULT_REDACTED_TEXT);
     expect(redacted.username).toBe(simpleNestedInputWithDeepSecret.username);
     expect(redacted.parentAccount.foo).toBe(DEFAULT_REDACTED_TEXT);
     expect(redacted.parentAccount.biz).toBe(DEFAULT_REDACTED_TEXT);
     expect(redacted.parentAccount.fizz.buzz).toBe(DEFAULT_REDACTED_TEXT);
+  });
+
+  it('Allows user to specify their own redactor', () => {
+    const foo = "foo";
+    const hashedFoo = 'acbd18db4cc2f85cedef654fccc4a4d8';
+    const customRedactor: Redactor = (value: any) => {
+      return crypto.createHash('md5').update(value).digest('hex');
+    };
+    const simpleObject = {
+      foo
+    }
+
+    const redactor: FieldRedactor = new FieldRedactorImpl({
+      redactor: customRedactor
+    });
+
+    const result = redactor.redact(simpleObject);
+    expect(result.foo).toBe(hashedFoo);
   });
 });

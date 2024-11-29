@@ -2,15 +2,18 @@ import rfdc from 'rfdc';
 import { FieldRedactor } from './fieldRedactor';
 import { FieldRedactorConfig } from './config';
 import { SecretManager } from '../secret/secretManager';
+import { Redactor } from '../redactor/redactor';
 
 export class FieldRedactorImpl implements FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private DEFAULT_REDACTED_TEXT = 'REDACTED';
   private redactedText: string;
   private secretManager: SecretManager;
+  private redactor: Redactor
   constructor(config?: FieldRedactorConfig) {
     this.redactedText = config?.replacementText || this.DEFAULT_REDACTED_TEXT;
     this.secretManager = new SecretManager(config?.secretKeys, config?.deepSecretKeys);
+    this.redactor = config?.redactor || ((val: any) => this.redactedText);
   } 
 
 
@@ -60,22 +63,22 @@ export class FieldRedactorImpl implements FieldRedactor {
   }
 
   private redactNullOrUndefined(): any {
-    return this.redactedText;
+    return this.redactor(null);
   }
 
   private redactBoolean(value: boolean): string {
-    return this.redactedText;
+    return this.redactor(value);
   }
 
   private redactFunction(value: Function): string {
-    return this.redactedText;
+    return this.redactor(value);
   }
 
   private redactDate(value: Date): string {
-    return this.redactedText;
+    return this.redactor(value);
   }
 
-  private redactAny(value: boolean): string {
-    return this.redactedText;
+  private redactAny(value: any): string {
+    return this.redactor(value);
   }
 }
