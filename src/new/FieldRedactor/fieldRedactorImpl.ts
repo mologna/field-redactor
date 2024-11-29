@@ -6,7 +6,7 @@ export class FieldRedactorImpl implements FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private DEFAULT_REDACTED_TEXT = 'REDACTED';
   private redactedText: string;
-  private secretKeys?: string[];
+  private secretKeys?: RegExp[];
   constructor(config?: FieldRedactorConfig) {
     this.redactedText = config?.replacementText || this.DEFAULT_REDACTED_TEXT;
     this.secretKeys = config?.secretKeys;
@@ -49,7 +49,14 @@ export class FieldRedactorImpl implements FieldRedactor {
     if (!this.secretKeys) {
       return true;
     }
-    return this.secretKeys.includes(key);
+
+    for (const secretKey of this.secretKeys) {
+      if (secretKey.test(key)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private redactValue(value: any) {

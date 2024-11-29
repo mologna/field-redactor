@@ -4,16 +4,25 @@ import { validInputWithAllTypes, validNestedInputWithAllTypes } from "./mocks";
 describe('NewFieldRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
 
-  const validateRedactorOutput = (input: any, output: any, redactedText: string, secretKeys?: string[]) => {
+  const validateRedactorOutput = (input: any, output: any, redactedText: string, secretKeys?: RegExp[]) => {
     for (const key of Object.keys(output)) {
       if (typeof output[key] === 'object' && !!output[key]) {
         validateRedactorOutput(input[key], output[key], redactedText);
-      } else if (!secretKeys || (secretKeys && secretKeys.includes(key))) {
+      } else if (!secretKeys || (secretKeys && isSecretKey(secretKeys, key))) {
         expect(output[key]).toBe(redactedText);
       } else {
         expect(output[key]).toBe(input[key]);
       }
     }
+  }
+
+  const isSecretKey = (secretKeys: RegExp[], key: string): boolean => {
+    for (const secretKey of secretKeys) {
+      if (secretKey.test(key)) {
+        return true;
+      }
+    }
+    return false;
   }
 
 
@@ -51,12 +60,11 @@ describe('NewFieldRedactor', () => {
   });
 
   it('Can redact only specific keys', () => {
-    const secretKeys: string[] = ["userId", "password", "acctBalance"];
+    const secretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
     const redactor: FieldRedactor = new FieldRedactorImpl({
       secretKeys
     });
     const redacted = redactor.redact(validInputWithAllTypes);
-    console.log(redacted);
     console.log(redacted);
     expect(redacted).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, secretKeys);
