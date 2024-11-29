@@ -10,7 +10,7 @@ export class FieldRedactorImpl implements FieldRedactor {
   private secretManager: SecretManager;
   constructor(config?: FieldRedactorConfig) {
     this.redactedText = config?.replacementText || this.DEFAULT_REDACTED_TEXT;
-    this.secretManager = new SecretManager(config?.secretKeys);
+    this.secretManager = new SecretManager(config?.secretKeys, config?.deepSecretKeys);
   } 
 
 
@@ -24,22 +24,23 @@ export class FieldRedactorImpl implements FieldRedactor {
     return copy;
   }
 
-  private redactObjectFieldsInPlace(object: any, key?: string) {
+  private redactObjectFieldsInPlace(object: any, isSecretObject: boolean = false): void {
     for (const key of Object.keys(object)) {
       if (!object[key] && this.secretManager.isSecretKey(key)) {
         object[key] = this.redactNullOrUndefined();
       } else if (!object[key]) {
         continue;
       } else if (typeof object[key] !== 'object' || object[key] instanceof Date) { 
-        object[key] = this.redactObjectFieldIfSecret(key, object[key]);
+        object[key] = this.redactObjectFieldIfSecret(key, object[key], isSecretObject);
       } else {
-        this.redactObjectFieldsInPlace(object[key], key);
+        const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
+        this.redactObjectFieldsInPlace(object[key], secretObject);
       }
     }
   }
 
-  private redactObjectFieldIfSecret(key: string, value: any): any {
-    if (this.secretManager.isSecretKey(key)) {
+  private redactObjectFieldIfSecret(key: string, value: any, forceRedaction: boolean): any {
+    if (forceRedaction || this.secretManager.isSecretKey(key)) {
       return this.redactValue(value);
     }
 

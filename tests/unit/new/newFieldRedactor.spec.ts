@@ -63,31 +63,31 @@ describe('NewFieldRedactor', () => {
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, secretKeys);
   });
 
-  // it('Redacts all values under a deeply nested key when specified', () => {
-  //   const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
-  //   const deepSecretKeys: RegExp[] = [/parentAccount/];
-  //   const redactor: FieldRedactor = new FieldRedactorImpl({
-  //     secretKeys,
-  //     deepSecretKeys
-  //   });
-  //   const simpleNestedInputWithDeepSecret = {
-  //     password: "password123",
-  //     username: "child",
-  //     foo: "bar",
-  //     parentAccount: {
-  //       foo: "bar",
-  //       biz: "baz",
-  //       fizz: {
-  //         buzz: "fizzbuzz"
-  //       }
-  //     }
-  //   }
-  //   const redacted = redactor.redact(simpleNestedInputWithDeepSecret);
-  //   expect(redacted).not.toBe(simpleNestedInputWithDeepSecret);
-  //   expect(redacted.password).toBe(DEFAULT_REDACTED_TEXT);
-  //   expect(redacted.username).toBe(simpleNestedInputWithDeepSecret.username);
-  //   expect(redacted.parentAccount.foo).toBe(DEFAULT_REDACTED_TEXT);
-  //   expect(redacted.parentAccount.biz).toBe(DEFAULT_REDACTED_TEXT);
-  //   expect(redacted.parentAccount.fizz.buzz).toBe(DEFAULT_REDACTED_TEXT);
-  // });
+  it('Redacts all values under a deeply nested key when specified', () => {
+    const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
+    const deepSecretKeys: RegExp[] = [/parentAccount/];
+    const redactor: FieldRedactor = new FieldRedactorImpl({
+      secretKeys,
+      deepSecretKeys
+    });
+    const simpleNestedInputWithDeepSecret = {
+      password: "password123",
+      username: "child",
+      foo: "bar",
+      parentAccount: {
+        foo: "bar",
+        biz: "baz",
+        fizz: {
+          buzz: "fizzbuzz"
+        }
+      }
+    }
+    const redacted = redactor.redact(simpleNestedInputWithDeepSecret);
+    expect(redacted).not.toBe(simpleNestedInputWithDeepSecret);
+    expect(redacted.password).toBe(DEFAULT_REDACTED_TEXT);
+    expect(redacted.username).toBe(simpleNestedInputWithDeepSecret.username);
+    expect(redacted.parentAccount.foo).toBe(DEFAULT_REDACTED_TEXT);
+    expect(redacted.parentAccount.biz).toBe(DEFAULT_REDACTED_TEXT);
+    expect(redacted.parentAccount.fizz.buzz).toBe(DEFAULT_REDACTED_TEXT);
+  });
 });
