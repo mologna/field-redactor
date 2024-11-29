@@ -1,15 +1,16 @@
 import rfdc from 'rfdc';
 import { FieldRedactor } from './fieldRedactor';
 import { FieldRedactorConfig } from './config';
+import { SecretManager } from '../secret/secretManager';
 
 export class FieldRedactorImpl implements FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private DEFAULT_REDACTED_TEXT = 'REDACTED';
   private redactedText: string;
-  private secretKeys?: RegExp[];
+  private secretManager: SecretManager;
   constructor(config?: FieldRedactorConfig) {
     this.redactedText = config?.replacementText || this.DEFAULT_REDACTED_TEXT;
-    this.secretKeys = config?.secretKeys;
+    this.secretManager = new SecretManager(config?.secretKeys);
   } 
 
 
@@ -25,7 +26,7 @@ export class FieldRedactorImpl implements FieldRedactor {
 
   private redactObjectFieldsInPlace(object: any, key?: string) {
     for (const key of Object.keys(object)) {
-      if (!object[key] && this.shouldRedactValue(key)) {
+      if (!object[key] && this.secretManager.isSecretKey(key)) {
         object[key] = this.redactNullOrUndefined();
       } else if (!object[key]) {
         continue;
@@ -38,25 +39,11 @@ export class FieldRedactorImpl implements FieldRedactor {
   }
 
   private redactObjectFieldIfSecret(key: string, value: any): any {
-    if (this.shouldRedactValue(key)) {
+    if (this.secretManager.isSecretKey(key)) {
       return this.redactValue(value);
     }
 
     return value;
-  }
-
-  private shouldRedactValue(key: string): boolean {
-    if (!this.secretKeys) {
-      return true;
-    }
-
-    for (const secretKey of this.secretKeys) {
-      if (secretKey.test(key)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   private redactValue(value: any) {
