@@ -4,15 +4,19 @@ import { validInputWithAllTypes, validNestedInputWithAllTypes } from "./mocks";
 describe('NewFieldRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
 
-  const validateRedactorOutput = (output: any, redactedText: string) => {
+  const validateRedactorOutput = (input: any, output: any, redactedText: string, secretKeys?: string[]) => {
     for (const key of Object.keys(output)) {
-      if (typeof output[key] === 'object') {
-        validateRedactorOutput(output[key], redactedText);
-      } else {
+      if (typeof output[key] === 'object' && !!output[key]) {
+        validateRedactorOutput(input[key], output[key], redactedText);
+      } else if (!secretKeys || (secretKeys && secretKeys.includes(key))) {
         expect(output[key]).toBe(redactedText);
+      } else {
+        expect(output[key]).toBe(input[key]);
       }
     }
   }
+
+
   it('Should throw an exception when given a value thats not a JSON object', () => {
     const inputError: string = "Input value must be a JSON object";
     const redactor: FieldRedactor = new FieldRedactorImpl();
@@ -28,14 +32,14 @@ describe('NewFieldRedactor', () => {
     const redactor: FieldRedactor = new FieldRedactorImpl();
     const redacted = redactor.redact(validInputWithAllTypes);
     expect(redacted).not.toBe(validInputWithAllTypes);
-    validateRedactorOutput(redacted, DEFAULT_REDACTED_TEXT);
+    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
   });
 
   it('Should be able to handle nested JSON objects of various types, sizes, and lengths', () => {
     const redactor: FieldRedactor = new FieldRedactorImpl();
     const redacted = redactor.redact(validNestedInputWithAllTypes);
     expect(redacted).not.toBe(validNestedInputWithAllTypes);
-    validateRedactorOutput(redacted, DEFAULT_REDACTED_TEXT);
+    validateRedactorOutput(validNestedInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
   });
 
   it('Can use custom redaction text', () => {
@@ -43,6 +47,18 @@ describe('NewFieldRedactor', () => {
     const redactor: FieldRedactor = new FieldRedactorImpl({ replacementText });
     const redacted = redactor.redact(validInputWithAllTypes);
     expect(redacted).not.toBe(validInputWithAllTypes);
-    validateRedactorOutput(redacted, replacementText);
+    validateRedactorOutput(validInputWithAllTypes, redacted, replacementText);
+  });
+
+  it('Can redact only specific keys', () => {
+    const secretKeys: string[] = ["userId", "password", "acctBalance"];
+    const redactor: FieldRedactor = new FieldRedactorImpl({
+      secretKeys
+    });
+    const redacted = redactor.redact(validInputWithAllTypes);
+    console.log(redacted);
+    console.log(redacted);
+    expect(redacted).not.toBe(validInputWithAllTypes);
+    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, secretKeys);
   });
 });

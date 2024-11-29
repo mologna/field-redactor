@@ -1,3 +1,4 @@
 export type FieldRedactorConfig = {
-  replacementText: string;
+  replacementText?: string;
+  secretKeys?: string[];
 }
