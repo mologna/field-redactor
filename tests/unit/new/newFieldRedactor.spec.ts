@@ -1,28 +1,21 @@
 import { FieldRedactor, FieldRedactorImpl } from "../../../src/new/FieldRedactor";
+import { SecretManager } from "../../../src/new/secret/secretManager";
 import { validInputWithAllTypes, validNestedInputWithAllTypes } from "./mocks";
 
 describe('NewFieldRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
 
   const validateRedactorOutput = (input: any, output: any, redactedText: string, secretKeys?: RegExp[]) => {
+    const manager = new SecretManager(secretKeys);
     for (const key of Object.keys(output)) {
       if (typeof output[key] === 'object' && !!output[key]) {
         validateRedactorOutput(input[key], output[key], redactedText);
-      } else if (!secretKeys || (secretKeys && isSecretKey(secretKeys, key))) {
+      } else if (!secretKeys || (secretKeys && manager.isSecretKey(key))) {
         expect(output[key]).toBe(redactedText);
       } else {
         expect(output[key]).toBe(input[key]);
       }
     }
-  }
-
-  const isSecretKey = (secretKeys: RegExp[], key: string): boolean => {
-    for (const secretKey of secretKeys) {
-      if (secretKey.test(key)) {
-        return true;
-      }
-    }
-    return false;
   }
 
 
@@ -69,4 +62,32 @@ describe('NewFieldRedactor', () => {
     expect(redacted).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, secretKeys);
   });
+
+  // it('Redacts all values under a deeply nested key when specified', () => {
+  //   const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
+  //   const deepSecretKeys: RegExp[] = [/parentAccount/];
+  //   const redactor: FieldRedactor = new FieldRedactorImpl({
+  //     secretKeys,
+  //     deepSecretKeys
+  //   });
+  //   const simpleNestedInputWithDeepSecret = {
+  //     password: "password123",
+  //     username: "child",
+  //     foo: "bar",
+  //     parentAccount: {
+  //       foo: "bar",
+  //       biz: "baz",
+  //       fizz: {
+  //         buzz: "fizzbuzz"
+  //       }
+  //     }
+  //   }
+  //   const redacted = redactor.redact(simpleNestedInputWithDeepSecret);
+  //   expect(redacted).not.toBe(simpleNestedInputWithDeepSecret);
+  //   expect(redacted.password).toBe(DEFAULT_REDACTED_TEXT);
+  //   expect(redacted.username).toBe(simpleNestedInputWithDeepSecret.username);
+  //   expect(redacted.parentAccount.foo).toBe(DEFAULT_REDACTED_TEXT);
+  //   expect(redacted.parentAccount.biz).toBe(DEFAULT_REDACTED_TEXT);
+  //   expect(redacted.parentAccount.fizz.buzz).toBe(DEFAULT_REDACTED_TEXT);
+  // });
 });
