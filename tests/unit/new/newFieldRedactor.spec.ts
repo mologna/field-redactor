@@ -54,7 +54,7 @@ describe('NewFieldRedactor', () => {
     const redactor: FieldRedactor = new FieldRedactorImpl();
     const redacted = redactor.redact(validInputIncludingNullAndUndefined);
     expect(redacted).not.toBe(validInputIncludingNullAndUndefined);
-    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, false);
+    validateRedactorOutput(validInputIncludingNullAndUndefined, redacted, DEFAULT_REDACTED_TEXT, false);
   });
 
   it('Can redact null or undefined when specified', () => {
@@ -66,8 +66,6 @@ describe('NewFieldRedactor', () => {
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, true);
   });
 
-
-
   it('Can use custom redaction text', () => {
     const replacementText: string = "foobar";
     const redactor: FieldRedactor = new FieldRedactorImpl({ replacementText });
@@ -76,13 +74,100 @@ describe('NewFieldRedactor', () => {
     validateRedactorOutput(validInputWithAllTypes, redacted, replacementText);
   });
 
+  it('Can redact all common values in an array', () => {
+    const testArray = [
+      'foo',
+      new Date(),
+      12,
+      123.45,
+      true
+    ];
+
+    const input = { testArray}
+    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const result = redactor.redact(input);
+    result.testArray.forEach((value: any) => {
+      expect(value).toBe(DEFAULT_REDACTED_TEXT);
+    });
+  });
+
+  it('Skips nulls and undefined when included in an array', () => {
+    const testArray = [
+      null,
+      undefined
+    ];
+
+    const input = { testArray }
+    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const result = redactor.redact(input);
+    result.testArray.forEach((value: any, index: number) => {
+      expect(value).toBe(testArray[index]);
+    });
+  });
+
+  it('Can handle objects nested in arrays', () => {
+    const testArray = [
+      {
+        foo: 'bar',
+        password: 'password'
+      }
+    ];
+
+      const input = { testArray }
+      const redactor: FieldRedactor = new FieldRedactorImpl();
+      const result = redactor.redact(input);
+      expect(result.testArray[0].foo).toBe(DEFAULT_REDACTED_TEXT);
+      expect(result.testArray[0].password).toBe(DEFAULT_REDACTED_TEXT);
+  });
+
+  it('Can handle arrays nested more than one deep in objects', () => {
+    const testObject = {
+      foo: ['a', 'b', 'c']
+    };
+
+    const input = { testObject }
+    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const result = redactor.redact(input);
+    expect(result.testObject.foo.length).toBe(3);
+    result.testObject.foo.forEach((value: any) => {
+      expect(value).toBe(DEFAULT_REDACTED_TEXT);
+    });
+  });
+
+  it('Can handle complex nesting structures of arrays and objects', () => {
+    const testObject = {
+      foo: [
+        {
+          bar: 'baz',
+          password: 'password'
+        },
+        {
+          bar: 'baz',
+          password: 'password'
+        },
+        'fizz',
+      ],
+      bar: 'buzz'
+    };
+
+    const input = { testObject }
+    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const result = redactor.redact(input);
+    expect(result.testObject.foo.length).toBe(testObject.foo.length);
+    expect(result.testObject.foo[0].bar).toBe(DEFAULT_REDACTED_TEXT);
+    expect(result.testObject.foo[0].password).toBe(DEFAULT_REDACTED_TEXT);
+    expect(result.testObject.foo[1].bar).toBe(DEFAULT_REDACTED_TEXT);
+    expect(result.testObject.foo[1].password).toBe(DEFAULT_REDACTED_TEXT);
+    expect(result.testObject.foo[2]).toBe(DEFAULT_REDACTED_TEXT);
+    expect(result.testObject.bar).toBe(DEFAULT_REDACTED_TEXT);
+  });
+
   it('Can redact only specific keys', () => {
     const secretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
     const redactor: FieldRedactor = new FieldRedactorImpl({
       secretKeys
     });
     const redacted = redactor.redact(validInputWithAllTypes);
-    console.log(redacted);
     expect(redacted).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, false, secretKeys);
   });

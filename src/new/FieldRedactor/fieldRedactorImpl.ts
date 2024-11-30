@@ -31,9 +31,11 @@ export class FieldRedactorImpl implements FieldRedactor {
   private redactObjectFieldsInPlace(object: any, isSecretObject: boolean = false): void {
     for (const key of Object.keys(object)) {
       if (!object[key]) {
-        object[key] = this.redactNullOrUndefinedValue(key, isSecretObject);
+        object[key] = this.redactNullOrUndefinedValue(key, object[key], isSecretObject);
       } else if (!object[key]) {
         continue;
+      } else if (Array.isArray(object[key])) {
+        object[key] = this.redactArrayField(key, object[key], isSecretObject);
       } else if (typeof object[key] !== 'object' || object[key] instanceof Date) { 
         object[key] = this.redactObjectFieldIfSecret(key, object[key], isSecretObject);
       } else {
@@ -41,6 +43,22 @@ export class FieldRedactorImpl implements FieldRedactor {
         this.redactObjectFieldsInPlace(object[key], secretObject);
       }
     }
+  }
+
+  private redactArrayField(key: string, array: any[], isSecretObject: boolean): any[] {
+    return array.map((value) => {
+      if (!value) {
+        return this.redactNullOrUndefinedValue(key, value, isSecretObject);
+      } else if (Array.isArray(value)) {
+        return this.redactArrayField(key, value, isSecretObject);
+      } else if (typeof value !== 'object' || value instanceof Date) {
+        return this.redactObjectFieldIfSecret(key, value, isSecretObject);
+      } else {
+        const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
+        this.redactObjectFieldsInPlace(value, secretObject);
+        return value;
+      }
+    });
   }
 
   private redactObjectFieldIfSecret(key: string, value: any, forceRedaction: boolean): any {
@@ -63,10 +81,12 @@ export class FieldRedactorImpl implements FieldRedactor {
     return this.redactAny(value);
   }
 
-  private redactNullOrUndefinedValue(key: string, isSecretObject: boolean): any {
+  private redactNullOrUndefinedValue(key: string, value: null | undefined, isSecretObject: boolean): any {
     if (isSecretObject || this.redactNullOrUndefined && this.secretManager.isSecretKey(key)) {
       return this.redactor(null);
     }
+
+    return value;
   }
 
   private redactBoolean(value: boolean): string {
