@@ -3,7 +3,7 @@ import { FieldRedactor } from './fieldRedactor';
 import { FieldRedactorConfig } from './config';
 import { SecretManager } from '../secret/secretManager';
 import { Redactor } from '../redactor/redactor';
-import { SpecialObjectRedactor } from './specialObjectRedactor';
+import { CustomObjectRedactor } from './customObjectRedactor';
 
 export class FieldRedactorImpl implements FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
@@ -11,14 +11,14 @@ export class FieldRedactorImpl implements FieldRedactor {
   private secretManager: SecretManager;
   private redactNullOrUndefined: boolean;
   private redactor: Redactor;
-  private specialObjectRedactor: SpecialObjectRedactor;
+  private customObjectRedactor: CustomObjectRedactor;
   constructor(config?: FieldRedactorConfig) {
     this.redactNullOrUndefined = config?.redactNullOrUndefined || false;
     this.secretManager = new SecretManager(config?.secretKeys, config?.deepSecretKeys);
     const replacementText = config?.replacementText || FieldRedactorImpl.DEFAULT_REDACTED_TEXT;
     this.redactor = config?.redactor || ((val: any) => replacementText);
-    this.specialObjectRedactor = new SpecialObjectRedactor(this.redactor);
-    this.specialObjectRedactor.setSpecialObjects(config?.specialObjects || []);
+    this.customObjectRedactor = new CustomObjectRedactor(this.redactor);
+    this.customObjectRedactor.setCustomObjects(config?.customObjects || []);
   } 
 
 
@@ -28,9 +28,9 @@ export class FieldRedactorImpl implements FieldRedactor {
     }
 
     const copy = this.deepCopy(value);
-    const specialObject = this.specialObjectRedactor.getMatchingSpecialObject(copy);
-    if (specialObject) {
-      this.specialObjectRedactor.redactSpecialObjectInPlace(copy, specialObject);
+    const customObject = this.customObjectRedactor.getMatchingCustomObject(copy);
+    if (customObject) {
+      this.customObjectRedactor.redactCustomObjectInPlace(copy, customObject);
     } else {
       this.redactObjectFieldsInPlace(copy);
     }
@@ -40,15 +40,12 @@ export class FieldRedactorImpl implements FieldRedactor {
 
   private redactObjectFieldsInPlace(object: any, isSecretObject: boolean = false): void {
     for (const key of Object.keys(object)) {
-      if (this.specialObjectRedactor.redactInPlaceIfSpecialObject(object[key])) {
-        continue;
-      }
       if (!this.isObject(object[key])) {
         object[key] = this.redactFields(key, object[key], isSecretObject);
       } else {
-        const specialObject = this.specialObjectRedactor.getMatchingSpecialObject(object[key]);
-        if (specialObject) {
-          this.specialObjectRedactor.redactSpecialObjectInPlace(object[key], specialObject);
+        const customObject = this.customObjectRedactor.getMatchingCustomObject(object[key]);
+        if (customObject) {
+          this.customObjectRedactor.redactCustomObjectInPlace(object[key], customObject);
         } else {
           const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
           this.redactObjectFieldsInPlace(object[key], secretObject);

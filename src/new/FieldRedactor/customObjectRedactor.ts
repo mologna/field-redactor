@@ -1,27 +1,27 @@
 import { Redactor } from "../redactor/redactor";
-import { SpecialObject } from "./config";
+import { CustomObject } from "./config";
 
-export class SpecialObjectRedactor {
-  private specialObjects: SpecialObject[] = [];
+export class CustomObjectRedactor {
+  private customObjects: CustomObject[] = [];
   private redactNullOrUndefined: boolean = false;
 
   constructor(
     private readonly redactor: Redactor) {
   }
 
-  public setSpecialObjects(specialObjects: SpecialObject[]): void {
-    this.specialObjects = specialObjects;
+  public setCustomObjects(customObjects: CustomObject[]): void {
+    this.customObjects = customObjects;
   }
 
   public setRedactNullOrUndefined(redactNullOrUndefined: boolean): void {
     this.redactNullOrUndefined = redactNullOrUndefined;
   };
 
-  public redactSpecialObjectInPlace(value: any, specialObject: SpecialObject): void {
-    for (const key of Object.keys(specialObject)) {
-      if (typeof specialObject[key] === 'object') {
-        this.redactSpecialObjectInPlace(value[key], specialObject[key]);
-      } else if (specialObject[key] === true ) {
+  public redactCustomObjectInPlace(value: any, customObject: CustomObject): void {
+    for (const key of Object.keys(customObject)) {
+      if (typeof customObject[key] === 'object') {
+        this.redactCustomObjectInPlace(value[key], customObject[key]);
+      } else if (customObject[key] === true ) {
         value[key] = this.redactValue(value[key]);
       }
     }
@@ -37,31 +37,31 @@ export class SpecialObjectRedactor {
     }
   }
 
-  public getMatchingSpecialObject(value: any): SpecialObject | undefined {
-    for (const specialObject of this.specialObjects) {
-      if (this.isSpecialObject(value, specialObject)) {
-        return specialObject;
+  public getMatchingCustomObject(value: any): CustomObject | undefined {
+    for (const customObject of this.customObjects) {
+      if (this.isCustomObject(value, customObject)) {
+        return customObject;
       }
     }
     return undefined;
   };
   
-  private isSpecialObject(value: any, specialObject: SpecialObject): boolean {
+  private isCustomObject(value: any, customObject: CustomObject): boolean {
     if (typeof value !== 'object' || !value || Array.isArray(value)) {
       return false;
     }
   
     for (const key of Object.keys(value)) {
-      if (!specialObject.hasOwnProperty(key)) {
+      if (!customObject.hasOwnProperty(key)) {
         return false;
       } else if (Array.isArray(value[key])) {
         continue;
       } else if (value[key] && typeof value[key] === 'object') {
-        if (typeof specialObject[key] !== 'object') {
+        if (typeof customObject[key] !== 'object') {
           return false;
         }
-        const nestedSpecialObjectIsValid = this.isSpecialObject(value[key], specialObject[key]);
-        if (!nestedSpecialObjectIsValid) {
+        const nestedCustomObjectIsValid = this.isCustomObject(value[key], customObject[key]);
+        if (!nestedCustomObjectIsValid) {
           return false;
         }
       }

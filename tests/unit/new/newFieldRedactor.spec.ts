@@ -235,7 +235,7 @@ describe('NewFieldRedactor', () => {
     };
 
     const redactor: FieldRedactor = new FieldRedactorImpl({
-      specialObjects
+      customObjects: specialObjects
     });
 
     const result = redactor.redact(input);
@@ -257,7 +257,7 @@ describe('NewFieldRedactor', () => {
     };
 
     const redactor: FieldRedactor = new FieldRedactorImpl({
-      specialObjects
+      customObjects: specialObjects
     });
 
     const result = redactor.redact(input);

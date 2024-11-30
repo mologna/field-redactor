@@ -1,7 +1,7 @@
 import { Redactor } from "../redactor/redactor";
 
-export type SpecialObject = {
-  [key: string]: boolean | SpecialObject;
+export type CustomObject = {
+  [key: string]: boolean | CustomObject;
 }
 
 export type FieldRedactorConfig = {
@@ -10,5 +10,5 @@ export type FieldRedactorConfig = {
   secretKeys?: RegExp[];
   deepSecretKeys?: RegExp[];
   redactor?: Redactor
-  specialObjects?: SpecialObject[];
+  customObjects?: CustomObject[];
 }

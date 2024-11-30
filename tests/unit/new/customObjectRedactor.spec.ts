@@ -1,72 +1,71 @@
-import { before } from "node:test";
-import { SpecialObject } from "../../../src/new/FieldRedactor/config";
-import { SpecialObjectRedactor } from "../../../src/new/FieldRedactor/specialObjectRedactor";
+import { CustomObject } from "../../../src/new/FieldRedactor/config";
+import { CustomObjectRedactor } from "../../../src/new/FieldRedactor/customObjectRedactor";
 import { Redactor } from "../../../src/new/redactor/redactor";
 
-describe('SpecialObjectRedactor', () => {
+describe('CustomObjectRedacto', () => {
   const REDACTION_TEXT: string = "REDACTED";
   const mockRedactor: Redactor = () => REDACTION_TEXT;
-  let specialObjectRedactor: SpecialObjectRedactor;
+  let customObjectRedactor: CustomObjectRedactor;
 
   beforeEach(() => {
-    specialObjectRedactor = new SpecialObjectRedactor(mockRedactor);
+    customObjectRedactor = new CustomObjectRedactor(mockRedactor);
   });
 
   describe('getMatchingSpecialObject', () => {
     it('getMatchingSpecialObject Can determine a special object with only one level', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: true,
         bar: false
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
-      const result = specialObjectRedactor.getMatchingSpecialObject({foo: "fizz", bar: "buzz"});
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const result = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz"});
       expect(result).toEqual(specialObject);
     });
 
     it('Can handle null and undefined field values', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: true,
         bar: false
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
-      const result = specialObjectRedactor.getMatchingSpecialObject({foo: null, bar: undefined});
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const result = customObjectRedactor.getMatchingCustomObject({foo: null, bar: undefined});
       expect(result).toEqual(specialObject);
     });
 
     it('Can handle array field values', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: true,
         bar: false
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
-      const result = specialObjectRedactor.getMatchingSpecialObject({foo: ["fizz"], bar: ["buzz"]});
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const result = customObjectRedactor.getMatchingCustomObject({foo: ["fizz"], bar: ["buzz"]});
       expect(result).toEqual(specialObject);
     });
   
     it('getMatchingSpecialObject Does not consider an object a special object if it has extra keys despite matching everywhere else', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: true,
         bar: false
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
-      const result = specialObjectRedactor.getMatchingSpecialObject({foo: "fizz", bar: "buzz", bim: "bam"});
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const result = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz", bim: "bam"});
       expect(result).toBeUndefined();
     });
   
     it('getMatchingSpecialObject Can handle nested special objects one deep', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: {
           bar: true,
           baz: false
         }
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
-      const result = specialObjectRedactor.getMatchingSpecialObject({foo: {bar: "fizz", baz: "buzz"}});
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const result = customObjectRedactor.getMatchingCustomObject({foo: {bar: "fizz", baz: "buzz"}});
       expect(result).toEqual(specialObject);
     });
 
     it('getMatchingSpecialObject Can handle nested special objects multiple layers deep', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: {
           bar: {
             baz: true,
@@ -74,23 +73,23 @@ describe('SpecialObjectRedactor', () => {
           }
         }
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
-      const result = specialObjectRedactor.getMatchingSpecialObject({foo: {bar: {baz: "fizz", bim: "false"}}});
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const result = customObjectRedactor.getMatchingCustomObject({foo: {bar: {baz: "fizz", bim: "false"}}});
       expect(result).toEqual(specialObject);
     });
 
     it('getMatchingSpecialObject Does not consider null, undefined, array, or non-object values special objects', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: true,
         bar: false
       };
     
-      specialObjectRedactor.setSpecialObjects([specialObject]);
-      const result1 = specialObjectRedactor.getMatchingSpecialObject(null);
-      const result2 = specialObjectRedactor.getMatchingSpecialObject(undefined);
-      const result3 = specialObjectRedactor.getMatchingSpecialObject([]);
-      const result4 = specialObjectRedactor.getMatchingSpecialObject("foo");
-      const result5 = specialObjectRedactor.getMatchingSpecialObject(123);
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const result1 = customObjectRedactor.getMatchingCustomObject(null);
+      const result2 = customObjectRedactor.getMatchingCustomObject(undefined);
+      const result3 = customObjectRedactor.getMatchingCustomObject([]);
+      const result4 = customObjectRedactor.getMatchingCustomObject("foo");
+      const result5 = customObjectRedactor.getMatchingCustomObject(123);
       expect(result1).toBeUndefined();
       expect(result2).toBeUndefined();
       expect(result3).toBeUndefined();
@@ -99,7 +98,7 @@ describe('SpecialObjectRedactor', () => {
     });
 
     it('Can find a matching special object in a list of special objects', () => {
-      const specialObjects: SpecialObject[] = [
+      const specialObjects: CustomObject[] = [
         {
           foo: true,
           bar: false,
@@ -109,50 +108,50 @@ describe('SpecialObjectRedactor', () => {
           bam: true
         }
       ];
-      specialObjectRedactor.setSpecialObjects(specialObjects);
-      const result1 = specialObjectRedactor.getMatchingSpecialObject({foo: "fizz", bar: "buzz"});
+      customObjectRedactor.setCustomObjects(specialObjects);
+      const result1 = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz"});
       expect(result1).toEqual(specialObjects[0]);
 
-      const result2 = specialObjectRedactor.getMatchingSpecialObject({bim: "fizz", bam: "buzz"});
+      const result2 = customObjectRedactor.getMatchingCustomObject({bim: "fizz", bam: "buzz"});
       expect(result2).toEqual(specialObjects[1]);
 
-      const result3 = specialObjectRedactor.getMatchingSpecialObject({foo: "fizz", bar: "buzz", bim: "bam"});
+      const result3 = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz", bim: "bam"});
       expect(result3).toBeUndefined();
     });
 
     it('Can handle an empty list of special objects', () => {
-      specialObjectRedactor.setSpecialObjects([]);
-      const result = specialObjectRedactor.getMatchingSpecialObject({foo: "fizz", bar: "buzz"});
+      customObjectRedactor.setCustomObjects([]);
+      const result = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz"});
       expect(result).toBeUndefined();
     });
   });
 
   describe('redactSpecialObjectInPlace', () => {
     it('Redacts a special object in place', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: true,
         bar: false
       };
       const obj = {foo: "fizz", bar: "buzz"};
-      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
+      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: REDACTION_TEXT, bar: "buzz"});
     });
 
     it('Redacts a nested special object in place', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: {
           bar: true,
           baz: false
         }
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
+      customObjectRedactor.setCustomObjects([specialObject]);
       const obj = {foo: {bar: "fizz", baz: "buzz"}};
-      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
+      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: {bar: REDACTION_TEXT, baz: "buzz"}});
     });
 
     it('Can handle nested special objects multiple layers deep', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: {
           bar: {
             baz: true,
@@ -160,43 +159,43 @@ describe('SpecialObjectRedactor', () => {
           }
         }
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
+      customObjectRedactor.setCustomObjects([specialObject]);
       const obj = {foo: {bar: {baz: "fizz", bim: "buzz"}}};
-      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
+      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: {bar: {baz: REDACTION_TEXT, bim: "buzz"}}});
     });
 
     it('Does not redact null, or undefined values by default', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: true,
         bar: true
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
+      customObjectRedactor.setCustomObjects([specialObject]);
       const obj = {foo: null, bar: undefined};
-      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
+      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: null, bar: undefined});
     });
 
     it('Can redact null, or undefined values if specified', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: true,
         bar: true
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
-      specialObjectRedactor.setRedactNullOrUndefined(true);
+      customObjectRedactor.setCustomObjects([specialObject]);
+      customObjectRedactor.setRedactNullOrUndefined(true);
       const obj = {foo: null, bar: undefined};
-      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
+      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: REDACTION_TEXT, bar: REDACTION_TEXT});
     });
 
     it('Can handle a special object where the value is an array', () => {
-      const specialObject: SpecialObject = {
+      const specialObject: CustomObject = {
         foo: false,
         bar: true
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
+      customObjectRedactor.setCustomObjects([specialObject]);
       const obj = {foo: "bim", bar: ["fizz", "buzz"]};
-      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
+      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj.foo).toEqual("bim");
       expect(obj.bar).toStrictEqual([REDACTION_TEXT, REDACTION_TEXT]);
     });
