@@ -1,6 +1,6 @@
 import rfdc from 'rfdc';
 import { FieldRedactor } from './fieldRedactor';
-import { FieldRedactorConfig } from './config';
+import { FieldRedactorConfig, SpecialObject } from './config';
 import { SecretManager } from '../secret/secretManager';
 import { Redactor } from '../redactor/redactor';
 
@@ -9,12 +9,14 @@ export class FieldRedactorImpl implements FieldRedactor {
   private static DEFAULT_REDACTED_TEXT = 'REDACTED';
   private secretManager: SecretManager;
   private redactNullOrUndefined: boolean;
-  private redactor: Redactor
+  private redactor: Redactor;
+  private specialObjects: SpecialObject[];
   constructor(config?: FieldRedactorConfig) {
     this.redactNullOrUndefined = config?.redactNullOrUndefined || false;
     this.secretManager = new SecretManager(config?.secretKeys, config?.deepSecretKeys);
     const replacementText = config?.replacementText || FieldRedactorImpl.DEFAULT_REDACTED_TEXT;
     this.redactor = config?.redactor || ((val: any) => replacementText);
+    this.specialObjects = config?.specialObjects || [];
   } 
 
 
