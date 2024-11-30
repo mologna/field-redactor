@@ -127,29 +127,15 @@ describe('SpecialObjectRedactor', () => {
     });
   });
 
-  describe('redactInPlaceIfSpecialObject', () => {
+  describe('redactSpecialObjectInPlace', () => {
     it('Redacts a special object in place', () => {
       const specialObject: SpecialObject = {
         foo: true,
         bar: false
       };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
       const obj = {foo: "fizz", bar: "buzz"};
-      const result = specialObjectRedactor.redactInPlaceIfSpecialObject(obj);
-      expect(result).toBe(true);
+      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: REDACTION_TEXT, bar: "buzz"});
-    });
-
-    it('Does not redact a non-special object', () => {
-      const specialObject: SpecialObject = {
-        foo: true,
-        bar: false
-      };
-      specialObjectRedactor.setSpecialObjects([specialObject]);
-      const obj = {bim: "bam"};
-      const result = specialObjectRedactor.redactInPlaceIfSpecialObject(obj);
-      expect(result).toBe(false);
-      expect(obj).toEqual({bim: "bam"});
     });
 
     it('Redacts a nested special object in place', () => {
@@ -161,8 +147,7 @@ describe('SpecialObjectRedactor', () => {
       };
       specialObjectRedactor.setSpecialObjects([specialObject]);
       const obj = {foo: {bar: "fizz", baz: "buzz"}};
-      const result = specialObjectRedactor.redactInPlaceIfSpecialObject(obj);
-      expect(result).toBe(true);
+      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: {bar: REDACTION_TEXT, baz: "buzz"}});
     });
 
@@ -177,8 +162,7 @@ describe('SpecialObjectRedactor', () => {
       };
       specialObjectRedactor.setSpecialObjects([specialObject]);
       const obj = {foo: {bar: {baz: "fizz", bim: "buzz"}}};
-      const result = specialObjectRedactor.redactInPlaceIfSpecialObject(obj);
-      expect(result).toBe(true);
+      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: {bar: {baz: REDACTION_TEXT, bim: "buzz"}}});
     });
 
@@ -189,8 +173,7 @@ describe('SpecialObjectRedactor', () => {
       };
       specialObjectRedactor.setSpecialObjects([specialObject]);
       const obj = {foo: null, bar: undefined};
-      const result = specialObjectRedactor.redactInPlaceIfSpecialObject(obj);
-      expect(result).toBeTruthy();
+      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: null, bar: undefined});
     });
 
@@ -202,8 +185,7 @@ describe('SpecialObjectRedactor', () => {
       specialObjectRedactor.setSpecialObjects([specialObject]);
       specialObjectRedactor.setRedactNullOrUndefined(true);
       const obj = {foo: null, bar: undefined};
-      const result = specialObjectRedactor.redactInPlaceIfSpecialObject(obj);
-      expect(result).toBeTruthy();
+      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
       expect(obj).toEqual({foo: REDACTION_TEXT, bar: REDACTION_TEXT});
     });
 
@@ -214,8 +196,7 @@ describe('SpecialObjectRedactor', () => {
       };
       specialObjectRedactor.setSpecialObjects([specialObject]);
       const obj = {foo: "bim", bar: ["fizz", "buzz"]};
-      const result = specialObjectRedactor.redactInPlaceIfSpecialObject(obj);
-      expect(result).toBeTruthy();
+      specialObjectRedactor.redactSpecialObjectInPlace(obj, specialObject);
       expect(obj.foo).toEqual("bim");
       expect(obj.bar).toStrictEqual([REDACTION_TEXT, REDACTION_TEXT]);
     });
