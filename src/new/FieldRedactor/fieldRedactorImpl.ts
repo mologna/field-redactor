@@ -1,8 +1,9 @@
 import rfdc from 'rfdc';
 import { FieldRedactor } from './fieldRedactor';
-import { FieldRedactorConfig, SpecialObject } from './config';
+import { FieldRedactorConfig } from './config';
 import { SecretManager } from '../secret/secretManager';
 import { Redactor } from '../redactor/redactor';
+import { SpecialObjectRedactor } from './specialObjectRedactor';
 
 export class FieldRedactorImpl implements FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
@@ -10,13 +11,14 @@ export class FieldRedactorImpl implements FieldRedactor {
   private secretManager: SecretManager;
   private redactNullOrUndefined: boolean;
   private redactor: Redactor;
-  private specialObjects: SpecialObject[];
+  private specialObjectRedactor: SpecialObjectRedactor;
   constructor(config?: FieldRedactorConfig) {
     this.redactNullOrUndefined = config?.redactNullOrUndefined || false;
     this.secretManager = new SecretManager(config?.secretKeys, config?.deepSecretKeys);
     const replacementText = config?.replacementText || FieldRedactorImpl.DEFAULT_REDACTED_TEXT;
     this.redactor = config?.redactor || ((val: any) => replacementText);
-    this.specialObjects = config?.specialObjects || [];
+    this.specialObjectRedactor = new SpecialObjectRedactor(this.redactor);
+    this.specialObjectRedactor.setSpecialObjects(config?.specialObjects || []);
   } 
 
 
@@ -26,17 +28,31 @@ export class FieldRedactorImpl implements FieldRedactor {
     }
 
     const copy = this.deepCopy(value);
-    this.redactObjectFieldsInPlace(copy);
+    const specialObject = this.specialObjectRedactor.getMatchingSpecialObject(copy);
+    if (specialObject) {
+      this.specialObjectRedactor.redactSpecialObjectInPlace(copy, specialObject);
+    } else {
+      this.redactObjectFieldsInPlace(copy);
+    }
+
     return copy;
   }
 
   private redactObjectFieldsInPlace(object: any, isSecretObject: boolean = false): void {
     for (const key of Object.keys(object)) {
+      if (this.specialObjectRedactor.redactInPlaceIfSpecialObject(object[key])) {
+        continue;
+      }
       if (!this.isObject(object[key])) {
         object[key] = this.redactFields(key, object[key], isSecretObject);
       } else {
-        const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
-        this.redactObjectFieldsInPlace(object[key], secretObject);
+        const specialObject = this.specialObjectRedactor.getMatchingSpecialObject(object[key]);
+        if (specialObject) {
+          this.specialObjectRedactor.redactSpecialObjectInPlace(object[key], specialObject);
+        } else {
+          const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
+          this.redactObjectFieldsInPlace(object[key], secretObject);
+        }
       }
     }
   }

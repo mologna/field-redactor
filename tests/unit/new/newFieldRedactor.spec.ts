@@ -218,4 +218,50 @@ describe('NewFieldRedactor', () => {
     const result = redactor.redact(simpleObject);
     expect(result.foo).toBe(hashedFoo);
   });
+
+  it('Can redact special objects', () => {
+    const specialObjects = [
+      {
+        foo: true,
+        bar: false
+      }
+    ];
+
+    const input = {
+      mySpecial:{
+        foo: "foo",
+        bar: "bar"
+      }
+    };
+
+    const redactor: FieldRedactor = new FieldRedactorImpl({
+      specialObjects
+    });
+
+    const result = redactor.redact(input);
+    expect(result.mySpecial.foo).toBe(DEFAULT_REDACTED_TEXT);
+    expect(result.mySpecial.bar).toBe(input.mySpecial.bar);
+  });
+
+  it('Can handle top-level special objects', () => {
+    const specialObjects = [
+      {
+        foo: true,
+        bar: false
+      }
+    ];
+
+    const input = {
+        foo: "foo",
+        bar: "bar"
+    };
+
+    const redactor: FieldRedactor = new FieldRedactorImpl({
+      specialObjects
+    });
+
+    const result = redactor.redact(input);
+    expect(result.foo).toBe(DEFAULT_REDACTED_TEXT);
+    expect(result.bar).toBe(input.bar);
+  });
 });

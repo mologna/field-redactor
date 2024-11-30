@@ -17,24 +17,24 @@ export class SpecialObjectRedactor {
     this.redactNullOrUndefined = redactNullOrUndefined;
   };
 
+  public redactSpecialObjectInPlace(value: any, specialObject: SpecialObject): any {
+    for (const key of Object.keys(specialObject)) {
+      if (typeof specialObject[key] === 'object') {
+        this.redactSpecialObjectInPlace(value[key], specialObject[key]);
+      } else if (specialObject[key] === true ) {
+        value[key] = this.redactValue(value[key]);
+      }
+    }
+  }
+
   public redactInPlaceIfSpecialObject(value: any): boolean {
     const specialObject: SpecialObject | undefined = this.getMatchingSpecialObject(value);
     if (!specialObject) {
       return false;
     }
 
-    this.doRedactInPlaceIfSpecialObject(value, specialObject);
+    this.redactSpecialObjectInPlace(value, specialObject);
     return true;
-  }
-
-  private doRedactInPlaceIfSpecialObject(value: any, specialObject: SpecialObject): void {
-    for (const key of Object.keys(specialObject)) {
-      if (typeof specialObject[key] === 'object') {
-        this.doRedactInPlaceIfSpecialObject(value[key], specialObject[key]);
-      } else if (specialObject[key] === true ) {
-        value[key] = this.redactValue(value[key]);
-      }
-    }
   }
 
   private redactValue(value: any): any {
