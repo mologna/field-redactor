@@ -30,14 +30,8 @@ export class FieldRedactorImpl implements FieldRedactor {
 
   private redactObjectFieldsInPlace(object: any, isSecretObject: boolean = false): void {
     for (const key of Object.keys(object)) {
-      if (!object[key]) {
-        object[key] = this.redactNullOrUndefinedValue(key, object[key], isSecretObject);
-      } else if (!object[key]) {
-        continue;
-      } else if (Array.isArray(object[key])) {
-        object[key] = this.redactArrayField(key, object[key], isSecretObject);
-      } else if (typeof object[key] !== 'object' || object[key] instanceof Date) { 
-        object[key] = this.redactObjectFieldIfSecret(key, object[key], isSecretObject);
+      if (!this.isObject(object[key])) {
+        object[key] = this.redactFields(key, object[key], isSecretObject);
       } else {
         const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
         this.redactObjectFieldsInPlace(object[key], secretObject);
@@ -45,20 +39,30 @@ export class FieldRedactorImpl implements FieldRedactor {
     }
   }
 
-  private redactArrayField(key: string, array: any[], isSecretObject: boolean): any[] {
+  private redactArrayFieldsInPlace(key: string, array: any[], isSecretObject: boolean): any[] {
     return array.map((value) => {
-      if (!value) {
-        return this.redactNullOrUndefinedValue(key, value, isSecretObject);
-      } else if (Array.isArray(value)) {
-        return this.redactArrayField(key, value, isSecretObject);
-      } else if (typeof value !== 'object' || value instanceof Date) {
-        return this.redactObjectFieldIfSecret(key, value, isSecretObject);
+      if (!this.isObject(value)) {
+        return this.redactFields(key, value, isSecretObject);
       } else {
         const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
         this.redactObjectFieldsInPlace(value, secretObject);
         return value;
       }
     });
+  }
+
+  private isObject(value: any) {
+    return !!value && typeof value === 'object' && !(value instanceof Date) && !Array.isArray(value);
+  }
+
+  private redactFields(key: string, value: any, isSecretObject: boolean) {
+    if (!value) {
+      return this.redactNullOrUndefinedValue(key, value, isSecretObject);
+    } else if (Array.isArray(value)) {
+      return this.redactArrayFieldsInPlace(key, value, isSecretObject);
+    } else {
+      return this.redactObjectFieldIfSecret(key, value, isSecretObject);
+    }
   }
 
   private redactObjectFieldIfSecret(key: string, value: any, forceRedaction: boolean): any {
