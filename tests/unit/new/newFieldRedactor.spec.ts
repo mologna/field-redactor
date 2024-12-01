@@ -264,4 +264,36 @@ describe('NewFieldRedactor', () => {
     expect(result.foo).toBe(DEFAULT_REDACTED_TEXT);
     expect(result.bar).toBe(input.bar);
   });
+
+  it('Can handle special objects in arrays', () => {
+    const specialObjects = [
+      {
+        foo: true,
+        bar: false
+      }
+    ];
+
+    const input = {
+    me: [
+        {
+            foo: "foo",
+            bar: "bar"
+        },
+        {
+            foo: "foo",
+            bar: "bar"
+        }
+    ]
+    };
+
+    const redactor: FieldRedactor = new FieldRedactor({
+      customObjects: specialObjects
+    });
+
+    const result = redactor.redact(input);
+    result.me.forEach((value: any, index: number) => {
+      expect(value.foo).toBe(DEFAULT_REDACTED_TEXT);
+      expect(value.bar).toBe(input.me[index].bar);
+    });
+  });
 });

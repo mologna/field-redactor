@@ -58,9 +58,15 @@ export class FieldRedactor {
       if (!this.isObject(value)) {
         return this.redactFields(key, value, isSecretObject);
       } else {
-        const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
-        this.redactObjectFieldsInPlace(value, secretObject);
-        return value;
+        const customObject = this.customObjectRedactor.getMatchingCustomObject(value);
+        if (customObject) {
+          this.customObjectRedactor.redactCustomObjectInPlace(value, customObject);
+          return value;
+        } else {
+          const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
+          this.redactObjectFieldsInPlace(value, secretObject);
+          return value;
+        }
       }
     });
   }
