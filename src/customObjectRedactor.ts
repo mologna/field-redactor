@@ -34,6 +34,7 @@ export class CustomObjectRedactor {
       }
     }
   }
+
   private redactValue(value: any): any {
     if (value === null || value === undefined) {
       return this.redactNullOrUndefined ? this.redactor(value) : value;
@@ -58,6 +59,10 @@ export class CustomObjectRedactor {
       return false;
     }
 
+    if (!this.customObjectDoesNotHaveExtraKeys(value, customObject)) {
+      return false;
+    }
+
     for (const key of Object.keys(value)) {
       if (!customObject.hasOwnProperty(key)) {
         return false;
@@ -71,6 +76,16 @@ export class CustomObjectRedactor {
         if (!nestedCustomObjectIsValid) {
           return false;
         }
+      }
+    }
+
+    return true;
+  }
+
+  private customObjectDoesNotHaveExtraKeys(value: any, customObject: CustomObject): boolean {
+    for (const key of Object.keys(customObject)) {
+      if (!value.hasOwnProperty(key)) {
+        return false;
       }
     }
 

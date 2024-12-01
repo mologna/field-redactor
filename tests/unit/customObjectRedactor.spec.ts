@@ -68,6 +68,20 @@ describe('CustomObjectRedactor', () => {
       expect(result).toBeUndefined();
     });
 
+    it('getMatchingSpecialObject Does not consider an object a special object if the special object has extra keys despite matching everywhere else', () => {
+      const specialObject: CustomObject = {
+        foo: true,
+        bar: false,
+        bim: true
+      };
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const result = customObjectRedactor.getMatchingCustomObject({
+        foo: 'fizz',
+        bar: 'buzz'
+      });
+      expect(result).toBeUndefined();
+    });
+
     it('getMatchingSpecialObject Can handle nested special objects one deep', () => {
       const specialObject: CustomObject = {
         foo: {
