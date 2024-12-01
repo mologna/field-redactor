@@ -31,6 +31,11 @@ export class FieldRedactor {
     this.ignoreDates = config?.ignoreDates || false;
   }
 
+  /**
+   * Redacts the fields of a JSON object based on the configuration provided.
+   * @param value The JSON value to redact
+   * @returns The redacted JSON object.
+   */
   public redact(value: any): any {
     if (!value || typeof value !== 'object' || value instanceof Date) {
       throw new Error('Input value must be a JSON object');
@@ -134,8 +139,6 @@ export class FieldRedactor {
   private redactValue(value: any) {
     if (typeof value === 'boolean') {
       return this.redactBoolean(value);
-    } else if (typeof value === 'function') {
-      return this.redactFunction(value);
     } else if (value instanceof Date) {
       return this.redactDate(value);
     }
@@ -160,10 +163,6 @@ export class FieldRedactor {
 
   private redactBoolean(value: boolean): boolean | string {
     return this.ignoreBooleans ? value : this.redactor(value);
-  }
-
-  private redactFunction(value: Function): string {
-    return this.redactor(value);
   }
 
   private redactDate(value: Date): Date | string {
