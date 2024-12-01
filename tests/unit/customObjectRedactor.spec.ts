@@ -1,9 +1,9 @@
-import { CustomObject } from "../../../src/new/types";
-import { CustomObjectRedactor } from "../../../src/new/customObjectRedactor";
-import { Redactor } from "../../../src/new/redactor";
-import { SecretManager } from "../../../src/new/secretManager";
+import { CustomObject } from "../../src/types";
+import { CustomObjectRedactor } from "../../src/customObjectRedactor";
+import { Redactor } from "../../src/redactor";
+import { SecretManager } from "../../src/secretManager";
 
-describe('CustomObjectRedacto', () => {
+describe('CustomObjectRedactor', () => {
   const REDACTION_TEXT: string = "REDACTED";
   const mockRedactor: Redactor = () => REDACTION_TEXT;
   let customObjectRedactor: CustomObjectRedactor;

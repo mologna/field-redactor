@@ -1,8 +1,8 @@
 import * as crypto from 'crypto';
-import { FieldRedactor } from "../../src/new/fieldRedactor";
-import { CustomObject } from "../../src/new/types";
-import { Redactor } from '../../src/new/redactor';
-import { logDataToRedact, sha256HashedAddress, sha256HashedBalance, sha256HashedCity, sha256HashedEmail, sha256HashedMdn, sha256HashedName, sha256HashedUserId } from './mocks';
+import { FieldRedactor } from "../../src/fieldRedactor";
+import { CustomObject } from "../../src/types";
+import { Redactor } from '../../src/redactor';
+import { logDataToRedact, sha256HashedAddress, sha256HashedBalance, sha256HashedCity, sha256HashedEmail, sha256HashedMdn, sha256HashedName, sha256HashedUserId } from '../mocks/logMocks';
 
 describe('FieldRedactor Integration Test', () => {
   it('Should redact all secret fields in a document with custom objects', () => {

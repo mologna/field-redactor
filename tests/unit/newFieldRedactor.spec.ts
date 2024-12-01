@@ -1,8 +1,8 @@
 import * as crypto from 'crypto';
-import { FieldRedactor } from "../../../src/new/fieldRedactor";
-import { SecretManager } from "../../../src/new/secretManager";
-import { validInputIncludingNullAndUndefined, validInputWithAllTypes, validNestedInputWithAllTypes } from "./mocks";
-import { Redactor } from '../../../src/new/redactor';
+import { FieldRedactor } from "../../src/fieldRedactor";
+import { SecretManager } from "../../src/secretManager";
+import { validInputIncludingNullAndUndefined, validInputWithAllTypes, validNestedInputWithAllTypes } from "../mocks/inputMocks";
+import { Redactor } from '../../src/redactor';
 
 describe('NewFieldRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
