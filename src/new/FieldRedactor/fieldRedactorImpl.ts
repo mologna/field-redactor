@@ -17,7 +17,7 @@ export class FieldRedactorImpl implements FieldRedactor {
     this.secretManager = new SecretManager(config?.secretKeys, config?.deepSecretKeys);
     const replacementText = config?.replacementText || FieldRedactorImpl.DEFAULT_REDACTED_TEXT;
     this.redactor = config?.redactor || ((val: any) => replacementText);
-    this.customObjectRedactor = new CustomObjectRedactor(this.redactor);
+    this.customObjectRedactor = new CustomObjectRedactor(this.secretManager, this.redactor);
     this.customObjectRedactor.setCustomObjects(config?.customObjects || []);
   } 
 

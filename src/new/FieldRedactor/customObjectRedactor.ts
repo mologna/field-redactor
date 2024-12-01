@@ -1,4 +1,5 @@
 import { Redactor } from "../redactor/redactor";
+import { SecretManager } from "../secret/secretManager";
 import { CustomObject } from "./config";
 
 export class CustomObjectRedactor {
@@ -6,7 +7,9 @@ export class CustomObjectRedactor {
   private redactNullOrUndefined: boolean = false;
 
   constructor(
-    private readonly redactor: Redactor) {
+    private readonly secretManager: SecretManager,
+    private readonly redactor: Redactor
+  ) {
   }
 
   public setCustomObjects(customObjects: CustomObject[]): void {
@@ -21,12 +24,13 @@ export class CustomObjectRedactor {
     for (const key of Object.keys(customObject)) {
       if (typeof customObject[key] === 'object') {
         this.redactCustomObjectInPlace(value[key], customObject[key]);
-      } else if (customObject[key] === true ) {
+      } else if (typeof customObject[key] === 'boolean' && customObject[key] === true ) {
         value[key] = this.redactValue(value[key]);
+      } else if (typeof customObject[key] === 'string' && !!value[customObject[key]] && this.secretManager.isSecretKey(value[customObject[key]])) {
+        value[key] = this.redactor(value[key]);
       }
     }
   }
-
   private redactValue(value: any): any {
     if (value === null || value === undefined) {
       return this.redactNullOrUndefined ? this.redactor(value) : value;

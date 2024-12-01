@@ -1,14 +1,17 @@
 import { CustomObject } from "../../../src/new/FieldRedactor/config";
 import { CustomObjectRedactor } from "../../../src/new/FieldRedactor/customObjectRedactor";
 import { Redactor } from "../../../src/new/redactor/redactor";
+import { SecretManager } from "../../../src/new/secret/secretManager";
 
 describe('CustomObjectRedacto', () => {
   const REDACTION_TEXT: string = "REDACTED";
   const mockRedactor: Redactor = () => REDACTION_TEXT;
   let customObjectRedactor: CustomObjectRedactor;
+  let secrets: RegExp[] = [/email/];
+  let secretManager: SecretManager = new SecretManager(secrets);
 
   beforeEach(() => {
-    customObjectRedactor = new CustomObjectRedactor(mockRedactor);
+    customObjectRedactor = new CustomObjectRedactor(secretManager, mockRedactor);
   });
 
   describe('getMatchingSpecialObject', () => {
@@ -198,6 +201,45 @@ describe('CustomObjectRedacto', () => {
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj.foo).toEqual("bim");
       expect(obj.bar).toStrictEqual([REDACTION_TEXT, REDACTION_TEXT]);
+    });
+
+    it('Uses the secretManager to determine if a string-specified value is a secret key', () => {
+      const specialObject: CustomObject = {
+        name: false,
+        kind: false,
+        value: 'name'
+      };
+
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const obj = {name: "email", kind: "String", value: "foo.bar@gmail.com"};
+      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      expect(obj).toEqual({name: "email", kind: "String", value: REDACTION_TEXT});
+    });
+
+    it('Does not redact a value if the string-specified field does not contain a secret key', () => {
+      const specialObject: CustomObject = {
+        name: false,
+        kind: false,
+        value: 'name'
+      };
+
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const obj = {name: "notredacted", kind: "String", value: "foo.bar@gmail.com"};
+      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      expect(obj).toEqual({name: "notredacted", kind: "String", value: "foo.bar@gmail.com"});
+    });
+
+    it('Does not redact a value or fail if the string-specified field does not exist', () => {
+      const specialObject: CustomObject = {
+        name: false,
+        kind: false,
+        value: 'foobar'
+      };
+
+      customObjectRedactor.setCustomObjects([specialObject]);
+      const obj = {name: "email", kind: "String", value: "foo.bar@gmail.com"};
+      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      expect(obj).toEqual({name: "email", kind: "String", value: "foo.bar@gmail.com"});
     });
   });
 });
