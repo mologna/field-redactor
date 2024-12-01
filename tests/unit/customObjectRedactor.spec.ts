@@ -1,17 +1,20 @@
-import { CustomObject } from "../../src/types";
-import { CustomObjectRedactor } from "../../src/customObjectRedactor";
-import { Redactor } from "../../src/redactor";
-import { SecretManager } from "../../src/secretManager";
+import { CustomObject } from '../../src/types';
+import { CustomObjectRedactor } from '../../src/customObjectRedactor';
+import { Redactor } from '../../src/redactor';
+import { SecretManager } from '../../src/secretManager';
 
 describe('CustomObjectRedactor', () => {
-  const REDACTION_TEXT: string = "REDACTED";
+  const REDACTION_TEXT: string = 'REDACTED';
   const mockRedactor: Redactor = () => REDACTION_TEXT;
   let customObjectRedactor: CustomObjectRedactor;
   let secrets: RegExp[] = [/email/];
   let secretManager: SecretManager = new SecretManager(secrets);
 
   beforeEach(() => {
-    customObjectRedactor = new CustomObjectRedactor(secretManager, mockRedactor);
+    customObjectRedactor = new CustomObjectRedactor(
+      secretManager,
+      mockRedactor
+    );
   });
 
   describe('getMatchingSpecialObject', () => {
@@ -21,7 +24,10 @@ describe('CustomObjectRedactor', () => {
         bar: false
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const result = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz"});
+      const result = customObjectRedactor.getMatchingCustomObject({
+        foo: 'fizz',
+        bar: 'buzz'
+      });
       expect(result).toEqual(specialObject);
     });
 
@@ -31,7 +37,10 @@ describe('CustomObjectRedactor', () => {
         bar: false
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const result = customObjectRedactor.getMatchingCustomObject({foo: null, bar: undefined});
+      const result = customObjectRedactor.getMatchingCustomObject({
+        foo: null,
+        bar: undefined
+      });
       expect(result).toEqual(specialObject);
     });
 
@@ -41,20 +50,27 @@ describe('CustomObjectRedactor', () => {
         bar: false
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const result = customObjectRedactor.getMatchingCustomObject({foo: ["fizz"], bar: ["buzz"]});
+      const result = customObjectRedactor.getMatchingCustomObject({
+        foo: ['fizz'],
+        bar: ['buzz']
+      });
       expect(result).toEqual(specialObject);
     });
-  
+
     it('getMatchingSpecialObject Does not consider an object a special object if it has extra keys despite matching everywhere else', () => {
       const specialObject: CustomObject = {
         foo: true,
         bar: false
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const result = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz", bim: "bam"});
+      const result = customObjectRedactor.getMatchingCustomObject({
+        foo: 'fizz',
+        bar: 'buzz',
+        bim: 'bam'
+      });
       expect(result).toBeUndefined();
     });
-  
+
     it('getMatchingSpecialObject Can handle nested special objects one deep', () => {
       const specialObject: CustomObject = {
         foo: {
@@ -63,7 +79,9 @@ describe('CustomObjectRedactor', () => {
         }
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const result = customObjectRedactor.getMatchingCustomObject({foo: {bar: "fizz", baz: "buzz"}});
+      const result = customObjectRedactor.getMatchingCustomObject({
+        foo: { bar: 'fizz', baz: 'buzz' }
+      });
       expect(result).toEqual(specialObject);
     });
 
@@ -77,7 +95,9 @@ describe('CustomObjectRedactor', () => {
         }
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const result = customObjectRedactor.getMatchingCustomObject({foo: {bar: {baz: "fizz", bim: "false"}}});
+      const result = customObjectRedactor.getMatchingCustomObject({
+        foo: { bar: { baz: 'fizz', bim: 'false' } }
+      });
       expect(result).toEqual(specialObject);
     });
 
@@ -86,12 +106,12 @@ describe('CustomObjectRedactor', () => {
         foo: true,
         bar: false
       };
-    
+
       customObjectRedactor.setCustomObjects([specialObject]);
       const result1 = customObjectRedactor.getMatchingCustomObject(null);
       const result2 = customObjectRedactor.getMatchingCustomObject(undefined);
       const result3 = customObjectRedactor.getMatchingCustomObject([]);
-      const result4 = customObjectRedactor.getMatchingCustomObject("foo");
+      const result4 = customObjectRedactor.getMatchingCustomObject('foo');
       const result5 = customObjectRedactor.getMatchingCustomObject(123);
       expect(result1).toBeUndefined();
       expect(result2).toBeUndefined();
@@ -104,7 +124,7 @@ describe('CustomObjectRedactor', () => {
       const specialObjects: CustomObject[] = [
         {
           foo: true,
-          bar: false,
+          bar: false
         },
         {
           bim: true,
@@ -112,19 +132,32 @@ describe('CustomObjectRedactor', () => {
         }
       ];
       customObjectRedactor.setCustomObjects(specialObjects);
-      const result1 = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz"});
+      const result1 = customObjectRedactor.getMatchingCustomObject({
+        foo: 'fizz',
+        bar: 'buzz'
+      });
       expect(result1).toEqual(specialObjects[0]);
 
-      const result2 = customObjectRedactor.getMatchingCustomObject({bim: "fizz", bam: "buzz"});
+      const result2 = customObjectRedactor.getMatchingCustomObject({
+        bim: 'fizz',
+        bam: 'buzz'
+      });
       expect(result2).toEqual(specialObjects[1]);
 
-      const result3 = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz", bim: "bam"});
+      const result3 = customObjectRedactor.getMatchingCustomObject({
+        foo: 'fizz',
+        bar: 'buzz',
+        bim: 'bam'
+      });
       expect(result3).toBeUndefined();
     });
 
     it('Can handle an empty list of special objects', () => {
       customObjectRedactor.setCustomObjects([]);
-      const result = customObjectRedactor.getMatchingCustomObject({foo: "fizz", bar: "buzz"});
+      const result = customObjectRedactor.getMatchingCustomObject({
+        foo: 'fizz',
+        bar: 'buzz'
+      });
       expect(result).toBeUndefined();
     });
   });
@@ -135,9 +168,9 @@ describe('CustomObjectRedactor', () => {
         foo: true,
         bar: false
       };
-      const obj = {foo: "fizz", bar: "buzz"};
+      const obj = { foo: 'fizz', bar: 'buzz' };
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
-      expect(obj).toEqual({foo: REDACTION_TEXT, bar: "buzz"});
+      expect(obj).toEqual({ foo: REDACTION_TEXT, bar: 'buzz' });
     });
 
     it('Redacts a nested special object in place', () => {
@@ -148,9 +181,9 @@ describe('CustomObjectRedactor', () => {
         }
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const obj = {foo: {bar: "fizz", baz: "buzz"}};
+      const obj = { foo: { bar: 'fizz', baz: 'buzz' } };
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
-      expect(obj).toEqual({foo: {bar: REDACTION_TEXT, baz: "buzz"}});
+      expect(obj).toEqual({ foo: { bar: REDACTION_TEXT, baz: 'buzz' } });
     });
 
     it('Can handle nested special objects multiple layers deep', () => {
@@ -163,9 +196,11 @@ describe('CustomObjectRedactor', () => {
         }
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const obj = {foo: {bar: {baz: "fizz", bim: "buzz"}}};
+      const obj = { foo: { bar: { baz: 'fizz', bim: 'buzz' } } };
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
-      expect(obj).toEqual({foo: {bar: {baz: REDACTION_TEXT, bim: "buzz"}}});
+      expect(obj).toEqual({
+        foo: { bar: { baz: REDACTION_TEXT, bim: 'buzz' } }
+      });
     });
 
     it('Does not redact null, or undefined values by default', () => {
@@ -174,9 +209,9 @@ describe('CustomObjectRedactor', () => {
         bar: true
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const obj = {foo: null, bar: undefined};
+      const obj = { foo: null, bar: undefined };
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
-      expect(obj).toEqual({foo: null, bar: undefined});
+      expect(obj).toEqual({ foo: null, bar: undefined });
     });
 
     it('Can redact null, or undefined values if specified', () => {
@@ -186,9 +221,9 @@ describe('CustomObjectRedactor', () => {
       };
       customObjectRedactor.setCustomObjects([specialObject]);
       customObjectRedactor.setRedactNullOrUndefined(true);
-      const obj = {foo: null, bar: undefined};
+      const obj = { foo: null, bar: undefined };
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
-      expect(obj).toEqual({foo: REDACTION_TEXT, bar: REDACTION_TEXT});
+      expect(obj).toEqual({ foo: REDACTION_TEXT, bar: REDACTION_TEXT });
     });
 
     it('Can handle a special object where the value is an array', () => {
@@ -197,9 +232,9 @@ describe('CustomObjectRedactor', () => {
         bar: true
       };
       customObjectRedactor.setCustomObjects([specialObject]);
-      const obj = {foo: "bim", bar: ["fizz", "buzz"]};
+      const obj = { foo: 'bim', bar: ['fizz', 'buzz'] };
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
-      expect(obj.foo).toEqual("bim");
+      expect(obj.foo).toEqual('bim');
       expect(obj.bar).toStrictEqual([REDACTION_TEXT, REDACTION_TEXT]);
     });
 
@@ -211,9 +246,13 @@ describe('CustomObjectRedactor', () => {
       };
 
       customObjectRedactor.setCustomObjects([specialObject]);
-      const obj = {name: "email", kind: "String", value: "foo.bar@gmail.com"};
+      const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
-      expect(obj).toEqual({name: "email", kind: "String", value: REDACTION_TEXT});
+      expect(obj).toEqual({
+        name: 'email',
+        kind: 'String',
+        value: REDACTION_TEXT
+      });
     });
 
     it('Does not redact a value if the string-specified field does not contain a secret key', () => {
@@ -224,9 +263,17 @@ describe('CustomObjectRedactor', () => {
       };
 
       customObjectRedactor.setCustomObjects([specialObject]);
-      const obj = {name: "notredacted", kind: "String", value: "foo.bar@gmail.com"};
+      const obj = {
+        name: 'notredacted',
+        kind: 'String',
+        value: 'foo.bar@gmail.com'
+      };
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
-      expect(obj).toEqual({name: "notredacted", kind: "String", value: "foo.bar@gmail.com"});
+      expect(obj).toEqual({
+        name: 'notredacted',
+        kind: 'String',
+        value: 'foo.bar@gmail.com'
+      });
     });
 
     it('Does not redact a value or fail if the string-specified field does not exist', () => {
@@ -237,9 +284,13 @@ describe('CustomObjectRedactor', () => {
       };
 
       customObjectRedactor.setCustomObjects([specialObject]);
-      const obj = {name: "email", kind: "String", value: "foo.bar@gmail.com"};
+      const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
       customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
-      expect(obj).toEqual({name: "email", kind: "String", value: "foo.bar@gmail.com"});
+      expect(obj).toEqual({
+        name: 'email',
+        kind: 'String',
+        value: 'foo.bar@gmail.com'
+      });
     });
   });
 });

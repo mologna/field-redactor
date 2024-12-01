@@ -39,7 +39,7 @@ export class SecretManager {
     }
 
     return this.valueMatchesAnyRegexValue(value, regexes);
-  };
+  }
 
   private valueMatchesAnyRegexValue(value: string, regexes: RegExp[]): boolean {
     for (const regex of regexes) {

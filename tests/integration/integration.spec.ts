@@ -1,13 +1,29 @@
 import * as crypto from 'crypto';
-import { FieldRedactor } from "../../src/fieldRedactor";
-import { CustomObject } from "../../src/types";
+import { FieldRedactor } from '../../src/fieldRedactor';
+import { CustomObject } from '../../src/types';
 import { Redactor } from '../../src/redactor';
-import { logDataToRedact, sha256HashedAddress, sha256HashedBalance, sha256HashedCity, sha256HashedEmail, sha256HashedMdn, sha256HashedName, sha256HashedUserId } from '../mocks/logMocks';
+import {
+  logDataToRedact,
+  sha256HashedAddress,
+  sha256HashedBalance,
+  sha256HashedCity,
+  sha256HashedEmail,
+  sha256HashedMdn,
+  sha256HashedName,
+  sha256HashedUserId
+} from '../mocks/logMocks';
 
 describe('FieldRedactor Integration Test', () => {
   it('Should redact all secret fields in a document with custom objects', () => {
     // Setup
-    const secretKeys = [/email/, /mdn/, /balance/, /address/, /city/, /fullname/i];
+    const secretKeys = [
+      /email/,
+      /mdn/,
+      /balance/,
+      /address/,
+      /city/,
+      /fullname/i
+    ];
     const customDataObject: CustomObject = {
       name: false,
       type: false,
@@ -20,7 +36,8 @@ describe('FieldRedactor Integration Test', () => {
       groups: false
     };
 
-    const redactor: Redactor = (val: any) => crypto.createHash('sha256').update(val.toString()).digest('hex'); 
+    const redactor: Redactor = (val: any) =>
+      crypto.createHash('sha256').update(val.toString()).digest('hex');
 
     const fieldRedactor = new FieldRedactor({
       secretKeys,
@@ -30,23 +47,25 @@ describe('FieldRedactor Integration Test', () => {
 
     // Execute
     const result = fieldRedactor.redact(logDataToRedact);
-    
+
     // Assert
-    expect(result["@timestamp"]).toEqual(logDataToRedact["@timestamp"]);
+    expect(result['@timestamp']).toEqual(logDataToRedact['@timestamp']);
     expect(result.level).toEqual(logDataToRedact.level);
     expect(result.appId).toEqual(logDataToRedact.appId);
     expect(result.clientName).toEqual(logDataToRedact.clientName);
     expect(result.parentSystem).toEqual(logDataToRedact.parentSystem);
     expect(result.owner).toEqual(logDataToRedact.owner);
-    expect(result.executedCampaigns).toStrictEqual(logDataToRedact.executedCampaigns);
+    expect(result.executedCampaigns).toStrictEqual(
+      logDataToRedact.executedCampaigns
+    );
     expect(result.otherCampaigns).toStrictEqual(logDataToRedact.otherCampaigns);
     expect(result.correlationId).toEqual(logDataToRedact.correlationId);
     expect(result.transactionId).toEqual(logDataToRedact.transactionId);
     expect(result.destinations).toEqual({
-        email: sha256HashedEmail,
-        fullName: sha256HashedName,
-        mdn: sha256HashedMdn
-      });
+      email: sha256HashedEmail,
+      fullName: sha256HashedName,
+      mdn: sha256HashedMdn
+    });
     expect(result.user.id).toEqual(sha256HashedUserId);
     expect(result.user.roles).toStrictEqual(logDataToRedact.user.roles);
     expect(result.user.groups).toStrictEqual(logDataToRedact.user.groups);
