@@ -11,4 +11,6 @@ export type FieldRedactorConfig = {
   deepSecretKeys?: RegExp[];
   redactor?: Redactor;
   customObjects?: CustomObject[];
+  ignoreBooleans?: boolean;
+  ignoreDates?: boolean;
 };

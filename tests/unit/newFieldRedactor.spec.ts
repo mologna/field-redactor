@@ -59,6 +59,21 @@ describe('NewFieldRedactor', () => {
     );
   });
 
+  it('Ignores boolean values when specified', () => {
+    const redactor: FieldRedactor = new FieldRedactor({ ignoreBooleans: true });
+    const redacted = redactor.redact({ foo: true, bar: "bar"});
+    expect(redacted.foo).toBe(true);
+    expect(redacted.bar).toBe(DEFAULT_REDACTED_TEXT);
+  });
+
+  it('Ignores date values when specified', () => {
+    const redactor: FieldRedactor = new FieldRedactor({ ignoreDates: true });
+    const date = new Date();
+    const redacted = redactor.redact({ foo: date, bar: "bar"});
+    expect(redacted.foo).toStrictEqual(date);
+    expect(redacted.bar).toBe(DEFAULT_REDACTED_TEXT);
+  });
+
   it('Should be able to handle nested JSON objects of various types, sizes, and lengths', () => {
     const redactor: FieldRedactor = new FieldRedactor();
     const redacted = redactor.redact(validNestedInputWithAllTypes);
