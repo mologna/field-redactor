@@ -1,11 +1,10 @@
 import rfdc from 'rfdc';
-import { FieldRedactor } from './fieldRedactor';
-import { FieldRedactorConfig } from './config';
-import { SecretManager } from '../secret/secretManager';
-import { Redactor } from '../redactor/redactor';
+import { FieldRedactorConfig } from './types';
+import { SecretManager } from './secretManager';
+import { Redactor } from './redactor';
 import { CustomObjectRedactor } from './customObjectRedactor';
 
-export class FieldRedactorImpl implements FieldRedactor {
+export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private static DEFAULT_REDACTED_TEXT = 'REDACTED';
   private secretManager: SecretManager;
@@ -15,7 +14,7 @@ export class FieldRedactorImpl implements FieldRedactor {
   constructor(config?: FieldRedactorConfig) {
     this.redactNullOrUndefined = config?.redactNullOrUndefined || false;
     this.secretManager = new SecretManager(config?.secretKeys, config?.deepSecretKeys);
-    const replacementText = config?.replacementText || FieldRedactorImpl.DEFAULT_REDACTED_TEXT;
+    const replacementText = config?.replacementText || FieldRedactor.DEFAULT_REDACTED_TEXT;
     this.redactor = config?.redactor || ((val: any) => replacementText);
     this.customObjectRedactor = new CustomObjectRedactor(this.secretManager, this.redactor);
     this.customObjectRedactor.setCustomObjects(config?.customObjects || []);

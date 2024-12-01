@@ -1,7 +1,7 @@
-import { CustomObject } from "../../../src/new/FieldRedactor/config";
-import { CustomObjectRedactor } from "../../../src/new/FieldRedactor/customObjectRedactor";
-import { Redactor } from "../../../src/new/redactor/redactor";
-import { SecretManager } from "../../../src/new/secret/secretManager";
+import { CustomObject } from "../../../src/new/types";
+import { CustomObjectRedactor } from "../../../src/new/customObjectRedactor";
+import { Redactor } from "../../../src/new/redactor";
+import { SecretManager } from "../../../src/new/secretManager";
 
 describe('CustomObjectRedacto', () => {
   const REDACTION_TEXT: string = "REDACTED";

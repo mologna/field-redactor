@@ -1,6 +1,6 @@
-import { Redactor } from "../redactor/redactor";
-import { SecretManager } from "../secret/secretManager";
-import { CustomObject } from "./config";
+import { Redactor } from "./redactor";
+import { SecretManager } from "./secretManager";
+import { CustomObject } from "./types";
 
 export class CustomObjectRedactor {
   private customObjects: CustomObject[] = [];

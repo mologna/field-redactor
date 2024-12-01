@@ -1,4 +1,4 @@
-import { Redactor } from "../redactor/redactor";
+import { Redactor } from "./redactor";
 
 export type CustomObject = {
   [key: string]: boolean | CustomObject | string;

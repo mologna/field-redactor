@@ -1,4 +1,4 @@
-import { SecretManager } from "../../../src/new/secret/secretManager";
+import { SecretManager } from "../../../src/new/secretManager";
 
 describe('NewSecretManager', () => {
   it('Can create a new secret manager which returns true for any key if no secrets given', () => {

@@ -1,8 +1,8 @@
 import * as crypto from 'crypto';
-import { FieldRedactor, FieldRedactorImpl } from "../../../src/new/FieldRedactor";
-import { SecretManager } from "../../../src/new/secret/secretManager";
+import { FieldRedactor } from "../../../src/new/fieldRedactor";
+import { SecretManager } from "../../../src/new/secretManager";
 import { validInputIncludingNullAndUndefined, validInputWithAllTypes, validNestedInputWithAllTypes } from "./mocks";
-import { Redactor } from '../../../src/new/redactor/redactor';
+import { Redactor } from '../../../src/new/redactor';
 
 describe('NewFieldRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
@@ -27,7 +27,7 @@ describe('NewFieldRedactor', () => {
 
   it('Should throw an exception when given a value thats not a JSON object', () => {
     const inputError: string = "Input value must be a JSON object";
-    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const redactor: FieldRedactor = new FieldRedactor();
     expect(() => redactor.redact(null)).toThrow(inputError);
     expect(() => redactor.redact(undefined)).toThrow(inputError);
     expect(() => redactor.redact(new Date())).toThrow(inputError);
@@ -37,28 +37,28 @@ describe('NewFieldRedactor', () => {
   });
 
   it('Should return a redacted copy of the input JSON for all value types', () => {
-    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const redactor: FieldRedactor = new FieldRedactor();
     const redacted = redactor.redact(validInputWithAllTypes);
     expect(redacted).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
   });
 
   it('Should be able to handle nested JSON objects of various types, sizes, and lengths', () => {
-    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const redactor: FieldRedactor = new FieldRedactor();
     const redacted = redactor.redact(validNestedInputWithAllTypes);
     expect(redacted).not.toBe(validNestedInputWithAllTypes);
     validateRedactorOutput(validNestedInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
   });
 
   it('Does not redact null or undefined by default', () => {
-    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const redactor: FieldRedactor = new FieldRedactor();
     const redacted = redactor.redact(validInputIncludingNullAndUndefined);
     expect(redacted).not.toBe(validInputIncludingNullAndUndefined);
     validateRedactorOutput(validInputIncludingNullAndUndefined, redacted, DEFAULT_REDACTED_TEXT, false);
   });
 
   it('Can redact null or undefined when specified', () => {
-    const redactor: FieldRedactor = new FieldRedactorImpl({
+    const redactor: FieldRedactor = new FieldRedactor({
       redactNullOrUndefined: true
     });
     const redacted = redactor.redact(validInputIncludingNullAndUndefined);
@@ -68,7 +68,7 @@ describe('NewFieldRedactor', () => {
 
   it('Can use custom redaction text', () => {
     const replacementText: string = "foobar";
-    const redactor: FieldRedactor = new FieldRedactorImpl({ replacementText });
+    const redactor: FieldRedactor = new FieldRedactor({ replacementText });
     const redacted = redactor.redact(validInputWithAllTypes);
     expect(redacted).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, redacted, replacementText);
@@ -84,7 +84,7 @@ describe('NewFieldRedactor', () => {
     ];
 
     const input = { testArray}
-    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const redactor: FieldRedactor = new FieldRedactor();
     const result = redactor.redact(input);
     result.testArray.forEach((value: any) => {
       expect(value).toBe(DEFAULT_REDACTED_TEXT);
@@ -98,7 +98,7 @@ describe('NewFieldRedactor', () => {
     ];
 
     const input = { testArray }
-    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const redactor: FieldRedactor = new FieldRedactor();
     const result = redactor.redact(input);
     result.testArray.forEach((value: any, index: number) => {
       expect(value).toBe(testArray[index]);
@@ -114,7 +114,7 @@ describe('NewFieldRedactor', () => {
     ];
 
       const input = { testArray }
-      const redactor: FieldRedactor = new FieldRedactorImpl();
+      const redactor: FieldRedactor = new FieldRedactor();
       const result = redactor.redact(input);
       expect(result.testArray[0].foo).toBe(DEFAULT_REDACTED_TEXT);
       expect(result.testArray[0].password).toBe(DEFAULT_REDACTED_TEXT);
@@ -126,7 +126,7 @@ describe('NewFieldRedactor', () => {
     };
 
     const input = { testObject }
-    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const redactor: FieldRedactor = new FieldRedactor();
     const result = redactor.redact(input);
     expect(result.testObject.foo.length).toBe(3);
     result.testObject.foo.forEach((value: any) => {
@@ -151,7 +151,7 @@ describe('NewFieldRedactor', () => {
     };
 
     const input = { testObject }
-    const redactor: FieldRedactor = new FieldRedactorImpl();
+    const redactor: FieldRedactor = new FieldRedactor();
     const result = redactor.redact(input);
     expect(result.testObject.foo.length).toBe(testObject.foo.length);
     expect(result.testObject.foo[0].bar).toBe(DEFAULT_REDACTED_TEXT);
@@ -164,7 +164,7 @@ describe('NewFieldRedactor', () => {
 
   it('Can redact only specific keys', () => {
     const secretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
-    const redactor: FieldRedactor = new FieldRedactorImpl({
+    const redactor: FieldRedactor = new FieldRedactor({
       secretKeys
     });
     const redacted = redactor.redact(validInputWithAllTypes);
@@ -175,7 +175,7 @@ describe('NewFieldRedactor', () => {
   it('Redacts all values under a deeply nested key when specified', () => {
     const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
     const deepSecretKeys: RegExp[] = [/parentAccount/];
-    const redactor: FieldRedactor = new FieldRedactorImpl({
+    const redactor: FieldRedactor = new FieldRedactor({
       secretKeys,
       deepSecretKeys
     });
@@ -211,7 +211,7 @@ describe('NewFieldRedactor', () => {
       foo
     }
 
-    const redactor: FieldRedactor = new FieldRedactorImpl({
+    const redactor: FieldRedactor = new FieldRedactor({
       redactor: customRedactor
     });
 
@@ -234,7 +234,7 @@ describe('NewFieldRedactor', () => {
       }
     };
 
-    const redactor: FieldRedactor = new FieldRedactorImpl({
+    const redactor: FieldRedactor = new FieldRedactor({
       customObjects: specialObjects
     });
 
@@ -256,7 +256,7 @@ describe('NewFieldRedactor', () => {
         bar: "bar"
     };
 
-    const redactor: FieldRedactor = new FieldRedactorImpl({
+    const redactor: FieldRedactor = new FieldRedactor({
       customObjects: specialObjects
     });
 
