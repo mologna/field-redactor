@@ -16,14 +16,7 @@ import {
 describe('FieldRedactor Integration Test', () => {
   it('Should redact all secret fields in a document with custom objects', () => {
     // Setup
-    const secretKeys = [
-      /email/,
-      /mdn/,
-      /balance/,
-      /address/,
-      /city/,
-      /fullname/i
-    ];
+    const secretKeys = [/email/, /mdn/, /balance/, /address/, /city/, /fullname/i];
     const customDataObject: CustomObject = {
       name: false,
       type: false,
@@ -36,8 +29,7 @@ describe('FieldRedactor Integration Test', () => {
       groups: false
     };
 
-    const redactor: Redactor = (val: any) =>
-      crypto.createHash('sha256').update(val.toString()).digest('hex');
+    const redactor: Redactor = (val: any) => crypto.createHash('sha256').update(val.toString()).digest('hex');
 
     const fieldRedactor = new FieldRedactor({
       secretKeys,
@@ -55,9 +47,7 @@ describe('FieldRedactor Integration Test', () => {
     expect(result.clientName).toEqual(logDataToRedact.clientName);
     expect(result.parentSystem).toEqual(logDataToRedact.parentSystem);
     expect(result.owner).toEqual(logDataToRedact.owner);
-    expect(result.executedCampaigns).toStrictEqual(
-      logDataToRedact.executedCampaigns
-    );
+    expect(result.executedCampaigns).toStrictEqual(logDataToRedact.executedCampaigns);
     expect(result.otherCampaigns).toStrictEqual(logDataToRedact.otherCampaigns);
     expect(result.correlationId).toEqual(logDataToRedact.correlationId);
     expect(result.transactionId).toEqual(logDataToRedact.transactionId);

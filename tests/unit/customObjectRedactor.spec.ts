@@ -11,10 +11,7 @@ describe('CustomObjectRedactor', () => {
   let secretManager: SecretManager = new SecretManager(secrets);
 
   beforeEach(() => {
-    customObjectRedactor = new CustomObjectRedactor(
-      secretManager,
-      mockRedactor
-    );
+    customObjectRedactor = new CustomObjectRedactor(secretManager, mockRedactor);
   });
 
   describe('getMatchingSpecialObject', () => {

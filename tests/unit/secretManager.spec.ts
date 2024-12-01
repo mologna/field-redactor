@@ -22,10 +22,7 @@ describe('NewSecretManager', () => {
   });
 
   it('Can create a secret manager which return true for object secret keys that match', () => {
-    const secretManager = new SecretManager(
-      [/foo/, /^pass/],
-      [/parentAccount/]
-    );
+    const secretManager = new SecretManager([/foo/, /^pass/], [/parentAccount/]);
     expect(secretManager.isSecretObjectKey('foo')).toBe(false);
     expect(secretManager.isSecretObjectKey('pass')).toBe(false);
     expect(secretManager.isSecretKey('parentAccount')).toBe(false);

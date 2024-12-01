@@ -23,10 +23,7 @@ describe('NewFieldRedactor', () => {
       if (typeof output[key] === 'object' && !!output[key]) {
         validateRedactorOutput(input[key], output[key], redactedText);
       } else if (!secretKeys || (secretKeys && manager.isSecretKey(key))) {
-        if (
-          (output[key] === null || output[key] === undefined) &&
-          !redactNullOrUndefined
-        ) {
+        if ((output[key] === null || output[key] === undefined) && !redactNullOrUndefined) {
           expect(output[key]).toBe(input[key]);
         } else {
           expect(output[key]).toBe(redactedText);
@@ -52,16 +49,12 @@ describe('NewFieldRedactor', () => {
     const redactor: FieldRedactor = new FieldRedactor();
     const redacted = redactor.redact(validInputWithAllTypes);
     expect(redacted).not.toBe(validInputWithAllTypes);
-    validateRedactorOutput(
-      validInputWithAllTypes,
-      redacted,
-      DEFAULT_REDACTED_TEXT
-    );
+    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
   });
 
   it('Ignores boolean values when specified', () => {
     const redactor: FieldRedactor = new FieldRedactor({ ignoreBooleans: true });
-    const redacted = redactor.redact({ foo: true, bar: "bar"});
+    const redacted = redactor.redact({ foo: true, bar: 'bar' });
     expect(redacted.foo).toBe(true);
     expect(redacted.bar).toBe(DEFAULT_REDACTED_TEXT);
   });
@@ -69,7 +62,7 @@ describe('NewFieldRedactor', () => {
   it('Ignores date values when specified', () => {
     const redactor: FieldRedactor = new FieldRedactor({ ignoreDates: true });
     const date = new Date();
-    const redacted = redactor.redact({ foo: date, bar: "bar"});
+    const redacted = redactor.redact({ foo: date, bar: 'bar' });
     expect(redacted.foo).toStrictEqual(date);
     expect(redacted.bar).toBe(DEFAULT_REDACTED_TEXT);
   });
@@ -78,23 +71,14 @@ describe('NewFieldRedactor', () => {
     const redactor: FieldRedactor = new FieldRedactor();
     const redacted = redactor.redact(validNestedInputWithAllTypes);
     expect(redacted).not.toBe(validNestedInputWithAllTypes);
-    validateRedactorOutput(
-      validNestedInputWithAllTypes,
-      redacted,
-      DEFAULT_REDACTED_TEXT
-    );
+    validateRedactorOutput(validNestedInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
   });
 
   it('Does not redact null or undefined by default', () => {
     const redactor: FieldRedactor = new FieldRedactor();
     const redacted = redactor.redact(validInputIncludingNullAndUndefined);
     expect(redacted).not.toBe(validInputIncludingNullAndUndefined);
-    validateRedactorOutput(
-      validInputIncludingNullAndUndefined,
-      redacted,
-      DEFAULT_REDACTED_TEXT,
-      false
-    );
+    validateRedactorOutput(validInputIncludingNullAndUndefined, redacted, DEFAULT_REDACTED_TEXT, false);
   });
 
   it('Can redact null or undefined when specified', () => {
@@ -103,12 +87,7 @@ describe('NewFieldRedactor', () => {
     });
     const redacted = redactor.redact(validInputIncludingNullAndUndefined);
     expect(redacted).not.toBe(validInputIncludingNullAndUndefined);
-    validateRedactorOutput(
-      validInputWithAllTypes,
-      redacted,
-      DEFAULT_REDACTED_TEXT,
-      true
-    );
+    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, true);
   });
 
   it('Can use custom redaction text', () => {
@@ -205,13 +184,7 @@ describe('NewFieldRedactor', () => {
     });
     const redacted = redactor.redact(validInputWithAllTypes);
     expect(redacted).not.toBe(validInputWithAllTypes);
-    validateRedactorOutput(
-      validInputWithAllTypes,
-      redacted,
-      DEFAULT_REDACTED_TEXT,
-      false,
-      secretKeys
-    );
+    validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, false, secretKeys);
   });
 
   it('Redacts all values under a deeply nested key when specified', () => {

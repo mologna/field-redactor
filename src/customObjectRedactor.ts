@@ -19,17 +19,11 @@ export class CustomObjectRedactor {
     this.redactNullOrUndefined = redactNullOrUndefined;
   }
 
-  public redactCustomObjectInPlace(
-    value: any,
-    customObject: CustomObject
-  ): void {
+  public redactCustomObjectInPlace(value: any, customObject: CustomObject): void {
     for (const key of Object.keys(customObject)) {
       if (typeof customObject[key] === 'object') {
         this.redactCustomObjectInPlace(value[key], customObject[key]);
-      } else if (
-        typeof customObject[key] === 'boolean' &&
-        customObject[key] === true
-      ) {
+      } else if (typeof customObject[key] === 'boolean' && customObject[key] === true) {
         value[key] = this.redactValue(value[key]);
       } else if (
         typeof customObject[key] === 'string' &&
@@ -73,10 +67,7 @@ export class CustomObjectRedactor {
         if (typeof customObject[key] !== 'object') {
           return false;
         }
-        const nestedCustomObjectIsValid = this.isCustomObject(
-          value[key],
-          customObject[key]
-        );
+        const nestedCustomObjectIsValid = this.isCustomObject(value[key], customObject[key]);
         if (!nestedCustomObjectIsValid) {
           return false;
         }
