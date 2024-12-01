@@ -6,6 +6,7 @@ module.exports = {
   },
   cacheDirectory: './tmp/jest-cache',
   coverageDirectory: './tmp/jest-coverage',
+  coveragePathIgnorePatterns: ['./node_modules/', './tests/mocks/'],
   collectCoverage: true,
   coverageThreshold: {
     global: {
