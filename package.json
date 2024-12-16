@@ -1,7 +1,7 @@
 {
-  "name": "obfuscator",
+  "name": "field-redactor",
   "version": "1.0.0",
-  "description": "Utility for obfuscating values and PII in an object",
+  "description": "Utility for redacting values and PII in JSON objects",
   "main": "index.js",
   "scripts": {
     "test": "jest",
