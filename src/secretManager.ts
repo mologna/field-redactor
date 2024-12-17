@@ -3,10 +3,12 @@ import { SecretManagerConfig } from './types';
 export class SecretManager {
   private secretKeys?: RegExp[];
   private deepSecretKeys?: RegExp[];
+  private fullRedactionKeys?: RegExp[];
 
   constructor(config: SecretManagerConfig) {
     this.secretKeys = config.secretKeys;
     this.deepSecretKeys = config.deepSecretKeys;
+    this.fullRedactionKeys = config.fullRedactionKeys;
   }
 
   /**
@@ -33,6 +35,19 @@ export class SecretManager {
       return false;
     }
     return this.valueIsSecret(key, this.deepSecretKeys);
+  }
+
+  /**
+   * Determines if a key is a secret object key which should be redacted. If no secret
+   * object keys are provided then assumes objects are not secret.
+   * @param key The key to check.
+   * @returns True if the key is a secret object key, false otherwise.
+   */
+  public isFullRedactionKey(key: string): boolean {
+    if (!this.fullRedactionKeys) {
+      return false;
+    }
+    return this.valueIsSecret(key, this.fullRedactionKeys);
   }
 
   private valueIsSecret(value: string, regexes?: RegExp[]): boolean {
