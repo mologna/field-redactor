@@ -21,7 +21,7 @@ Basic usage of the FieldRedactor is straightforward but not recommended:
 ```
 const myJsonObject = { foo: "bar" };
 const fieldRedactor = new FieldRedactor();
-const result = fieldRedactor.redact(myJsonObject) 
+const result = await fieldRedactor.redact(myJsonObject) 
 console.log(result); // { foo: "REDACTED" }
 ```
 
@@ -34,9 +34,9 @@ There are far more performant ways to perform global value redaction - the power
 | ------------ | ---- | ------- | ------ |
 | secretKeys   | RegExp[] | null | Specifies which values at any level of the JSON object should be redacted. Objects are not deeply redacted, but primitive values in arrays are. If not specified all values are considered secret. |
 | deepSecretKeys | RegExp[] | [] | Specifies which values at any level of the JSON object shold be deeply redacted. All values will be redacted and all children objects will have their values fully redacted unless matching a custom object. |
-| redactor | (val: any) => string | (val: any) => "REDACTED" | The function to use when redacting values.
-| ignoreBooleans | boolean | false | If true booleans will not be redacted. |
-| ignoreDates | boolean | false| If true Dates/Date Strings will not be redacted. |
+| redactor | (val: any) => Promise\<string\> | (val: any) => Promise.resolve("REDACTED") | The function to use when redacting values.
+| ignoreBooleans | boolean | false | If true booleans will not be redacted even if secret. |
+| ignoreDates | boolean | false| If true Dates/Date Strings will not be redacted even if secret. |
 | customObjects | CustomObject | [] | Specifies custom objects which require more fine-tuned redaction logic such as referencing sibling keys. See custom objects section. |
 
 
@@ -65,7 +65,7 @@ const myJsonObject = {
 const fieldRedactor = new FieldRedactor({
   secretKeys: [/email/i, /name/i, /someSecretData/i, /contactInfo/i],
 });
-const result = fieldRedactor.redact(myJsonObject);
+const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
 Yields the following result:
@@ -114,7 +114,7 @@ const myJsonObject = {
 const fieldRedactor = new FieldRedactor({
   deepSecretKeys: [/someSecretData/i, /contactInfo/i],
 });
-const result = fieldRedactor.redact(myJsonObject);
+const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
 Yields the following result:
@@ -138,7 +138,7 @@ Yields the following result:
 * Similarly, all primitive values in `someSecretData` were redacted and all object values were likewise redacted.
 
 ## customRedactor Configuration
-* type: `(val: any) => string`
+* type: `(val: any) => Promise<string>`
 * Takes in a primitive value, `Date`, or `Function` (if for some reason you have those) from the JSON object and returns a redacted value
 * If user has set the `allowNullOrUndefined` flag to true then the function should account for this possibility
 * **Users should provide this in most cases.**
@@ -146,11 +146,11 @@ Yields the following result:
 ### Example
 ```
 import * as crypto from 'crypto';
-const redactor: Redactor = (val: any) => crypto.createHash('sha256').update(val.toString()).digest('hex');
+const redactor: Redactor = (val: any) => Promise.resolve(crypto.createHash('sha256').update(val.toString()).digest('hex'));
 const fieldRedactor = new FieldRedactor({
   redactor
 });
-const result = redactor.redact({foo: "bar"});
+const result = await redactor.redact({foo: "bar"});
 console.log(result); // 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9'
 ```
 
@@ -158,17 +158,17 @@ console.log(result); // 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b
 **One of the most powerful features of this library and why it was written in the first place.**
 * type: `CustomObject[]`
 * Any object that matches this custom object will be redacted based on the custom object configuration.
-* Priority supercedes all other redactions
+* **Priority supercedes all other redactions**
   * if custom object located in a deeply nested `deepSecretKey` object then it will be evaluated according to custom object rules, not `deepSecretKey` rules.
 * **CustomObjects MUST be an exact match**
-  * If a key exist in that is not present in the object being evaluated it is not a match
+  * If a key exists which is not present in the object being evaluated it is not a match
   * If the object being evaluated contains an extra key it is not a match
 
 ### Schema
 A custom object takes the following format:
 ```
 {
-  key: true | false | string | CustomObject
+  [key]: true | false | string | CustomObject
 }
 ```
 * key: Specifies the key to match on
@@ -208,7 +208,7 @@ const fieldRedactor = new FieldRedactor({
   secretKeys: [/email/],
   customObjects: [myCustomObject]
 });
-const result = fieldRedactor.redact(myJsonObject);
+const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
 
@@ -244,7 +244,7 @@ Yields the following to the console:
 The following example illustrates the power and utility of this library when conditionally redacting JSON output for logging or other purposes. It allows users to specify the manner of redaction, which fields should be redacted, which fields should be deeply redacted, whether or not Dates should be redacted, and specify custom object logic where the key identifying whether or not a specific field should be redacted may not be the key for the field itself. I find it a quite useful tool!
 
 ```
-const myRedactor = (text: string) => "REDACTED";
+const myRedactor = (text: string) => Promise.resolve("REDACTED");
 const metadataCustomObject = {
   name: false,
   type: false,
@@ -323,7 +323,7 @@ const myJsonObjectToRedact = {
   "
 }
 
-const result = fieldRedactor.redact(myJsonObject);
+const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
 
@@ -391,7 +391,11 @@ Yields the following to the console:
 * object data in `actions` matched the `actionsCustomObject` so the value was conditionally redacted if the `field` value was a secret
 * object data in `metadata` matched the `metadataCustomObject` so the value was conditionally redacted if the `name` value was a secret
 
-# Future Improvements
-1. Make Asynchronous
-2. Allow for full array redaction on specific keys
-3. Allow for customObjects to conditionally use deep/shallow redaction
+# Future Improvements and Features
+
+| Feature | Status | Comments |
+| ------- | ------ | -------- |
+| Asynchronous Support | **In Progress** | Allow for asynchronous encryption schemes |
+| Full Array Redaction | Not Started | Allow the entire array to be stringified and redacted
+| Custom Object Pass-Through | Not Started | Allow a fourth option in CustomObjects to denote that key should be evaluated by normal rules
+| Custom Object DeepSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
