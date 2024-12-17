@@ -4,11 +4,15 @@ export type CustomObject = {
   [key: string]: boolean | CustomObject | string;
 };
 
-export type FieldRedactorConfig = {
-  redactNullOrUndefined?: boolean;
-  replacementText?: string;
+export type SecretManagerConfig = {
   secretKeys?: RegExp[];
   deepSecretKeys?: RegExp[];
+  fullRedactionKeys?: RegExp[];
+};
+
+export type FieldRedactorConfig = SecretManagerConfig & {
+  redactNullOrUndefined?: boolean;
+  replacementText?: string;
   redactor?: Redactor;
   customObjects?: CustomObject[];
   ignoreBooleans?: boolean;

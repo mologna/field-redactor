@@ -18,7 +18,7 @@ describe('NewFieldRedactor', () => {
     redactNullOrUndefined?: boolean,
     secretKeys?: RegExp[]
   ) => {
-    const manager = new SecretManager(secretKeys);
+    const manager = new SecretManager({ secretKeys });
     for (const key of Object.keys(output)) {
       if (typeof output[key] === 'object' && !!output[key]) {
         validateRedactorOutput(input[key], output[key], redactedText);

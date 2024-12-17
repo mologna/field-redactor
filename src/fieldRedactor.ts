@@ -15,7 +15,10 @@ export class FieldRedactor {
   private readonly ignoreDates: boolean = false;
   constructor(config?: FieldRedactorConfig) {
     this.redactNullOrUndefined = config?.redactNullOrUndefined || false;
-    this.secretManager = new SecretManager(config?.secretKeys, config?.deepSecretKeys);
+    this.secretManager = new SecretManager({
+      secretKeys: config?.secretKeys,
+      deepSecretKeys: config?.deepSecretKeys
+    });
     const replacementText = config?.replacementText || FieldRedactor.DEFAULT_REDACTED_TEXT;
     this.redactor = config?.redactor || ((val: any) => Promise.resolve(replacementText));
     this.customObjectRedactor = new CustomObjectRedactor(this.secretManager, this.redactor);

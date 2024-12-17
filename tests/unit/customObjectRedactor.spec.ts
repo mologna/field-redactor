@@ -7,8 +7,8 @@ describe('CustomObjectRedactor', () => {
   const REDACTION_TEXT: string = 'REDACTED';
   const mockRedactor: Redactor = () => Promise.resolve(REDACTION_TEXT);
   let customObjectRedactor: CustomObjectRedactor;
-  let secrets: RegExp[] = [/email/];
-  let secretManager: SecretManager = new SecretManager(secrets);
+  let secretKeys: RegExp[] = [/email/];
+  let secretManager: SecretManager = new SecretManager({ secretKeys });
 
   beforeEach(() => {
     customObjectRedactor = new CustomObjectRedactor(secretManager, mockRedactor);

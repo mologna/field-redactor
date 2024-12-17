@@ -1,10 +1,12 @@
+import { SecretManagerConfig } from './types';
+
 export class SecretManager {
   private secretKeys?: RegExp[];
-  private secretObjectKeys?: RegExp[];
+  private deepSecretKeys?: RegExp[];
 
-  constructor(secretKeys?: RegExp[], secretObjectKeys?: RegExp[]) {
-    this.secretKeys = secretKeys;
-    this.secretObjectKeys = secretObjectKeys;
+  constructor(config: SecretManagerConfig) {
+    this.secretKeys = config.secretKeys;
+    this.deepSecretKeys = config.deepSecretKeys;
   }
 
   /**
@@ -27,10 +29,10 @@ export class SecretManager {
    * @returns True if the key is a secret object key, false otherwise.
    */
   public isSecretObjectKey(key: string): boolean {
-    if (!this.secretObjectKeys) {
+    if (!this.deepSecretKeys) {
       return false;
     }
-    return this.valueIsSecret(key, this.secretObjectKeys);
+    return this.valueIsSecret(key, this.deepSecretKeys);
   }
 
   private valueIsSecret(value: string, regexes?: RegExp[]): boolean {
