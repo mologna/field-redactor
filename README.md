@@ -450,10 +450,15 @@ Features are ordered by priority.
 
 | Feature | Status | Comments |
 | ------- | ------ | -------- |
-| Asynchronous Support | **Complete** | Allow for asynchronous encryption schemes |
-| Full Redaction | **Complete** | Allow the entire array/object to be stringified and redacted
-| In-Place Redaction | **Complete** | Allow users to redact objects in-place instead of copying first |
-| Custom Object DeepSecret | **In Progress** | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
-| Integration Tests | Not Started | Implement a much more full-fledged suite of integration tests |
-| Custom Object Pass-Through | Not Started | Allow a fourth option in CustomObjects to denote that key should be evaluated by normal rules |
+| 1. Asynchronous Support | **Complete** | Allow for asynchronous encryption schemes |
+| 2. Full Redaction | **Complete** | Allow the entire array/object to be stringified and redacted
+| 3. In-Place Redaction | **Complete** | Allow users to redact objects in-place instead of copying first |
+| 4. Extract Redactor Logic | **In Progress** | Refactor to allow redactor logic to be re-used by CustomObjectRedactor |
+| 5.a Do not allow Nested Custom Objects | Not Started | Remove concept of nested custom objects in preparation for "pass" logic |
+| 5.b Custom Object DeepSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
+| 5.c Custom Object FullSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
+| 5.d Custom Object Pass-Through | Not Started | Allow a fourth option in CustomObjects to denote that key should be evaluated by normal rules |
+| 6 Separate Custom Secrets | Not Started | Allow users to configure custom objects with separate secrets |
+| 7 Integration Tests | Not Started | Implement a much more full-fledged suite of integration tests |
+
 
