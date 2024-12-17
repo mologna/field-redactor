@@ -32,12 +32,13 @@ There are far more performant ways to perform global value redaction - the power
 ## Overview
 | Config Field | Type | Default | Effect |
 | ------------ | ---- | ------- | ------ |
+| redactor | (val: any) => Promise\<string\> | (val: any) => Promise.resolve("REDACTED") | The function to use when redacting values.
 | secretKeys   | RegExp[] | null | Specifies which values at any level of the JSON object should be redacted. Objects are not deeply redacted, but primitive values in arrays are. If not specified all values are considered secret. |
 | deepSecretKeys | RegExp[] | [] | Specifies which values at any level of the JSON object shold be deeply redacted. All values will be redacted and all children objects will have their values fully redacted unless matching a custom object. |
-| redactor | (val: any) => Promise\<string\> | (val: any) => Promise.resolve("REDACTED") | The function to use when redacting values.
+| fullSecretKeys | RegExp[] | [] | Specifies which values at any level of the JSON object should be stringified and fully redacted. Primarily pertinent to objects and arrays.
+| customObjects | CustomObject | [] | Specifies custom objects which require more fine-tuned redaction logic such as referencing sibling keys. See custom objects section. |
 | ignoreBooleans | boolean | false | If true booleans will not be redacted even if secret. |
 | ignoreDates | boolean | false| If true Dates/Date Strings will not be redacted even if secret. |
-| customObjects | CustomObject | [] | Specifies custom objects which require more fine-tuned redaction logic such as referencing sibling keys. See custom objects section. |
 
 
 ## secretKeys Configuration 
@@ -136,6 +137,46 @@ Yields the following result:
 ```
 * Unlike `secretKeys`, all values in `contactInfo` were redacted as it matched the `deepSecretKeys` regular expression.
 * Similarly, all primitive values in `someSecretData` were redacted and all object values were likewise redacted.
+
+## fullSecretKeys Configuration
+* type: `RegExp[]`
+* If the key of an object or child object is a regular expression match its value will be stringified and redacted.
+  * Useful for objects or array values where the entire value should be strified and redacted
+
+### Example
+```
+const myJsonObject = {
+  timestamp: "2024-12-01T22:07:26.448Z",
+  userId: 271,
+  contactInfo: {
+    email: "foo.bar@example.com",
+    firstName: "Foo",
+    lastName: "Bar",
+    Salutation: "Mr.",
+    preference: "email",
+    lastUpdated: "2024-12-01T22:07:26.448Z"
+  },
+  someSecretData: ["fizz", "buzz", { deep: "foo", name: "bar" }],
+  hobbies: ["Basketball", "Baseball", "Tennis"]
+}
+const fieldRedactor = new FieldRedactor({
+  fullSecretKeys: [/someSecretData/i, /contactInfo/i],
+});
+const result = await fieldRedactor.redact(myJsonObject);
+console.log(result);
+```
+Yields the following result:
+```
+{
+  timestamp: "2024-12-01T22:07:26.448Z",
+  userId: 271,
+  contactInfo: "REDACTED",
+  someSecretData: "REDACTED",
+  hobbies: ["Basketball", "Baseball", "Tennis"]
+}
+```
+* Entirity of `contactInfo` was redacted.
+* Entirity of `someSecretData` was redacted.
 
 ## customRedactor Configuration
 * type: `(val: any) => Promise<string>`
@@ -319,8 +360,11 @@ const myJsonObjectToRedact = {
     }
   ],
   hobbies: ["Basketball", "Baseball", "Tennis"],
-  someDeepSecretData: ["fizz", "buzz", { deep: "is redacted", name: "foobar" }]
-  "
+  someDeepSecretData: ["fizz", "buzz", { deep: "is redacted", name: "foobar" }],
+  someFullSecretData: {
+    foo: "bar"
+  },
+  someFullSecretData2: ["a", 1, "12"]
 }
 
 const result = await fieldRedactor.redact(myJsonObject);
@@ -380,8 +424,9 @@ Yields the following to the console:
     }
   ],
   hobbies: ["Basketball", "Baseball", "Tennis"],
-  someDeepSecretData: ["REDACTED", "REDACTED", { deep: "REDACTED", name: "REDACTED" }]
-  "
+  someDeepSecretData: ["REDACTED", "REDACTED", { deep: "REDACTED", name: "REDACTED" }],
+  someFullSecretData: "REDACTED"
+  someFullSecretData2: "REDACTED"
 }
 ```
 * All data in `accountInfo` was redacted, including child objects, as it was a match for a `deepSecretKey`
