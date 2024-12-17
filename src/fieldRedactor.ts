@@ -57,7 +57,7 @@ export class FieldRedactor {
         if (customObject) {
           await this.customObjectRedactor.redactCustomObjectInPlace(object[key], customObject);
         } else {
-          const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
+          const secretObject = isSecretObject || this.secretManager.isDeepSecretKey(key);
           await this.redactObjectFieldsInPlace(object[key], secretObject);
         }
       }
@@ -74,7 +74,7 @@ export class FieldRedactor {
           await this.customObjectRedactor.redactCustomObjectInPlace(value, customObject);
           return Promise.resolve(value);
         } else {
-          const secretObject = isSecretObject || this.secretManager.isSecretObjectKey(key);
+          const secretObject = isSecretObject || this.secretManager.isDeepSecretKey(key);
           await this.redactObjectFieldsInPlace(value, secretObject);
           return Promise.resolve(value);
         }

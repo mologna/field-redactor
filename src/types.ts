@@ -7,7 +7,7 @@ export type CustomObject = {
 export type SecretManagerConfig = {
   secretKeys?: RegExp[];
   deepSecretKeys?: RegExp[];
-  fullRedactionKeys?: RegExp[];
+  fullSecretKeys?: RegExp[];
 };
 
 export type FieldRedactorConfig = SecretManagerConfig & {

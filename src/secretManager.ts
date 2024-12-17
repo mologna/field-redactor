@@ -3,19 +3,19 @@ import { SecretManagerConfig } from './types';
 export class SecretManager {
   private secretKeys?: RegExp[];
   private deepSecretKeys?: RegExp[];
-  private fullRedactionKeys?: RegExp[];
+  private fullSecretKeys?: RegExp[];
 
   constructor(config: SecretManagerConfig) {
     this.secretKeys = config.secretKeys;
     this.deepSecretKeys = config.deepSecretKeys;
-    this.fullRedactionKeys = config.fullRedactionKeys;
+    this.fullSecretKeys = config.fullSecretKeys;
   }
 
   /**
-   * Determines if the given key is a secret key which should be redacted. If no secret
-   * keys are provided assumes all keys are secret.
+   * Determines if the given key is a secret. If no secrets provided then assumes
+   * all keys are secret.
    * @param key The key to check.
-   * @returns True if the key is a secret key, false otherwise.
+   * @returns True if the key is a secret key or no secret keys exist, otherwise false.
    */
   public isSecretKey(key: string): boolean {
     if (!this.secretKeys) {
@@ -25,12 +25,11 @@ export class SecretManager {
   }
 
   /**
-   * Determines if a key is a secret object key which should be redacted. If no secret
-   * object keys are provided then assumes objects are not secret.
+   * Determines if a key is a deep secret. If no deep secrets provided then assumes false.
    * @param key The key to check.
-   * @returns True if the key is a secret object key, false otherwise.
+   * @returns True if the key is a deep secret key, otherwise false.
    */
-  public isSecretObjectKey(key: string): boolean {
+  public isDeepSecretKey(key: string): boolean {
     if (!this.deepSecretKeys) {
       return false;
     }
@@ -41,13 +40,13 @@ export class SecretManager {
    * Determines if a key is a secret object key which should be redacted. If no secret
    * object keys are provided then assumes objects are not secret.
    * @param key The key to check.
-   * @returns True if the key is a secret object key, false otherwise.
+   * @returns True if the key is a full secret key, otherwise false.
    */
-  public isFullRedactionKey(key: string): boolean {
-    if (!this.fullRedactionKeys) {
+  public isFullSecretKey(key: string): boolean {
+    if (!this.fullSecretKeys) {
       return false;
     }
-    return this.valueIsSecret(key, this.fullRedactionKeys);
+    return this.valueIsSecret(key, this.fullSecretKeys);
   }
 
   private valueIsSecret(value: string, regexes?: RegExp[]): boolean {
