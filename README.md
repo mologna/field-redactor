@@ -391,11 +391,15 @@ Yields the following to the console:
 * object data in `actions` matched the `actionsCustomObject` so the value was conditionally redacted if the `field` value was a secret
 * object data in `metadata` matched the `metadataCustomObject` so the value was conditionally redacted if the `name` value was a secret
 
-# Future Improvements and Features
+---
+
+# Feature Development Chart
+Features are ordered by priority.
 
 | Feature | Status | Comments |
 | ------- | ------ | -------- |
-| Asynchronous Support | **In Progress** | Allow for asynchronous encryption schemes |
-| Full Array Redaction | Not Started | Allow the entire array to be stringified and redacted
-| Custom Object Pass-Through | Not Started | Allow a fourth option in CustomObjects to denote that key should be evaluated by normal rules
+| Asynchronous Support | **Complete** | Allow for asynchronous encryption schemes |
+| Full Redaction | Not Started | Allow the entire array/object to be stringified and redacted
 | Custom Object DeepSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
+| Custom Object Pass-Through | Not Started | Allow a fourth option in CustomObjects to denote that key should be evaluated by normal rules
+
