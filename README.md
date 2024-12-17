@@ -16,13 +16,20 @@ In many instances redaction of sensitive data from log output is fairly straight
 If this object is placed in a data set with many others, and only it and a few others have sensitive PII, redaction becomes quite troublesome. Of course, one could redact all `value` fields from these objects, but this creates another problem when using log data to trace or debug, as it has now all been redacted. The conditional determination of whether or not I want to redact the value lies in its `name` field, and I often found myself writing custom logic for specific types of objects that became brittle and a code maintenance nightmare. So I decided to write my own, more manageable plug-and-play solution that would require only minor configuration tweaks instead. Enter FieldRedactor!
 
 # Basic Usage
-Basic usage of the FieldRedactor is straightforward but not recommended:
+Basic usage of the FieldRedactor is straightforward but not recommended. Object redaction can be performed either in-place or return the redacted object:
 
 ```
 const myJsonObject = { foo: "bar" };
 const fieldRedactor = new FieldRedactor();
-const result = await fieldRedactor.redact(myJsonObject) 
+
+// return redacted result
+const result = await fieldRedactor.redact(myJsonObject);
+console.log(myJsonObject); // { foo: "REDACTED" }
 console.log(result); // { foo: "REDACTED" }
+
+// redact in place
+await fieldRedactor.redactInPlace(myJsonObject);
+console.log(myJsonObject); // { foo: "REDACTED" }
 ```
 
 There are far more performant ways to perform global value redaction - the power of this tool comes from its customization.
@@ -447,5 +454,6 @@ Features are ordered by priority.
 | Full Redaction | **Complete** | Allow the entire array/object to be stringified and redacted
 | In-Place Redaction | **In Progress** | Allow users to redact objects in-place instead of copying first |
 | Custom Object DeepSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
+| Integration Tests | Not Started | Implement a much more full-fledged suite of integration tests |
 | Custom Object Pass-Through | Not Started | Allow a fourth option in CustomObjects to denote that key should be evaluated by normal rules |
 

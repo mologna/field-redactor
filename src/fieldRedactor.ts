@@ -34,19 +34,36 @@ export class FieldRedactor {
    * @returns The redacted JSON object.
    */
   public async redact(value: any): Promise<any> {
+    this.validateInput(value);
+
+    const copy = this.deepCopy(value);
+    return this.redactInternal(copy);
+  }
+
+  /**
+   * Redacts the fields of a JSON object in place based on the configuration provided.
+   * @param value The JSON value to redact in place.
+   */
+  public async redactInPlace(value: any): Promise<void> {
+    this.validateInput(value);
+    return this.redactInternal(value);
+  }
+
+  private async redactInternal(value: any): Promise<any> {
+    const customObject = this.customObjectRedactor.getMatchingCustomObject(value);
+    if (customObject) {
+      await this.customObjectRedactor.redactCustomObjectInPlace(value, customObject);
+    } else {
+      await this.redactObjectFieldsInPlace(value);
+    }
+
+    return value;
+  }
+
+  private validateInput(value: any) {
     if (!value || typeof value !== 'object' || value instanceof Date) {
       throw new Error('Input value must be a JSON object');
     }
-
-    const copy = this.deepCopy(value);
-    const customObject = this.customObjectRedactor.getMatchingCustomObject(copy);
-    if (customObject) {
-      await this.customObjectRedactor.redactCustomObjectInPlace(copy, customObject);
-    } else {
-      await this.redactObjectFieldsInPlace(copy);
-    }
-
-    return copy;
   }
 
   private async redactObjectFieldsInPlace(object: any, isSecretObject: boolean = false): Promise<void> {

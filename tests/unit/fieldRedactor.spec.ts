@@ -48,9 +48,15 @@ describe('NewFieldRedactor', () => {
   it('Should return a redacted copy of the input JSON for all value types', async () => {
     const redactor: FieldRedactor = new FieldRedactor();
     const redacted = await redactor.redact(validInputWithAllTypes);
-    console.log(redacted);
     expect(redacted).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
+  });
+
+  it('Can redact in place', async () => {
+    const copy = JSON.parse(JSON.stringify(validInputWithAllTypes));
+    const redactor: FieldRedactor = new FieldRedactor();
+    await redactor.redactInPlace(copy);
+    validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT);
   });
 
   it('Ignores boolean values when specified', async () => {
