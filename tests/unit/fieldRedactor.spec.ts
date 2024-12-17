@@ -34,93 +34,94 @@ describe('NewFieldRedactor', () => {
     }
   };
 
-  it('Should throw an exception when given a value thats not a JSON object', () => {
+  it('Should throw an exception when given a value thats not a JSON object', async () => {
     const inputError: string = 'Input value must be a JSON object';
     const redactor: FieldRedactor = new FieldRedactor();
-    expect(() => redactor.redact(null)).toThrow(inputError);
-    expect(() => redactor.redact(undefined)).toThrow(inputError);
-    expect(() => redactor.redact(new Date())).toThrow(inputError);
-    expect(() => redactor.redact(1)).toThrow(inputError);
-    expect(() => redactor.redact('foobar')).toThrow(inputError);
-    expect(() => redactor.redact(() => {})).toThrow(inputError);
+    await expect(() => redactor.redact(null)).rejects.toThrow(inputError);
+    await expect(async () => redactor.redact(undefined)).rejects.toThrow(inputError);
+    await expect(async () => redactor.redact(new Date())).rejects.toThrow(inputError);
+    await expect(async () => redactor.redact(1)).rejects.toThrow(inputError);
+    await expect(async () => redactor.redact('foobar')).rejects.toThrow(inputError);
+    await expect(async () => redactor.redact(() => {})).rejects.toThrow(inputError);
   });
 
-  it('Should return a redacted copy of the input JSON for all value types', () => {
+  it('Should return a redacted copy of the input JSON for all value types', async () => {
     const redactor: FieldRedactor = new FieldRedactor();
-    const redacted = redactor.redact(validInputWithAllTypes);
+    const redacted = await redactor.redact(validInputWithAllTypes);
+    console.log(redacted);
     expect(redacted).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
   });
 
-  it('Ignores boolean values when specified', () => {
+  it('Ignores boolean values when specified', async () => {
     const redactor: FieldRedactor = new FieldRedactor({ ignoreBooleans: true });
-    const redacted = redactor.redact({ foo: true, bar: 'bar' });
+    const redacted = await redactor.redact({ foo: true, bar: 'bar' });
     expect(redacted.foo).toBe(true);
     expect(redacted.bar).toBe(DEFAULT_REDACTED_TEXT);
   });
 
-  it('Ignores date values when specified', () => {
+  it('Ignores date values when specified', async () => {
     const redactor: FieldRedactor = new FieldRedactor({ ignoreDates: true });
     const date = new Date();
-    const redacted = redactor.redact({ foo: date, bar: 'bar' });
+    const redacted = await redactor.redact({ foo: date, bar: 'bar' });
     expect(redacted.foo).toStrictEqual(date);
     expect(redacted.bar).toBe(DEFAULT_REDACTED_TEXT);
   });
 
-  it('Should be able to handle nested JSON objects of various types, sizes, and lengths', () => {
+  it('Should be able to handle nested JSON objects of various types, sizes, and lengths', async () => {
     const redactor: FieldRedactor = new FieldRedactor();
-    const redacted = redactor.redact(validNestedInputWithAllTypes);
+    const redacted = await redactor.redact(validNestedInputWithAllTypes);
     expect(redacted).not.toBe(validNestedInputWithAllTypes);
     validateRedactorOutput(validNestedInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT);
   });
 
-  it('Does not redact null or undefined by default', () => {
+  it('Does not redact null or undefined by default', async () => {
     const redactor: FieldRedactor = new FieldRedactor();
-    const redacted = redactor.redact(validInputIncludingNullAndUndefined);
+    const redacted = await redactor.redact(validInputIncludingNullAndUndefined);
     expect(redacted).not.toBe(validInputIncludingNullAndUndefined);
     validateRedactorOutput(validInputIncludingNullAndUndefined, redacted, DEFAULT_REDACTED_TEXT, false);
   });
 
-  it('Can redact null or undefined when specified', () => {
+  it('Can redact null or undefined when specified', async () => {
     const redactor: FieldRedactor = new FieldRedactor({
       redactNullOrUndefined: true
     });
-    const redacted = redactor.redact(validInputIncludingNullAndUndefined);
+    const redacted = await redactor.redact(validInputIncludingNullAndUndefined);
     expect(redacted).not.toBe(validInputIncludingNullAndUndefined);
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, true);
   });
 
-  it('Can use custom redaction text', () => {
+  it('Can use custom redaction text', async () => {
     const replacementText: string = 'foobar';
     const redactor: FieldRedactor = new FieldRedactor({ replacementText });
-    const redacted = redactor.redact(validInputWithAllTypes);
+    const redacted = await redactor.redact(validInputWithAllTypes);
     expect(redacted).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, redacted, replacementText);
   });
 
-  it('Can redact all common values in an array', () => {
+  it('Can redact all common values in an array', async () => {
     const testArray = ['foo', new Date(), 12, 123.45, true];
 
     const input = { testArray };
     const redactor: FieldRedactor = new FieldRedactor();
-    const result = redactor.redact(input);
+    const result = await redactor.redact(input);
     result.testArray.forEach((value: any) => {
       expect(value).toBe(DEFAULT_REDACTED_TEXT);
     });
   });
 
-  it('Skips nulls and undefined when included in an array', () => {
+  it('Skips nulls and undefined when included in an array', async () => {
     const testArray = [null, undefined];
 
     const input = { testArray };
     const redactor: FieldRedactor = new FieldRedactor();
-    const result = redactor.redact(input);
+    const result = await redactor.redact(input);
     result.testArray.forEach((value: any, index: number) => {
       expect(value).toBe(testArray[index]);
     });
   });
 
-  it('Can handle objects nested in arrays', () => {
+  it('Can handle objects nested in arrays', async () => {
     const testArray = [
       {
         foo: 'bar',
@@ -130,26 +131,26 @@ describe('NewFieldRedactor', () => {
 
     const input = { testArray };
     const redactor: FieldRedactor = new FieldRedactor();
-    const result = redactor.redact(input);
+    const result = await redactor.redact(input);
     expect(result.testArray[0].foo).toBe(DEFAULT_REDACTED_TEXT);
     expect(result.testArray[0].password).toBe(DEFAULT_REDACTED_TEXT);
   });
 
-  it('Can handle arrays nested more than one deep in objects', () => {
+  it('Can handle arrays nested more than one deep in objects', async () => {
     const testObject = {
       foo: ['a', 'b', 'c']
     };
 
     const input = { testObject };
     const redactor: FieldRedactor = new FieldRedactor();
-    const result = redactor.redact(input);
+    const result = await redactor.redact(input);
     expect(result.testObject.foo.length).toBe(3);
     result.testObject.foo.forEach((value: any) => {
       expect(value).toBe(DEFAULT_REDACTED_TEXT);
     });
   });
 
-  it('Can handle complex nesting structures of arrays and objects', () => {
+  it('Can handle complex nesting structures of arrays and objects', async () => {
     const testObject = {
       foo: [
         {
@@ -167,7 +168,7 @@ describe('NewFieldRedactor', () => {
 
     const input = { testObject };
     const redactor: FieldRedactor = new FieldRedactor();
-    const result = redactor.redact(input);
+    const result = await redactor.redact(input);
     expect(result.testObject.foo.length).toBe(testObject.foo.length);
     expect(result.testObject.foo[0].bar).toBe(DEFAULT_REDACTED_TEXT);
     expect(result.testObject.foo[0].password).toBe(DEFAULT_REDACTED_TEXT);
@@ -177,17 +178,17 @@ describe('NewFieldRedactor', () => {
     expect(result.testObject.bar).toBe(DEFAULT_REDACTED_TEXT);
   });
 
-  it('Can redact only specific keys', () => {
+  it('Can redact only specific keys', async () => {
     const secretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
     const redactor: FieldRedactor = new FieldRedactor({
       secretKeys
     });
-    const redacted = redactor.redact(validInputWithAllTypes);
+    const redacted = await redactor.redact(validInputWithAllTypes);
     expect(redacted).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, redacted, DEFAULT_REDACTED_TEXT, false, secretKeys);
   });
 
-  it('Redacts all values under a deeply nested key when specified', () => {
+  it('Redacts all values under a deeply nested key when specified', async () => {
     const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
     const deepSecretKeys: RegExp[] = [/parentAccount/];
     const redactor: FieldRedactor = new FieldRedactor({
@@ -206,7 +207,7 @@ describe('NewFieldRedactor', () => {
         }
       }
     };
-    const redacted = redactor.redact(simpleNestedInputWithDeepSecret);
+    const redacted = await redactor.redact(simpleNestedInputWithDeepSecret);
 
     expect(redacted).not.toBe(simpleNestedInputWithDeepSecret);
     expect(redacted.password).toBe(DEFAULT_REDACTED_TEXT);
@@ -216,11 +217,11 @@ describe('NewFieldRedactor', () => {
     expect(redacted.parentAccount.fizz.buzz).toBe(DEFAULT_REDACTED_TEXT);
   });
 
-  it('Allows user to specify their own redactor', () => {
+  it('Allows user to specify their own redactor', async () => {
     const foo = 'foo';
     const hashedFoo = 'acbd18db4cc2f85cedef654fccc4a4d8';
     const customRedactor: Redactor = (value: any) => {
-      return crypto.createHash('md5').update(value).digest('hex');
+      return Promise.resolve(crypto.createHash('md5').update(value).digest('hex'));
     };
     const simpleObject = {
       foo
@@ -230,11 +231,11 @@ describe('NewFieldRedactor', () => {
       redactor: customRedactor
     });
 
-    const result = redactor.redact(simpleObject);
+    const result = await redactor.redact(simpleObject);
     expect(result.foo).toBe(hashedFoo);
   });
 
-  it('Can redact special objects', () => {
+  it('Can redact special objects', async () => {
     const specialObjects = [
       {
         foo: true,
@@ -253,12 +254,12 @@ describe('NewFieldRedactor', () => {
       customObjects: specialObjects
     });
 
-    const result = redactor.redact(input);
+    const result = await redactor.redact(input);
     expect(result.mySpecial.foo).toBe(DEFAULT_REDACTED_TEXT);
     expect(result.mySpecial.bar).toBe(input.mySpecial.bar);
   });
 
-  it('Can handle top-level special objects', () => {
+  it('Can handle top-level special objects', async () => {
     const specialObjects = [
       {
         foo: true,
@@ -275,12 +276,12 @@ describe('NewFieldRedactor', () => {
       customObjects: specialObjects
     });
 
-    const result = redactor.redact(input);
+    const result = await redactor.redact(input);
     expect(result.foo).toBe(DEFAULT_REDACTED_TEXT);
     expect(result.bar).toBe(input.bar);
   });
 
-  it('Can handle special objects in arrays', () => {
+  it('Can handle special objects in arrays', async () => {
     const specialObjects = [
       {
         foo: true,
@@ -305,7 +306,7 @@ describe('NewFieldRedactor', () => {
       customObjects: specialObjects
     });
 
-    const result = redactor.redact(input);
+    const result = await redactor.redact(input);
     result.me.forEach((value: any, index: number) => {
       expect(value.foo).toBe(DEFAULT_REDACTED_TEXT);
       expect(value.bar).toBe(input.me[index].bar);

@@ -1,1 +1,1 @@
-export type Redactor = (value: any) => string;
+export type Redactor = (value: any) => Promise<string>;

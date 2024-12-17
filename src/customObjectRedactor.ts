@@ -19,27 +19,27 @@ export class CustomObjectRedactor {
     this.redactNullOrUndefined = redactNullOrUndefined;
   }
 
-  public redactCustomObjectInPlace(value: any, customObject: CustomObject): void {
+  public async redactCustomObjectInPlace(value: any, customObject: CustomObject): Promise<void> {
     for (const key of Object.keys(customObject)) {
       if (typeof customObject[key] === 'object') {
         this.redactCustomObjectInPlace(value[key], customObject[key]);
       } else if (typeof customObject[key] === 'boolean' && customObject[key] === true) {
-        value[key] = this.redactValue(value[key]);
+        value[key] = await this.redactValue(value[key]);
       } else if (
         typeof customObject[key] === 'string' &&
         !!value[customObject[key]] &&
         this.secretManager.isSecretKey(value[customObject[key]])
       ) {
-        value[key] = this.redactor(value[key]);
+        value[key] = await this.redactor(value[key]);
       }
     }
   }
 
-  private redactValue(value: any): any {
+  private redactValue(value: any): Promise<any> {
     if (value === null || value === undefined) {
       return this.redactNullOrUndefined ? this.redactor(value) : value;
     } else if (Array.isArray(value)) {
-      return value.map((element) => this.redactValue(element));
+      return Promise.all(value.map(async (element) => this.redactValue(element)));
     } else {
       return this.redactor(value);
     }

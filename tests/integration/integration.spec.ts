@@ -14,7 +14,7 @@ import {
 } from '../mocks/logMocks';
 
 describe('FieldRedactor Integration Test', () => {
-  it('Should redact all secret fields in a document with custom objects', () => {
+  it('Should redact all secret fields in a document with custom objects', async () => {
     // Setup
     const secretKeys = [/email/, /mdn/, /balance/, /address/, /city/, /fullname/i];
     const customDataObject: CustomObject = {
@@ -29,7 +29,8 @@ describe('FieldRedactor Integration Test', () => {
       groups: false
     };
 
-    const redactor: Redactor = (val: any) => crypto.createHash('sha256').update(val.toString()).digest('hex');
+    const redactor: Redactor = (val: any) =>
+      Promise.resolve(crypto.createHash('sha256').update(val.toString()).digest('hex'));
 
     const fieldRedactor = new FieldRedactor({
       secretKeys,
@@ -38,7 +39,7 @@ describe('FieldRedactor Integration Test', () => {
     });
 
     // Execute
-    const result = fieldRedactor.redact(logDataToRedact);
+    const result = await fieldRedactor.redact(logDataToRedact);
 
     // Assert
     expect(result['@timestamp']).toEqual(logDataToRedact['@timestamp']);

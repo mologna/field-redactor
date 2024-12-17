@@ -5,7 +5,7 @@ import { SecretManager } from '../../src/secretManager';
 
 describe('CustomObjectRedactor', () => {
   const REDACTION_TEXT: string = 'REDACTED';
-  const mockRedactor: Redactor = () => REDACTION_TEXT;
+  const mockRedactor: Redactor = () => Promise.resolve(REDACTION_TEXT);
   let customObjectRedactor: CustomObjectRedactor;
   let secrets: RegExp[] = [/email/];
   let secretManager: SecretManager = new SecretManager(secrets);
@@ -163,7 +163,7 @@ describe('CustomObjectRedactor', () => {
       expect(result3).toBeUndefined();
     });
 
-    it('Can handle an empty list of special objects', () => {
+    it('Can handle an empty list of special objects', async () => {
       customObjectRedactor.setCustomObjects([]);
       const result = customObjectRedactor.getMatchingCustomObject({
         foo: 'fizz',
@@ -174,17 +174,17 @@ describe('CustomObjectRedactor', () => {
   });
 
   describe('redactSpecialObjectInPlace', () => {
-    it('Redacts a special object in place', () => {
+    it('Redacts a special object in place', async () => {
       const specialObject: CustomObject = {
         foo: true,
         bar: false
       };
       const obj = { foo: 'fizz', bar: 'buzz' };
-      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      await customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({ foo: REDACTION_TEXT, bar: 'buzz' });
     });
 
-    it('Redacts a nested special object in place', () => {
+    it('Redacts a nested special object in place', async () => {
       const specialObject: CustomObject = {
         foo: {
           bar: true,
@@ -193,11 +193,11 @@ describe('CustomObjectRedactor', () => {
       };
       customObjectRedactor.setCustomObjects([specialObject]);
       const obj = { foo: { bar: 'fizz', baz: 'buzz' } };
-      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      await customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({ foo: { bar: REDACTION_TEXT, baz: 'buzz' } });
     });
 
-    it('Can handle nested special objects multiple layers deep', () => {
+    it('Can handle nested special objects multiple layers deep', async () => {
       const specialObject: CustomObject = {
         foo: {
           bar: {
@@ -208,24 +208,24 @@ describe('CustomObjectRedactor', () => {
       };
       customObjectRedactor.setCustomObjects([specialObject]);
       const obj = { foo: { bar: { baz: 'fizz', bim: 'buzz' } } };
-      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      await customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({
         foo: { bar: { baz: REDACTION_TEXT, bim: 'buzz' } }
       });
     });
 
-    it('Does not redact null, or undefined values by default', () => {
+    it('Does not redact null, or undefined values by default', async () => {
       const specialObject: CustomObject = {
         foo: true,
         bar: true
       };
       customObjectRedactor.setCustomObjects([specialObject]);
       const obj = { foo: null, bar: undefined };
-      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      await customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({ foo: null, bar: undefined });
     });
 
-    it('Can redact null, or undefined values if specified', () => {
+    it('Can redact null, or undefined values if specified', async () => {
       const specialObject: CustomObject = {
         foo: true,
         bar: true
@@ -233,23 +233,23 @@ describe('CustomObjectRedactor', () => {
       customObjectRedactor.setCustomObjects([specialObject]);
       customObjectRedactor.setRedactNullOrUndefined(true);
       const obj = { foo: null, bar: undefined };
-      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      await customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({ foo: REDACTION_TEXT, bar: REDACTION_TEXT });
     });
 
-    it('Can handle a special object where the value is an array', () => {
+    it('Can handle a special object where the value is an array', async () => {
       const specialObject: CustomObject = {
         foo: false,
         bar: true
       };
       customObjectRedactor.setCustomObjects([specialObject]);
       const obj = { foo: 'bim', bar: ['fizz', 'buzz'] };
-      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      await customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj.foo).toEqual('bim');
       expect(obj.bar).toStrictEqual([REDACTION_TEXT, REDACTION_TEXT]);
     });
 
-    it('Uses the secretManager to determine if a string-specified value is a secret key', () => {
+    it('Uses the secretManager to determine if a string-specified value is a secret key', async () => {
       const specialObject: CustomObject = {
         name: false,
         kind: false,
@@ -258,7 +258,7 @@ describe('CustomObjectRedactor', () => {
 
       customObjectRedactor.setCustomObjects([specialObject]);
       const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
-      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      await customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({
         name: 'email',
         kind: 'String',
@@ -266,7 +266,7 @@ describe('CustomObjectRedactor', () => {
       });
     });
 
-    it('Does not redact a value if the string-specified field does not contain a secret key', () => {
+    it('Does not redact a value if the string-specified field does not contain a secret key', async () => {
       const specialObject: CustomObject = {
         name: false,
         kind: false,
@@ -279,7 +279,7 @@ describe('CustomObjectRedactor', () => {
         kind: 'String',
         value: 'foo.bar@gmail.com'
       };
-      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      await customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({
         name: 'notredacted',
         kind: 'String',
@@ -287,7 +287,7 @@ describe('CustomObjectRedactor', () => {
       });
     });
 
-    it('Does not redact a value or fail if the string-specified field does not exist', () => {
+    it('Does not redact a value or fail if the string-specified field does not exist', async () => {
       const specialObject: CustomObject = {
         name: false,
         kind: false,
@@ -296,7 +296,7 @@ describe('CustomObjectRedactor', () => {
 
       customObjectRedactor.setCustomObjects([specialObject]);
       const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
-      customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
+      await customObjectRedactor.redactCustomObjectInPlace(obj, specialObject);
       expect(obj).toEqual({
         name: 'email',
         kind: 'String',
