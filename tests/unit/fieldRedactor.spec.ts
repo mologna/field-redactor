@@ -217,6 +217,30 @@ describe('NewFieldRedactor', () => {
     expect(redacted.parentAccount.fizz.buzz).toBe(DEFAULT_REDACTED_TEXT);
   });
 
+  it('Can perform fullRedaction on objects and arrays when specified', async () => {
+    const redactor: FieldRedactor = new FieldRedactor({
+      fullSecretKeys: [/foo/, /bar/],
+      secretKeys: []
+    });
+
+    const input = {
+      foo: {
+        bar: {
+          fizz: 'buzz',
+          bim: 'bam'
+        },
+        a: 'b'
+      },
+      bar: ['fizz', 'buzz'],
+      bim: 'bam'
+    };
+
+    const redacted = await redactor.redact(input);
+    expect(redacted.foo).toBe(DEFAULT_REDACTED_TEXT);
+    expect(redacted.bar).toBe(DEFAULT_REDACTED_TEXT);
+    expect(redacted.bim).toBe('bam');
+  });
+
   it('Allows user to specify their own redactor', async () => {
     const foo = 'foo';
     const hashedFoo = 'acbd18db4cc2f85cedef654fccc4a4d8';

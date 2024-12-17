@@ -17,7 +17,8 @@ export class FieldRedactor {
     this.redactNullOrUndefined = config?.redactNullOrUndefined || false;
     this.secretManager = new SecretManager({
       secretKeys: config?.secretKeys,
-      deepSecretKeys: config?.deepSecretKeys
+      deepSecretKeys: config?.deepSecretKeys,
+      fullSecretKeys: config?.fullSecretKeys
     });
     const replacementText = config?.replacementText || FieldRedactor.DEFAULT_REDACTED_TEXT;
     this.redactor = config?.redactor || ((val: any) => Promise.resolve(replacementText));
@@ -50,15 +51,18 @@ export class FieldRedactor {
 
   private async redactObjectFieldsInPlace(object: any, isSecretObject: boolean = false): Promise<void> {
     for (const key of Object.keys(object)) {
-      if (!this.isObject(object[key])) {
-        object[key] = await this.redactFields(key, object[key], isSecretObject);
+      const value: any = object[key];
+      if (this.secretManager.isFullSecretKey(key)) {
+        object[key] = await this.redactValue(JSON.stringify(value));
+      } else if (!this.isObject(object[key])) {
+        object[key] = await this.redactFields(key, value, isSecretObject);
       } else {
-        const customObject = this.customObjectRedactor.getMatchingCustomObject(object[key]);
+        const customObject = this.customObjectRedactor.getMatchingCustomObject(value);
         if (customObject) {
-          await this.customObjectRedactor.redactCustomObjectInPlace(object[key], customObject);
+          await this.customObjectRedactor.redactCustomObjectInPlace(value, customObject);
         } else {
           const secretObject = isSecretObject || this.secretManager.isDeepSecretKey(key);
-          await this.redactObjectFieldsInPlace(object[key], secretObject);
+          await this.redactObjectFieldsInPlace(value, secretObject);
         }
       }
     }
