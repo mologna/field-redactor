@@ -452,8 +452,8 @@ Features are ordered by priority.
 | ------- | ------ | -------- |
 | Asynchronous Support | **Complete** | Allow for asynchronous encryption schemes |
 | Full Redaction | **Complete** | Allow the entire array/object to be stringified and redacted
-| In-Place Redaction | **In Progress** | Allow users to redact objects in-place instead of copying first |
-| Custom Object DeepSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
+| In-Place Redaction | **Complete** | Allow users to redact objects in-place instead of copying first |
+| Custom Object DeepSecret | **In Progress** | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
 | Integration Tests | Not Started | Implement a much more full-fledged suite of integration tests |
 | Custom Object Pass-Through | Not Started | Allow a fourth option in CustomObjects to denote that key should be evaluated by normal rules |
 
