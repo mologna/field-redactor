@@ -1,6 +1,5 @@
-import { CustomObject } from '../../src/types';
+import { CustomObject, Redactor } from '../../src/types';
 import { CustomObjectRedactor } from '../../src/customObjectRedactor';
-import { Redactor } from '../../src/redactor';
 import { SecretManager } from '../../src/secretManager';
 
 describe('CustomObjectRedactor', () => {

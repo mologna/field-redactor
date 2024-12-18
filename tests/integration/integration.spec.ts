@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import { FieldRedactor } from '../../src/fieldRedactor';
-import { CustomObject } from '../../src/types';
-import { Redactor } from '../../src/redactor';
+import { CustomObject, Redactor } from '../../src/types';
 import {
   logDataToRedact,
   sha256HashedAddress,

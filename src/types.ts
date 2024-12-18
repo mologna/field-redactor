@@ -1,4 +1,4 @@
-import { Redactor } from './redactor';
+export type Redactor = (value: any) => Promise<string>;
 
 export type CustomObject = {
   [key: string]: boolean | CustomObject | string;

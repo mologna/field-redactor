@@ -1,6 +1,5 @@
-import { Redactor } from './redactor';
 import { SecretManager } from './secretManager';
-import { CustomObject } from './types';
+import { CustomObject, Redactor } from './types';
 
 export class CustomObjectRedactor {
   private customObjects: CustomObject[] = [];
