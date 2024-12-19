@@ -6,7 +6,7 @@ import {
   validInputWithAllTypes,
   validNestedInputWithAllTypes
 } from '../mocks/inputMocks';
-import { Redactor } from '../../src/types';
+import { CustomObject, Redactor } from '../../src/types';
 import { ObjectRedactor } from '../../src/objectRedactor';
 
 describe('ObjectRedactor', () => {
@@ -333,6 +333,120 @@ describe('ObjectRedactor', () => {
     result.me.forEach((value: any, index: number) => {
       expect(value.foo).toBe(DEFAULT_REDACTED_TEXT);
       expect(value.bar).toBe(input.me[index].bar);
+    });
+  });
+
+  it('Does not redact null, or undefined special object values by default', async () => {
+    const specialObject: CustomObject = {
+      foo: true,
+      bar: true
+    };
+    const redactor: ObjectRedactor = new ObjectRedactor({
+      customObjects: [specialObject],
+      secretKeys: [],
+      redactNullOrUndefined: false
+    });
+    const obj = { foo: null, bar: undefined };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({ foo: null, bar: undefined });
+  });
+      
+  it('Can redact null, or undefined special object values if specified', async () => {
+    const specialObject: CustomObject = {
+      foo: true,
+      bar: true
+    };
+    const redactor: ObjectRedactor = new ObjectRedactor({
+      customObjects: [specialObject],
+      redactNullOrUndefined: true
+    });
+    const obj = { foo: null, bar: undefined };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({ foo: DEFAULT_REDACTED_TEXT, bar: DEFAULT_REDACTED_TEXT });
+  });
+
+
+  it('Uses the secretManager to determine if a string-specified value is a secret key', async () => {
+    const specialObject: CustomObject = {
+      name: false,
+      kind: false,
+      value: 'name'
+    };
+
+    const redactor: ObjectRedactor = new ObjectRedactor({
+      customObjects: [specialObject],
+      secretKeys: [/email/]
+    });
+    const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'email',
+      kind: 'String',
+      value: DEFAULT_REDACTED_TEXT
+    });
+  });
+
+  it('Uses the secretManager to determine if a string-specified value is a secret key and can handle arrays', async () => {
+    const specialObject: CustomObject = {
+      name: false,
+      kind: false,
+      value: 'name'
+    };
+
+    const redactor: ObjectRedactor = new ObjectRedactor({
+      customObjects: [specialObject],
+      secretKeys: [/email/]
+    });
+    const obj = { name: 'email', kind: 'String', value: ["foo", "bar"] };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'email',
+      kind: 'String',
+      value: [DEFAULT_REDACTED_TEXT, DEFAULT_REDACTED_TEXT]
+    });
+  });
+
+  it('Does not redact a value if the string-specified field does not contain a secret key', async () => {
+    const specialObject: CustomObject = {
+      name: false,
+      kind: false,
+      value: 'name'
+    };
+
+    const redactor: ObjectRedactor = new ObjectRedactor({
+      customObjects: [specialObject],
+      secretKeys: [/email/]
+    });
+    const obj = {
+      name: 'notredacted',
+      kind: 'String',
+      value: 'foo.bar@gmail.com'
+    };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'notredacted',
+      kind: 'String',
+      value: 'foo.bar@gmail.com'
+    });
+  });
+
+  it('Does not redact a value or fail if the string-specified field does not exist', async () => {
+    const specialObject: CustomObject = {
+      name: false,
+      kind: false,
+      value: 'foobar'
+    };
+
+    const redactor: ObjectRedactor = new ObjectRedactor({
+      customObjects: [specialObject],
+      secretKeys: [/email/]
+    });
+    const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'email',
+      kind: 'String',
+      value: 'foo.bar@gmail.com'
     });
   });
 });
