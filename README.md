@@ -211,6 +211,7 @@ console.log(result); // 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b
 * If a key is marked for redaction but its value is an object then it will be redacted according to normal rules.
 * **Priority supercedes all other redactions**
   * if custom object located in a deeply nested `deepSecretKey` object then it will be evaluated according to custom object rules, not `deepSecretKey` rules.
+  * If a customObject is found inside another custom object being evaluated then its rules will supercede the parent
 * **CustomObjects MUST be an exact match**
   * If a key exists which is not present in the object being evaluated it is not a match
   * If the object being evaluated contains an extra key it is not a match
@@ -235,16 +236,20 @@ A custom object takes the following format:
 | `Deep` | Similar in functionality to `deepSecretKeys`; redact if primitive and redact all values if an object |
 | `Shallow` | Similar in functionality to `secretKeys`; redact if primitive and revert to normal rules if an object |
 | `Pass` | Do not redact if primitive value; revert to normal rules if an object |
-| `Ignore` | Do not redact whatsoever |
+| `Ignore` | Do not redact object whatsoever |
 
 ### Example
-TODO UPDATE
 ```
 const myCustomObject = {
-  name: false,
-  type: false,
-  id: true,
-  value: "name"
+  name: CustomObjectMatchType.Ignore,
+  type: CustomObjectMatchType.Ignore,
+  shallowValue: "name",
+  deepValue: "type",
+  shallow: CustomObjectMatchType.Shallow,
+  deep: CustomObjectMatchType.Deep,
+  full: CustomObjectMatchType.Full,
+  pass: CustomObjectMatchType.Pass,
+  ignore: CustomObjectMatchType.Ignore
 };
 
 const myJsonObject = {
@@ -253,29 +258,52 @@ const myJsonObject = {
   data: [
     {
       name: "email",
-      type: "String",
-      id: 1122,
-      value: "foo.bar@example.com"
-    },
-    {
-      name: "message",
-      type: "String",
-      id: 1122,
-      value: "Hello, World!"
+      type: "Secure",
+      shallowValue: "foo.bar@example.com",
+      deepValue: "foobar",
+      shallow: "hello",
+      deep: "hello",
+      full: "hello",
+      pass: "hello",
+      ignore: "hello"
     },
     {
       name: "email",
-      type: "Object",
-      id: 1122,
-      value: {
-        foo: "bar",
-        email: "myemail@email.com"
+      type: "Secure",
+      shallowValue: {
+        hello: "world",
+        email: "foobar"
+      },
+      deepValue: {
+        hello: "world",
+        email: "foobar"
+      },
+      shallow: {
+        hello: "world",
+        email: "foobar"
+      },
+      deep: {
+        hello: "world",
+        email: "foobar"
+      },
+      full: {
+        hello: "world",
+        email: "foobar"
+      },
+      pass: {
+        hello: "world",
+        email: "foobar"
+      },
+      ignore: {
+        hello: "world",
+        email: "foobar"
       }
     }
   ]
 };
 const fieldRedactor = new FieldRedactor({
   secretKeys: [/email/],
+  deepSecretKeys: [/secure/i],
   customObjects: [myCustomObject]
 });
 const result = await fieldRedactor.redact(myJsonObject);
@@ -290,40 +318,65 @@ Yields the following to the console:
   data: [
     {
       name: "email",
-      type: "String",
-      id: "REDACTED",
-      value: "REDACTED"
-    },
-    {
-      name: "message",
-      type: "String",
-      id: "REDACTED",
-      value: "Hello, World!"
+      type: "Secure",
+      shallowValue: "REDACTED",
+      deepValue: "REDACTED",
+      shallow: "REDACTED",
+      deep: "REDACTED",
+      full: "REDACTED",
+      pass: "hello",
+      ignore: "hello"
     },
     {
       name: "email",
-      type: "Object",
-      id: "REDACTED",
-      value: {
-        foo: "bar",
+      type: "Secure",
+      shallowValue: {
+        hello: "world",
         email: "REDACTED"
+      },
+      deepValue: {
+        hello: "REDACTED",
+        email: "REDACTED"
+      },
+      shallow: {
+        hello: "world",
+        email: "REDACTED"
+      },
+      deep: {
+        hello: "REDACTED",
+        email: "REDACTED"
+      },
+      full: "REDACTED",
+      pass: {
+        hello: "world",
+        email: "REDACTED"
+      },
+      ignore: {
+        hello: "world",
+        email: "foobar"
       }
     }
   ]
 };
 ```
 * Both objects in the data array matched the custom object and were redacted accordingly
-* `name` and `type` field were never redacted as the custom object specified `false`
-* `id` field was always redacted as the custom object specified `true`
-* `value` field was conditionally redacted based on the value for field `"name"` as specified by the custom object
-  * It was redacted in the first object because the `"name"` value was `"email"`, which was a secret.
-  * It was *not* redacted in the second object because the `"name"` value was `"message"` which was not a secret.
-  * It was redacted in the third object according to normal object redaction rules as the value was an object.
+* `name` and `type` field were never redacted because `CustomObjectMatchType` was `Ignore`
+* `shallowValue` had key specifier `name`, the value of which was `email` which matched shallowKey `/email/`
+  * Value was redacted when primitive and according to `shallowKeys` rules when an object
+* `deepValue` had key specifier `type`, the value of which was `Secure` which matched deepKey `/secure/i`
+  * Value was redacted when primitive and according to `deepKeys` rules when an object
+* `shallow` field was redacted when primitive and assessed normally when object because `CustomObjectMatchType` was `Shallow`
+* `deep` field was redacted when primitive and fully redacted because `CustomObjectMatchType` was `Deep`
+* `full` field was always stringified and redacted regardless of type because `CustomObjectMatchType` was `Full`
+* `pass` field was not redacted when primitive but assessed normally when object because `CustomObjectMatchType` was `Pass`
+* `ignore` field was completely ignored regardless of type
+
+As one can see, combining a list of secret keys, deep secret keys, and custom objects with sibling checks yields a quite powerful and customizable tool capable of conditionally redacting a broad variety of JSON inputs correctly according to a single configuration.
 
 ## ignoreBooleans Configuration
 * type: `boolean`
 * default: `false`
-* effect: If set to true `boolean` values will not be redacted
+* effect: If set to true `boolean` values will never be redacted
 
 ### Example
 ```
@@ -352,7 +405,7 @@ Yields the following result:
 ## ignoreNullOrUndefined Configuration
 * type: `boolean`
 * default: `true`
-* effect: If set to false `null` and `undefined` values will be redacted
+* effect: If set to true `null` and `undefined` values will never be redacted.
 
 ### Example
 ```
@@ -383,6 +436,7 @@ Yields the following result:
 * default: `[]`
 * effect: Dates with the given moment formats will be ignored.
   * Useful if your application is globally redacting dates but wants to preserve certain values, such as timestamps.
+*Note: This will be replaced in the future as Moment.js is no longer a well-supported tool*
 
 ### Example
 ```
@@ -415,23 +469,23 @@ The following example illustrates the power and utility of this library when con
 ```
 const myRedactor = (text: string) => Promise.resolve("REDACTED");
 const metadataCustomObject = {
-  name: false,
-  type: false,
-  id: true,
+  name: CustomObjectMatchTypes.Pass,
+  type: CustomObjectMatchTypes.Pass,
+  id: CustomObjectMatchTypes.Shallow,
   value: "name"
 };
 
 const actionsCustomObject = {
-  userId: false,
-  field: false,
-  action: false,
+  userId: CustomObjectMatchTypes.Pass,
+  field: CustomObjectMatchTypes.Pass,
+  action: CustomObjectMatchTypes.Pass,
   value: "field"
 }
 
 const fieldRedactor = new FieldRedactor({
   redactor: myRedactor,
   secretKeys: [/email/, /name/i, /someSecretData/, /children/],
-  deepSecretKeys: [/accountInfo/i, /someDeepSecretData/i],
+  deepSecretKeys: [/accountInfo/i, /someDeepSecretData/i, /privateInfo/i],
   customObjects: [metadataCustomObject, actionsCustomObject],
   ignoreNullOrUndefined: false,
   redactDates: true
@@ -482,9 +536,20 @@ const myJsonObjectToRedact = {
     },
     {
       name: "children",
-      type: Array,
+      type: "Array",
       id: 20,
       value: ["John, "Paul","Ringo", "George"]
+    },
+    {
+      name: "privateInfo",
+      type: "Object",
+      id: 20,
+      value: {
+        mySecretThings: {
+          a: "foo",
+          b: "bar"
+        }
+      }
     }
   ],
   hobbies: ["Basketball", "Baseball", "Tennis"],
@@ -549,6 +614,17 @@ Yields the following to the console:
       type: Array,
       id:  "REDACTED",
       value: ["REDACTED", "REDACTED", "REDACTED", "REDACTED"]
+    },
+    {
+      name: "privateInfo",
+      type: "Object",
+      id: "REDACTED",
+      value: {
+        mySecretThings: {
+          a: "REDACTED",
+          b: "REDACTED"
+        }
+      }
     }
   ],
   hobbies: ["Basketball", "Baseball", "Tennis"],
@@ -561,8 +637,8 @@ Yields the following to the console:
 * Only data in `contactInfo` which matched a `secretKey` was redacted
 * Object data in someSecretData was only redacted if the key was a `secretKey`
 * All object data in `someDeepSecretData` was redacted as it was specified as a `deepSecretKey`.
-* object data in `actions` matched the `actionsCustomObject` so the value was conditionally redacted if the `field` value was a secret
-* object data in `metadata` matched the `metadataCustomObject` so the value was conditionally redacted if the `name` value was a secret
+* object data in `actions` matched the `actionsCustomObject` so the value was conditionally redacted if the `field` value was a secret/deepSecret
+* object data in `metadata` matched the `metadataCustomObject` so the value was conditionally redacted if the `name` value was a secret/deepSecret
 
 ---
 
@@ -576,8 +652,9 @@ Features are ordered by priority.
 | 3. In-Place Redaction | **Complete** | Allow users to redact objects in-place instead of copying first |
 | 4. Extract Redactor Logic | **Complete** | Refactor to allow redactor logic to be re-used by CustomObjectRedactor |
 | 5.a Do not allow Nested Custom Objects | **Complete** | Remove concept of nested custom objects in preparation for "pass" logic |
-| 5.b Custom Object DeepSecret | **In Progress** | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
-| 5.c Custom Object Type Enum | Not Started | Change CustomObject boolean flag to enum for Deep, Shallow, Pass-Through, Full, or Skip |
+| 5.b Custom Object DeepSecret | **Complete** | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
+| 5.c Custom Object Type Enum | **Complete** | Change CustomObject boolean flag to enum for Deep, Shallow, Pass-Through, Full, or Skip |
+| 5.d Custom Object Full Secret | Not Started | Allow FullSecret Redaction for Custom Objects |
 | 6. Date Changes | Not Started | Change how Date parsing is handled |
 | 6a. ignoreDates | Not Started | Change ignoreDates to ignoreDateFormats to be more accurate to its use case |
 | 6b. ignoreDates | Not Started | Add option to ignore actual Date values |
