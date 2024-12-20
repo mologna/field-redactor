@@ -2,7 +2,7 @@ import rfdc from 'rfdc';
 import * as crypto from 'crypto';
 import { SecretManager } from '../../src/secretManager';
 import { validInputWithAllTypes, validNestedInputWithAllTypes } from '../mocks/inputMocks';
-import { CustomObject, Redactor } from '../../src/types';
+import { CustomObject, CustomObjectMatchType, Redactor } from '../../src/types';
 import { ObjectRedactor } from '../../src/objectRedactor';
 import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { CustomObjectChecker } from '../../src/customObjectChecker';
@@ -400,6 +400,80 @@ describe('ObjectRedactor', () => {
         }
       ]
     });
+  });
+
+  it('Can handle nested objects of various CustomObjectMatchTypes correctly', async () => {
+    const customObject: CustomObject = {
+      full: CustomObjectMatchType.Full,
+      deep: CustomObjectMatchType.Deep,
+      shallow: CustomObjectMatchType.Shallow,
+      pass: CustomObjectMatchType.Pass,
+      ignore: CustomObjectMatchType.Ignore
+    };
+
+    customObjectChecker = new CustomObjectChecker([customObject]);
+    secretManager = new SecretManager({ secretKeys: [/fizz/, /fazz/]});
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+    const nestedObject = {
+      bim: "bam",
+      biff: ["buzz", { bam: "bar"}]
+    };
+    const obj = {
+      full: {
+        bim: "bam",
+        biff: ["buzz", { bam: "bar"}]
+      },
+      deep: {
+        bim: "bam",
+        biff: ["buzz", { bam: "bar"}]
+      },
+      shallow: {
+        bim: "bam",
+        fizz: "buzz",
+        fazz: ["buzz", { bam: "bar"}]
+      },
+      pass: {
+        bam: "bam",
+        fizz: "buzz"
+      },
+      ignore: {
+        bam: "bam",
+        fizz: "buzz"
+      }
+    };
+
+    await redactor.redactInPlace(obj);
+    expect(obj.full).toMatch(JSON.stringify(nestedObject));
+    expect(obj.deep).toEqual({ bim: DEFAULT_REDACTED_TEXT , biff: [ DEFAULT_REDACTED_TEXT, { bam: DEFAULT_REDACTED_TEXT }]});
+    expect(obj.shallow).toEqual({bim : "bam", fizz: DEFAULT_REDACTED_TEXT, fazz: [DEFAULT_REDACTED_TEXT, { bam: "bar" }]});
+    expect(obj.pass).toEqual({bam: "bam", fizz: DEFAULT_REDACTED_TEXT});
+    expect(obj.ignore).toEqual({bam: "bam", fizz: "buzz"});
+  });
+
+  it('Can handle primitive object types of various CustomObjectMatchTypes correctly', async () => {
+    const customObject: CustomObject = {
+      full: CustomObjectMatchType.Full,
+      deep: CustomObjectMatchType.Deep,
+      shallow: CustomObjectMatchType.Shallow,
+      pass: CustomObjectMatchType.Pass,
+      ignore: CustomObjectMatchType.Ignore
+    };
+
+    customObjectChecker = new CustomObjectChecker([customObject]);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+    const obj = {
+      full: "bam",
+      deep: "bam",
+      shallow: "bam",
+      pass: "bam",
+      ignore: "bam"
+    };
+    await redactor.redactInPlace(obj);
+    expect(obj.full).toBe(DEFAULT_REDACTED_TEXT);
+    expect(obj.deep).toBe(DEFAULT_REDACTED_TEXT);
+    expect(obj.shallow).toBe(DEFAULT_REDACTED_TEXT);
+    expect(obj.pass).toBe(DEFAULT_REDACTED_TEXT);
+    expect(obj.ignore).toBe("bam");
   });
 
   it('Uses the secretManager to determine if a string-specified value is a secret key and can handle arrays', async () => {

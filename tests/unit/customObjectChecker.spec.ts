@@ -1,24 +1,30 @@
 import { CustomObjectChecker } from '../../src/customObjectChecker';
-import { CustomObject } from '../../src/types';
+import { CustomObject, CustomObjectMatchType } from '../../src/types';
 
 describe('CustomObjectChecker', () => {
-  it('getMatchingSpecialObject Can determine a special object with only one level', () => {
+  it('getMatchingSpecialObject Can determine a special object with all types', () => {
     const specialObject: CustomObject = {
-      foo: true,
-      bar: false
+      foo: CustomObjectMatchType.Full,
+      bar: CustomObjectMatchType.Deep,
+      bim: CustomObjectMatchType.Shallow,
+      bam: CustomObjectMatchType.Pass,
+      buzz: CustomObjectMatchType.Ignore
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
       foo: 'fizz',
-      bar: 'buzz'
+      bar: 'buzz',
+      bim: 'bam',
+      bam: 'bim',
+      buzz: 'fizzbuzz'
     });
     expect(result).toEqual(specialObject);
   });
 
   it('Can handle null and undefined field values', () => {
     const specialObject: CustomObject = {
-      foo: true,
-      bar: false
+      foo: CustomObjectMatchType.Full,
+      bar: CustomObjectMatchType.Ignore
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
@@ -30,8 +36,8 @@ describe('CustomObjectChecker', () => {
 
   it('Can handle array field values', () => {
     const specialObject: CustomObject = {
-      foo: true,
-      bar: false
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow,
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
@@ -43,8 +49,8 @@ describe('CustomObjectChecker', () => {
 
   it('getMatchingSpecialObject Does not consider an object a special object if it has extra keys despite matching everywhere else', () => {
     const specialObject: CustomObject = {
-      foo: true,
-      bar: false
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow,
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
@@ -57,9 +63,9 @@ describe('CustomObjectChecker', () => {
 
   it('getMatchingSpecialObject Does not consider an object a special object if the special object has extra keys despite matching everywhere else', () => {
     const specialObject: CustomObject = {
-      foo: true,
-      bar: false,
-      bim: true
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow,
+      bim: CustomObjectMatchType.Shallow,
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
@@ -71,8 +77,8 @@ describe('CustomObjectChecker', () => {
 
   it('getMatchingSpecialObject considers values which are objects to still be a match', () => {
     const specialObject: CustomObject = {
-      foo: true,
-      bar: true
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow,
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
@@ -86,7 +92,7 @@ describe('CustomObjectChecker', () => {
 
   it('getMatchingSpecialObject considers values which are objects to still be a match for string matches', () => {
     const specialObject: CustomObject = {
-      foo: true,
+      foo: CustomObjectMatchType.Shallow,
       bar: 'foo'
     };
     const checker = new CustomObjectChecker([specialObject]);
@@ -103,8 +109,8 @@ describe('CustomObjectChecker', () => {
 
   it('getMatchingSpecialObject Does not consider null, undefined, array, or non-object values special objects', () => {
     const specialObject: CustomObject = {
-      foo: true,
-      bar: false
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow,
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result1 = checker.getMatchingCustomObject(null);
@@ -122,12 +128,12 @@ describe('CustomObjectChecker', () => {
   it('Can find a matching special object in a list of special objects', () => {
     const specialObjects: CustomObject[] = [
       {
-        foo: true,
-        bar: false
+        foo: CustomObjectMatchType.Shallow,
+        bar: CustomObjectMatchType.Shallow
       },
       {
-        bim: true,
-        bam: true
+        bim: CustomObjectMatchType.Shallow,
+        bam: CustomObjectMatchType.Shallow
       }
     ];
     const checker = new CustomObjectChecker(specialObjects);
