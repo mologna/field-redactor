@@ -69,7 +69,7 @@ export class ObjectRedactor {
     for (const key of Object.keys(customObject)) {
       if (this.isObject(value[key]) || Array.isArray(value[key])) {
         await this.handleCustomObjectValueIfObjectOrArray(value, key, customObject);
-      } else if (typeof customObject[key] === 'boolean' || typeof customObject[key] === 'number') {
+      } else if (typeof customObject[key] === 'number') {
         value[key] = await this.handleCustomObjectMatchValueIfPrimitive(value[key], customObject[key]);
       } else if (this.shouldForceShallowRedactionOfCustomObjectKey(value, customObject, key)) {
         value[key] = await this.redactFields(value[customObject[key] as string], value[key], false, true);
@@ -77,7 +77,10 @@ export class ObjectRedactor {
     }
   }
 
-  private async handleCustomObjectMatchValueIfPrimitive(value: any, matchValue: CustomObjectMatchType | boolean): Promise<any> {
+  private async handleCustomObjectMatchValueIfPrimitive(
+    value: any,
+    matchValue: CustomObjectMatchType | boolean
+  ): Promise<any> {
     switch (matchValue) {
       case CustomObjectMatchType.Full:
         return this.primitiveRedactor.redactValue(JSON.stringify(value));
@@ -91,7 +94,11 @@ export class ObjectRedactor {
     }
   }
 
-  private async handleCustomObjectValueIfObjectOrArray(value: any, key: string, customObject: CustomObject): Promise<void> {
+  private async handleCustomObjectValueIfObjectOrArray(
+    value: any,
+    key: string,
+    customObject: CustomObject
+  ): Promise<void> {
     if (typeof customObject[key] === 'string' && !!value[customObject[key]]) {
       if (this.secretManager.isDeepSecretKey(value[customObject[key]])) {
         await this.redactObjectFieldsInPlace(value[key], true);
@@ -111,8 +118,6 @@ export class ObjectRedactor {
           return this.redactObjectFieldsInPlace(value[key], true);
         case CustomObjectMatchType.Shallow:
         case CustomObjectMatchType.Pass:
-        case true:
-        case false:
           return this.redactObjectFieldsInPlace(value[key], false);
         case CustomObjectMatchType.Ignore:
           return Promise.resolve();
@@ -121,9 +126,11 @@ export class ObjectRedactor {
   }
 
   private shouldForceShallowRedactionOfCustomObjectKey(value: any, customObject: CustomObject, key: string): boolean {
-    return typeof customObject[key] === 'string' &&
-    !!value[customObject[key]] &&
-    this.secretManager.isSecretKey(value[customObject[key]]);
+    return (
+      typeof customObject[key] === 'string' &&
+      !!value[customObject[key]] &&
+      this.secretManager.isSecretKey(value[customObject[key]])
+    );
   }
 
   private isObject(value: any) {

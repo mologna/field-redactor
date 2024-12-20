@@ -37,7 +37,7 @@ describe('CustomObjectChecker', () => {
   it('Can handle array field values', () => {
     const specialObject: CustomObject = {
       foo: CustomObjectMatchType.Shallow,
-      bar: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
@@ -50,7 +50,7 @@ describe('CustomObjectChecker', () => {
   it('getMatchingSpecialObject Does not consider an object a special object if it has extra keys despite matching everywhere else', () => {
     const specialObject: CustomObject = {
       foo: CustomObjectMatchType.Shallow,
-      bar: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
@@ -65,7 +65,7 @@ describe('CustomObjectChecker', () => {
     const specialObject: CustomObject = {
       foo: CustomObjectMatchType.Shallow,
       bar: CustomObjectMatchType.Shallow,
-      bim: CustomObjectMatchType.Shallow,
+      bim: CustomObjectMatchType.Shallow
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
@@ -78,7 +78,7 @@ describe('CustomObjectChecker', () => {
   it('getMatchingSpecialObject considers values which are objects to still be a match', () => {
     const specialObject: CustomObject = {
       foo: CustomObjectMatchType.Shallow,
-      bar: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
@@ -110,7 +110,7 @@ describe('CustomObjectChecker', () => {
   it('getMatchingSpecialObject Does not consider null, undefined, array, or non-object values special objects', () => {
     const specialObject: CustomObject = {
       foo: CustomObjectMatchType.Shallow,
-      bar: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result1 = checker.getMatchingCustomObject(null);

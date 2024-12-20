@@ -1,4 +1,4 @@
-import moment from "moment";
+import moment from 'moment';
 
 export type Redactor = (value: any) => Promise<string>;
 
@@ -8,10 +8,10 @@ export enum CustomObjectMatchType {
   Shallow,
   Pass,
   Ignore
-};
+}
 
 export type CustomObject = {
-  [key: string]: boolean | CustomObjectMatchType | string;
+  [key: string]: CustomObjectMatchType | string;
 };
 
 export type PrimitiveRedactorConfig = {
@@ -19,7 +19,7 @@ export type PrimitiveRedactorConfig = {
   ignoreBooleans?: boolean;
   ignoreDates?: moment.MomentBuiltinFormat[];
   ignoreNullOrUndefined?: boolean;
-}
+};
 
 export type SecretManagerConfig = {
   secretKeys?: RegExp[];
@@ -27,8 +27,9 @@ export type SecretManagerConfig = {
   fullSecretKeys?: RegExp[];
 };
 
-export type FieldRedactorConfig = PrimitiveRedactorConfig & SecretManagerConfig & {
-  replacementText?: string;
-  redactor?: Redactor;
-  customObjects?: CustomObject[];
-};
+export type FieldRedactorConfig = PrimitiveRedactorConfig &
+  SecretManagerConfig & {
+    replacementText?: string;
+    redactor?: Redactor;
+    customObjects?: CustomObject[];
+  };

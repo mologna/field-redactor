@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { FieldRedactor } from '../../src/fieldRedactor';
-import { CustomObject, Redactor } from '../../src/types';
+import { CustomObject, CustomObjectMatchType, Redactor } from '../../src/types';
 import {
   logDataToRedact,
   sha256HashedAddress,
@@ -17,15 +17,15 @@ describe('FieldRedactor Integration Test', () => {
     // Setup
     const secretKeys = [/email/, /mdn/, /balance/, /address/, /city/, /fullname/i];
     const customDataObject: CustomObject = {
-      name: false,
-      type: false,
+      name: CustomObjectMatchType.Ignore,
+      type: CustomObjectMatchType.Ignore,
       value: 'name'
     };
 
     const customUserObject: CustomObject = {
-      id: true,
-      roles: false,
-      groups: false
+      id: CustomObjectMatchType.Shallow,
+      roles: CustomObjectMatchType.Ignore,
+      groups: CustomObjectMatchType.Ignore
     };
 
     const redactor: Redactor = (val: any) =>
