@@ -3,7 +3,7 @@ import { PrimitiveRedactorConfig, Redactor } from './types';
 
 export class PrimitiveRedactor {
   private static DEFAULT_REDACTED_TEXT = 'REDACTED';
-  private ignoreDates?: [moment.MomentBuiltinFormat];
+  private ignoreDates?: moment.MomentBuiltinFormat[];
   private ignoreBooleans: boolean;
   private ignoreNullOrUndefined: boolean;
   private redactor: Redactor = (val: any) => Promise.resolve(PrimitiveRedactor.DEFAULT_REDACTED_TEXT);

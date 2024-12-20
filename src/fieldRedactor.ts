@@ -8,7 +8,6 @@ import { CustomObjectChecker } from './customObjectChecker';
 export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private readonly objectRedactor: ObjectRedactor;
-
   constructor(config?: FieldRedactorConfig) {
     const {
       ignoreBooleans,
