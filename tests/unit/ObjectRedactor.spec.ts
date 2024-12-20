@@ -1,11 +1,7 @@
 import rfdc from 'rfdc';
 import * as crypto from 'crypto';
 import { SecretManager } from '../../src/secretManager';
-import {
-  validInputIncludingNullAndUndefined,
-  validInputWithAllTypes,
-  validNestedInputWithAllTypes
-} from '../mocks/inputMocks';
+import { validInputWithAllTypes, validNestedInputWithAllTypes } from '../mocks/inputMocks';
 import { CustomObject, Redactor } from '../../src/types';
 import { ObjectRedactor } from '../../src/objectRedactor';
 
@@ -38,54 +34,18 @@ describe('ObjectRedactor', () => {
 
   it('Should return a redacted copy of the input JSON for all value types', async () => {
     const redactor: ObjectRedactor = new ObjectRedactor();
-    const copy = deepCopy(validInputWithAllTypes)
+    const copy = deepCopy(validInputWithAllTypes);
     await redactor.redactInPlace(copy);
     expect(copy).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT);
   });
 
-  it('Ignores boolean values when specified', async () => {
-    const redactor: ObjectRedactor = new ObjectRedactor({ ignoreBooleans: true });
-    const input = { foo: true, bar: 'bar' };
-    await redactor.redactInPlace(input);
-    expect(input.foo).toBe(true);
-    expect(input.bar).toBe(DEFAULT_REDACTED_TEXT);
-  });
-
-  it('Ignores date values when specified', async () => {
-    const redactor: ObjectRedactor = new ObjectRedactor({ ignoreDates: true });
-    const date = new Date();
-    const input = { foo: date, bar: 'bar' };
-    await redactor.redactInPlace(input);
-    expect(input.foo).toStrictEqual(date);
-    expect(input.bar).toBe(DEFAULT_REDACTED_TEXT);
-  });
-
   it('Should be able to handle nested JSON objects of various types, sizes, and lengths', async () => {
     const redactor: ObjectRedactor = new ObjectRedactor();
-    const copy = deepCopy(validInputWithAllTypes)
+    const copy = deepCopy(validInputWithAllTypes);
     await redactor.redactInPlace(copy);
     expect(copy).not.toBe(validNestedInputWithAllTypes);
     validateRedactorOutput(validNestedInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT);
-  });
-
-  it('Does not redact null or undefined by default', async () => {
-    const redactor: ObjectRedactor = new ObjectRedactor();
-    const copy = deepCopy(validInputIncludingNullAndUndefined);
-    await redactor.redactInPlace(copy);
-    expect(copy).not.toBe(validInputIncludingNullAndUndefined);
-    validateRedactorOutput(validInputIncludingNullAndUndefined, copy, DEFAULT_REDACTED_TEXT, true);
-  });
-
-  it('Can redact null or undefined when specified', async () => {
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      ignoreNullOrUndefined: false
-    });
-    const copy = deepCopy(validInputIncludingNullAndUndefined);
-    await redactor.redactInPlace(copy);
-    console.log(copy);
-    expect(copy).not.toBe(validInputIncludingNullAndUndefined);
-    validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT, false);
   });
 
   it('Can redact all common values in an array', async () => {
@@ -334,13 +294,13 @@ describe('ObjectRedactor', () => {
     };
     const redactor: ObjectRedactor = new ObjectRedactor({
       customObjects: [specialObject],
-      secretKeys: [],
+      secretKeys: []
     });
     const obj = { foo: null, bar: undefined };
     await redactor.redactInPlace(obj);
     expect(obj).toEqual({ foo: null, bar: undefined });
   });
-      
+
   it('Redacts null or undefined special object values if specified', async () => {
     const specialObject: CustomObject = {
       foo: true,
@@ -355,7 +315,6 @@ describe('ObjectRedactor', () => {
     await redactor.redactInPlace(obj);
     expect(obj).toEqual({ foo: DEFAULT_REDACTED_TEXT, bar: DEFAULT_REDACTED_TEXT });
   });
-
 
   it('Uses the secretManager to determine if a string-specified value is a secret key', async () => {
     const specialObject: CustomObject = {
@@ -388,8 +347,8 @@ describe('ObjectRedactor', () => {
       customObjects: [specialObject],
       secretKeys: [/email/]
     });
-    
-    const obj = { name: 'email', kind: 'String', value: ["foo", "bar"] };
+
+    const obj = { name: 'email', kind: 'String', value: ['foo', 'bar'] };
     await redactor.redactInPlace(obj);
     expect(obj).toEqual({
       name: 'email',

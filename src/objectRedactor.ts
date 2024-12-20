@@ -14,7 +14,7 @@ export class ObjectRedactor {
       ignoreBooleans: config?.ignoreBooleans,
       ignoreDates: config?.ignoreDates,
       ignoreNullOrUndefined: config?.ignoreNullOrUndefined
-    })
+    });
     this.secretManager = new SecretManager({
       secretKeys: config?.secretKeys,
       deepSecretKeys: config?.deepSecretKeys,
@@ -54,7 +54,12 @@ export class ObjectRedactor {
     console.log(object);
   }
 
-  private async redactArrayFieldsInPlace(key: string, array: any[], forceDeepRedaction: boolean, forceShallowRedaction: boolean): Promise<any[]> {
+  private async redactArrayFieldsInPlace(
+    key: string,
+    array: any[],
+    forceDeepRedaction: boolean,
+    forceShallowRedaction: boolean
+  ): Promise<any[]> {
     const promises: Promise<any>[] = array.map(async (value) => {
       if (!this.isObject(value)) {
         return this.redactFields(key, value, forceDeepRedaction, forceShallowRedaction);
@@ -94,7 +99,12 @@ export class ObjectRedactor {
     return !!value && typeof value === 'object' && !(value instanceof Date) && !Array.isArray(value);
   }
 
-  private async redactFields(key: string, value: any, forceDeepRedaction: boolean, forceShallowRedaction: boolean): Promise<any> {
+  private async redactFields(
+    key: string,
+    value: any,
+    forceDeepRedaction: boolean,
+    forceShallowRedaction: boolean
+  ): Promise<any> {
     if (Array.isArray(value)) {
       return this.redactArrayFieldsInPlace(key, value, forceDeepRedaction, forceShallowRedaction);
     } else {
@@ -102,7 +112,12 @@ export class ObjectRedactor {
     }
   }
 
-  private async redactObjectFieldIfSecret(key: string, value: any, forceDeepRedactin: boolean, forceShallowRedaction: boolean): Promise<any> {
+  private async redactObjectFieldIfSecret(
+    key: string,
+    value: any,
+    forceDeepRedactin: boolean,
+    forceShallowRedaction: boolean
+  ): Promise<any> {
     if (forceShallowRedaction) {
       return this.primitiveRedactor.redactValue(value);
     } else if (forceDeepRedactin || this.secretManager.isSecretKey(key)) {

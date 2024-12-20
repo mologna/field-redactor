@@ -1,3 +1,5 @@
+import moment from "moment";
+
 export type Redactor = (value: any) => Promise<string>;
 
 export type CustomObject = {
@@ -7,7 +9,7 @@ export type CustomObject = {
 export type PrimitiveRedactorConfig = {
   redactor?: Redactor;
   ignoreBooleans?: boolean;
-  ignoreDates?: boolean;
+  ignoreDates?: [moment.MomentBuiltinFormat];
   ignoreNullOrUndefined?: boolean;
 }
 
