@@ -4,10 +4,16 @@ import { SecretManager } from '../../src/secretManager';
 import { validInputWithAllTypes, validNestedInputWithAllTypes } from '../mocks/inputMocks';
 import { CustomObject, Redactor } from '../../src/types';
 import { ObjectRedactor } from '../../src/objectRedactor';
+import { PrimitiveRedactor } from '../../src/primitiveRedactor';
+import { CustomObjectChecker } from '../../src/customObjectChecker';
 
 describe('ObjectRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
   const deepCopy = rfdc({ proto: true, circles: true });
+  let primitiveRedactor: PrimitiveRedactor;
+  let secretManager: SecretManager;
+  let customObjectChecker: CustomObjectChecker;
+  let basicObjectRedactor: ObjectRedactor;
 
   const validateRedactorOutput = (
     input: any,
@@ -32,18 +38,23 @@ describe('ObjectRedactor', () => {
     }
   };
 
+  beforeEach(() => {
+    primitiveRedactor = new PrimitiveRedactor({});
+    secretManager = new SecretManager({});
+    customObjectChecker = new CustomObjectChecker();
+    basicObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+  });
+
   it('Should return a redacted copy of the input JSON for all value types', async () => {
-    const redactor: ObjectRedactor = new ObjectRedactor();
     const copy = deepCopy(validInputWithAllTypes);
-    await redactor.redactInPlace(copy);
+    await basicObjectRedactor.redactInPlace(copy);
     expect(copy).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT);
   });
 
   it('Should be able to handle nested JSON objects of various types, sizes, and lengths', async () => {
-    const redactor: ObjectRedactor = new ObjectRedactor();
     const copy = deepCopy(validInputWithAllTypes);
-    await redactor.redactInPlace(copy);
+    await basicObjectRedactor.redactInPlace(copy);
     expect(copy).not.toBe(validNestedInputWithAllTypes);
     validateRedactorOutput(validNestedInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT);
   });
@@ -52,8 +63,7 @@ describe('ObjectRedactor', () => {
     const testArray = ['foo', new Date(), 12, 123.45, true];
 
     const input = { testArray };
-    const redactor: ObjectRedactor = new ObjectRedactor();
-    await redactor.redactInPlace(input);
+    await basicObjectRedactor.redactInPlace(input);
     input.testArray.forEach((value: any) => {
       expect(value).toBe(DEFAULT_REDACTED_TEXT);
     });
@@ -62,8 +72,7 @@ describe('ObjectRedactor', () => {
   it('Skips nulls and undefined when included in an array', async () => {
     const testArray = [null, undefined];
     const input = { testArray };
-    const redactor: ObjectRedactor = new ObjectRedactor();
-    await redactor.redactInPlace(input);
+    await basicObjectRedactor.redactInPlace(input);
     input.testArray.forEach((value: any, index: number) => {
       expect(value).toBe(testArray[index]);
     });
@@ -78,8 +87,7 @@ describe('ObjectRedactor', () => {
     ];
 
     const input = { testArray };
-    const redactor: ObjectRedactor = new ObjectRedactor();
-    const result = await redactor.redactInPlace(input);
+    const result = await basicObjectRedactor.redactInPlace(input);
     expect(result.testArray[0].foo).toBe(DEFAULT_REDACTED_TEXT);
     expect(result.testArray[0].password).toBe(DEFAULT_REDACTED_TEXT);
   });
@@ -90,8 +98,7 @@ describe('ObjectRedactor', () => {
     };
 
     const input = { testObject };
-    const redactor: ObjectRedactor = new ObjectRedactor();
-    const result = await redactor.redactInPlace(input);
+    const result = await basicObjectRedactor.redactInPlace(input);
     expect(result.testObject.foo.length).toBe(3);
     result.testObject.foo.forEach((value: any) => {
       expect(value).toBe(DEFAULT_REDACTED_TEXT);
@@ -115,8 +122,7 @@ describe('ObjectRedactor', () => {
     };
 
     const input = { testObject };
-    const redactor: ObjectRedactor = new ObjectRedactor();
-    const result = await redactor.redactInPlace(input);
+    const result = await basicObjectRedactor.redactInPlace(input);
     expect(result.testObject.foo.length).toBe(testObject.foo.length);
     expect(result.testObject.foo[0].bar).toBe(DEFAULT_REDACTED_TEXT);
     expect(result.testObject.foo[0].password).toBe(DEFAULT_REDACTED_TEXT);
@@ -128,9 +134,8 @@ describe('ObjectRedactor', () => {
 
   it('Can redact only specific keys', async () => {
     const secretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      secretKeys
-    });
+    secretManager = new SecretManager({ secretKeys });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
     const copy = deepCopy(validInputWithAllTypes);
     await redactor.redactInPlace(copy);
     expect(copy).not.toBe(validInputWithAllTypes);
@@ -140,10 +145,8 @@ describe('ObjectRedactor', () => {
   it('Redacts all values under a deeply nested key when specified', async () => {
     const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
     const deepSecretKeys: RegExp[] = [/parentAccount/];
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      secretKeys,
-      deepSecretKeys
-    });
+    secretManager = new SecretManager({ secretKeys, deepSecretKeys });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
     const simpleNestedInputWithDeepSecret = {
       password: 'password123',
       username: 'child',
@@ -168,10 +171,8 @@ describe('ObjectRedactor', () => {
   });
 
   it('Can perform fullRedaction on objects and arrays when specified', async () => {
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      fullSecretKeys: [/foo/, /bar/],
-      secretKeys: []
-    });
+    secretManager = new SecretManager({ fullSecretKeys: [/foo/, /bar/], secretKeys: [] });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
     const input = {
       foo: {
@@ -197,13 +198,12 @@ describe('ObjectRedactor', () => {
     const customRedactor: Redactor = (value: any) => {
       return Promise.resolve(crypto.createHash('md5').update(value).digest('hex'));
     };
+    const primitiveRedactor = new PrimitiveRedactor({ redactor: customRedactor });
     const simpleObject = {
       foo
     };
 
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      redactor: customRedactor
-    });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
     const result = await redactor.redactInPlace(simpleObject);
     expect(result.foo).toBe(hashedFoo);
@@ -224,9 +224,8 @@ describe('ObjectRedactor', () => {
       }
     };
 
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      customObjects: specialObjects
-    });
+    customObjectChecker = new CustomObjectChecker(specialObjects);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
     const result = await redactor.redactInPlace(input);
     expect(result.mySpecial.foo).toBe(DEFAULT_REDACTED_TEXT);
@@ -246,9 +245,8 @@ describe('ObjectRedactor', () => {
       bar: 'bar'
     };
 
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      customObjects: specialObjects
-    });
+    customObjectChecker = new CustomObjectChecker(specialObjects);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
     const result = await redactor.redactInPlace(input);
     expect(result.foo).toBe(DEFAULT_REDACTED_TEXT);
@@ -276,9 +274,8 @@ describe('ObjectRedactor', () => {
       ]
     };
 
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      customObjects: specialObjects
-    });
+    customObjectChecker = new CustomObjectChecker(specialObjects);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
     const result = await redactor.redactInPlace(input);
     result.me.forEach((value: any, index: number) => {
@@ -292,10 +289,10 @@ describe('ObjectRedactor', () => {
       foo: true,
       bar: true
     };
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      customObjects: [specialObject],
-      secretKeys: []
-    });
+
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    secretManager = new SecretManager({ secretKeys: [] });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
     const obj = { foo: null, bar: undefined };
     await redactor.redactInPlace(obj);
     expect(obj).toEqual({ foo: null, bar: undefined });
@@ -306,11 +303,11 @@ describe('ObjectRedactor', () => {
       foo: true,
       bar: true
     };
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      customObjects: [specialObject],
-      secretKeys: [],
-      ignoreNullOrUndefined: false
-    });
+    secretManager = new SecretManager({ secretKeys: [] });
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
     const obj = { foo: null, bar: undefined };
     await redactor.redactInPlace(obj);
     expect(obj).toEqual({ foo: DEFAULT_REDACTED_TEXT, bar: DEFAULT_REDACTED_TEXT });
@@ -323,10 +320,11 @@ describe('ObjectRedactor', () => {
       value: 'name'
     };
 
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      customObjects: [specialObject],
-      secretKeys: [/email/]
-    });
+    const secretKeys: RegExp[] = [/email/];
+    secretManager = new SecretManager({ secretKeys });
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
     const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
     await redactor.redactInPlace(obj);
     expect(obj).toEqual({
@@ -343,10 +341,10 @@ describe('ObjectRedactor', () => {
       value: 'name'
     };
 
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      customObjects: [specialObject],
-      secretKeys: [/email/]
-    });
+    const secretKeys: RegExp[] = [/email/];
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    secretManager = new SecretManager({ secretKeys });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
     const obj = { name: 'email', kind: 'String', value: ['foo', 'bar'] };
     await redactor.redactInPlace(obj);
@@ -363,11 +361,11 @@ describe('ObjectRedactor', () => {
       kind: false,
       value: 'name'
     };
+    const secretKeys: RegExp[] = [/email/];
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    secretManager = new SecretManager({ secretKeys });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      customObjects: [specialObject],
-      secretKeys: [/email/]
-    });
     const obj = {
       name: 'notredacted',
       kind: 'String',
@@ -388,10 +386,11 @@ describe('ObjectRedactor', () => {
       value: 'foobar'
     };
 
-    const redactor: ObjectRedactor = new ObjectRedactor({
-      customObjects: [specialObject],
-      secretKeys: [/email/]
-    });
+    const secretKeys: RegExp[] = [/email/];
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    secretManager = new SecretManager({ secretKeys });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
     const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
     await redactor.redactInPlace(obj);
     expect(obj).toEqual({

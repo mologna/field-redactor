@@ -1,13 +1,41 @@
 import rfdc from 'rfdc';
 import { FieldRedactorConfig } from './types';
 import { ObjectRedactor } from './objectRedactor';
+import { PrimitiveRedactor } from './primitiveRedactor';
+import { SecretManager } from './secretManager';
+import { CustomObjectChecker } from './customObjectChecker';
 
 export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private readonly objectRedactor: ObjectRedactor;
 
   constructor(config?: FieldRedactorConfig) {
-    this.objectRedactor = new ObjectRedactor(config);
+    const {
+      ignoreBooleans,
+      ignoreDates,
+      ignoreNullOrUndefined,
+      redactor,
+      secretKeys,
+      deepSecretKeys,
+      fullSecretKeys,
+      customObjects
+    } = config || {};
+
+    const primitiveRedactor = new PrimitiveRedactor({
+      ignoreBooleans,
+      ignoreDates,
+      ignoreNullOrUndefined,
+      redactor
+    });
+
+    const secretManager = new SecretManager({
+      secretKeys,
+      deepSecretKeys,
+      fullSecretKeys
+    });
+    const customObjectChecker = new CustomObjectChecker(customObjects);
+
+    this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
   }
 
   /**

@@ -1,27 +1,14 @@
-import { CustomObject, FieldRedactorConfig } from './types';
+import { CustomObject } from './types';
 import { SecretManager } from './secretManager';
 import { CustomObjectChecker } from './customObjectChecker';
 import { PrimitiveRedactor } from './primitiveRedactor';
 
 export class ObjectRedactor {
-  private secretManager: SecretManager;
-  private primitiveRedactor: PrimitiveRedactor;
-  private checker: CustomObjectChecker;
-  constructor(config?: FieldRedactorConfig) {
-    console.log(config?.ignoreNullOrUndefined);
-    this.primitiveRedactor = new PrimitiveRedactor({
-      redactor: config?.redactor,
-      ignoreBooleans: config?.ignoreBooleans,
-      ignoreDates: config?.ignoreDates,
-      ignoreNullOrUndefined: config?.ignoreNullOrUndefined
-    });
-    this.secretManager = new SecretManager({
-      secretKeys: config?.secretKeys,
-      deepSecretKeys: config?.deepSecretKeys,
-      fullSecretKeys: config?.fullSecretKeys
-    });
-    this.checker = new CustomObjectChecker(config?.customObjects);
-  }
+  constructor(
+    private readonly primitiveRedactor: PrimitiveRedactor,
+    private readonly secretManager: SecretManager,
+    private readonly checker: CustomObjectChecker
+  ) {}
 
   public async redactInPlace(value: any): Promise<any> {
     const customObject = this.checker.getMatchingCustomObject(value);
