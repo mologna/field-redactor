@@ -19,18 +19,19 @@ If this object is placed in a data set with many others, and only it and a few o
 Basic usage of the FieldRedactor is straightforward but not recommended. Object redaction can be performed either in-place or return the redacted object:
 
 ```
-const myJsonObject = { foo: "bar" };
+const myJsonObject = { foo: "bar", fizz: null };
 const fieldRedactor = new FieldRedactor();
 
 // return redacted result
 const result = await fieldRedactor.redact(myJsonObject);
-console.log(myJsonObject); // { foo: "REDACTED" }
-console.log(result); // { foo: "REDACTED" }
+console.log(myJsonObject); // { foo: "bar", fizz: null }
+console.log(result); // { foo: "REDACTED", fizz: null }
 
 // redact in place
 await fieldRedactor.redactInPlace(myJsonObject);
-console.log(myJsonObject); // { foo: "REDACTED" }
+console.log(myJsonObject); // { foo: "REDACTED", fizz: null }
 ```
+* `null` and `undefined` values are not redacted by default.
 
 There are far more performant ways to perform global value redaction - the power of this tool comes from its customization.
 
@@ -45,7 +46,8 @@ There are far more performant ways to perform global value redaction - the power
 | fullSecretKeys | RegExp[] | [] | Specifies which values at any level of the JSON object should be stringified and fully redacted. Primarily pertinent to objects and arrays.
 | customObjects | CustomObject | [] | Specifies custom objects which require more fine-tuned redaction logic such as referencing sibling keys. See custom objects section. |
 | ignoreBooleans | boolean | false | If true booleans will not be redacted even if secret. |
-| ignoreDates | boolean | false| If true Dates/Date Strings will not be redacted even if secret. |
+| ignoreDates | moment.MomentBuiltinFormat[] | [] | If provided, dates and values which match the specified format will not be redacted |
+| ignoreNullOrUndefined | boolean | true | If true nulls and undefines will not be redacted |
 
 
 ## secretKeys Configuration 
@@ -206,6 +208,7 @@ console.log(result); // 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b
 **One of the most powerful features of this library and why it was written in the first place.**
 * type: `CustomObject[]`
 * Any object that matches this custom object will be redacted based on the custom object configuration.
+* If a key is marked for redaction but its value is an object then it will be redacted according to normal rules.
 * **Priority supercedes all other redactions**
   * if custom object located in a deeply nested `deepSecretKey` object then it will be evaluated according to custom object rules, not `deepSecretKey` rules.
 * **CustomObjects MUST be an exact match**
@@ -216,14 +219,13 @@ console.log(result); // 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b
 A custom object takes the following format:
 ```
 {
-  [key]: true | false | string | CustomObject
+  [key]: true | false | string
 }
 ```
 * key: Specifies the key to match on
 * `true` - always redact
 * `false` - never redact
 * `string` redact if the sibling key with this name has a secret value
-* `CustomObject` Custom Objects can be nested.
 
 #### Example
 ```
@@ -249,6 +251,15 @@ const myJsonObject = {
       type: "String",
       id: 1122,
       value: "Hello, World!"
+    },
+    {
+      name: "email",
+      type: "Object",
+      id: 1122,
+      value: {
+        foo: "bar",
+        email: "myemail@email.com"
+      }
     }
   ]
 };
@@ -277,6 +288,15 @@ Yields the following to the console:
       type: "String",
       id: "REDACTED",
       value: "Hello, World!"
+    },
+    {
+      name: "email",
+      type: "Object",
+      id: "REDACTED",
+      value: {
+        foo: "bar",
+        email: "REDACTED"
+      }
     }
   ]
 };
@@ -287,6 +307,96 @@ Yields the following to the console:
 * `value` field was conditionally redacted based on the value for field `"name"` as specified by the custom object
   * It was redacted in the first object because the `"name"` value was `"email"`, which was a secret.
   * It was *not* redacted in the second object because the `"name"` value was `"message"` which was not a secret.
+  * It was redacted in the third object according to normal object redaction rules as the value was an object.
+
+## ignoreBooleans Configuration
+* type: `boolean`
+* default: `false`
+* effect: If set to true `boolean` values will not be redacted
+
+### Example
+```
+const myJsonObject = { 
+  foo: "bar",
+  fizz: false,
+  buzz: true
+  };
+const fieldRedactor = new FieldRedactor({
+  ignoreBooleans: true
+});
+
+// return redacted result
+const result = await fieldRedactor.redact(myJsonObject);
+console.log(result);
+```
+Yields the following result:
+```
+{
+  foo: "REDACTED",
+  fizz: false,
+  buzz: true
+}
+```
+
+## ignoreNullOrUndefined Configuration
+* type: `boolean`
+* default: `true`
+* effect: If set to false `null` and `undefined` values will be redacted
+
+### Example
+```
+const myJsonObject = { 
+  foo: "bar",
+  fizz: null,
+  buzz: undefined
+  };
+const fieldRedactor = new FieldRedactor({
+  ignoreNullOrUndefined: false
+});
+
+// return redacted result
+const result = await fieldRedactor.redact(myJsonObject);
+console.log(result);
+```
+Yields the following result:
+```
+{
+  foo: "REDACTED",
+  fizz: "REDACTED",
+  buzz: "REDACTED"
+}
+```
+
+## ignoreDates Configuration
+* type: `moment.MomentBuiltinFormat[]`
+* default: `[]`
+* effect: Dates with the given moment formats will be ignored.
+  * Useful if your application is globally redacting dates but wants to preserve certain values, such as timestamps.
+
+### Example
+```
+const myJsonObject = { 
+  foo: "2024-12-20T19:10:03.042Z",
+  fizz: "Fri Dec 20 2024",
+  buzz: "2024/12/20"
+  };
+
+const fieldRedactor = new FieldRedactor({
+  ignoreDates: [moment.ISO_8601]
+});
+
+// return redacted result
+const result = await fieldRedactor.redact(myJsonObject);
+console.log(result);
+```
+Yields the following result:
+```
+{
+  foo: "REDACTED",
+  fizz: "Fri Dec 20 2024",
+  buzz: "2024/12/20"
+}
+```
 
 # Full Example Using All Configurations
 The following example illustrates the power and utility of this library when conditionally redacting JSON output for logging or other purposes. It allows users to specify the manner of redaction, which fields should be redacted, which fields should be deeply redacted, whether or not Dates should be redacted, and specify custom object logic where the key identifying whether or not a specific field should be redacted may not be the key for the field itself. I find it a quite useful tool!
@@ -312,7 +422,7 @@ const fieldRedactor = new FieldRedactor({
   secretKeys: [/email/, /name/i, /someSecretData/, /children/],
   deepSecretKeys: [/accountInfo/i, /someDeepSecretData/i],
   customObjects: [metadataCustomObject, actionsCustomObject],
-  redactNullOrUndefined: true,
+  ignoreNullOrUndefined: false,
   redactDates: true
 });
 
@@ -453,13 +563,15 @@ Features are ordered by priority.
 | 1. Asynchronous Support | **Complete** | Allow for asynchronous encryption schemes |
 | 2. Full Redaction | **Complete** | Allow the entire array/object to be stringified and redacted
 | 3. In-Place Redaction | **Complete** | Allow users to redact objects in-place instead of copying first |
-| 4. Extract Redactor Logic | **In Progress** | Refactor to allow redactor logic to be re-used by CustomObjectRedactor |
-| 5.a Do not allow Nested Custom Objects | Not Started | Remove concept of nested custom objects in preparation for "pass" logic |
+| 4. Extract Redactor Logic | **Complete** | Refactor to allow redactor logic to be re-used by CustomObjectRedactor |
+| 5.a Do not allow Nested Custom Objects | **Complete** | Remove concept of nested custom objects in preparation for "pass" logic |
 | 5.b Custom Object DeepSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
 | 5.c Custom Object FullSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
 | 5.d Custom Object Pass-Through | Not Started | Allow a fourth option in CustomObjects to denote that key should be evaluated by normal rules |
+| 6. Date Changes | Not Started | Change how Date parsing is handled |
+| 6a. ignoreDates | Not Started | Change ignoreDates to ignoreDateFormats to be more accurate to its use case |
+| 6b. ignoreDates | Not Started | Add option to ignore actual Date values |
+| 6c. Moment.js removal | Not Started | Remove dependency on Moment.js as its no longer supported |
 | 6. Separate Custom Secrets | Not Started | Allow users to configure custom objects with separate secrets |
 | 7. Integration Tests | Not Started | Implement a much more full-fledged suite of integration tests |
 | 8. Remove ReplacementText config | Not Started | Remove replacement text config that's no longer needed |
-
-
