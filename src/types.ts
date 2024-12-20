@@ -3,7 +3,7 @@ import moment from "moment";
 export type Redactor = (value: any) => Promise<string>;
 
 export type CustomObject = {
-  [key: string]: boolean | CustomObject | string;
+  [key: string]: boolean | string;
 };
 
 export type PrimitiveRedactorConfig = {

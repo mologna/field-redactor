@@ -38,7 +38,6 @@ export class ObjectRedactor {
         }
       }
     }
-    console.log(object);
   }
 
   private async redactArrayFieldsInPlace(
@@ -68,18 +67,29 @@ export class ObjectRedactor {
 
   public async redactCustomObjectInPlace(value: any, customObject: CustomObject): Promise<void> {
     for (const key of Object.keys(customObject)) {
-      if (this.isObject(value[key])) {
-        this.redactObjectFieldsInPlace(value[key]);
+      if (this.shouldForceDeepRedactionOfCustomObjectKey(value, customObject, key)) {
+        await this.redactObjectFieldsInPlace(value[key], true);
+      } else if (this.isObject(value[key])) {      
+        await this.redactObjectFieldsInPlace(value[key], false);
       } else if (typeof customObject[key] === 'boolean' && customObject[key] === true) {
         value[key] = await this.redactFields(key, value[key], false, true);
-      } else if (
-        typeof customObject[key] === 'string' &&
-        !!value[customObject[key]] &&
-        this.secretManager.isSecretKey(value[customObject[key]])
-      ) {
-        value[key] = await this.redactFields(value[customObject[key]], value[key], false, true);
+      } else if (this.shouldForceShallowRedactionOfCustomObjectKey(value, customObject, key)) {
+        value[key] = await this.redactFields(value[customObject[key] as string], value[key], false, true);
       }
     }
+  }
+
+  private shouldForceDeepRedactionOfCustomObjectKey(value: any, customObject: CustomObject, key: string): boolean {
+    if (!this.isObject(value[key]) && !Array.isArray(value[key])) {
+      return false
+    }
+    return typeof customObject[key] === 'string' && !!value[customObject[key]] && this.secretManager.isDeepSecretKey(value[customObject[key]]);
+  }
+
+  private shouldForceShallowRedactionOfCustomObjectKey(value: any, customObject: CustomObject, key: string): boolean {
+    return typeof customObject[key] === 'string' &&
+    !!value[customObject[key]] &&
+    this.secretManager.isSecretKey(value[customObject[key]]);
   }
 
   private isObject(value: any) {

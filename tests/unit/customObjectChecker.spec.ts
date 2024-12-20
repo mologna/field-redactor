@@ -69,32 +69,34 @@ describe('CustomObjectChecker', () => {
     expect(result).toBeUndefined();
   });
 
-  it('getMatchingSpecialObject Can handle nested special objects one deep', () => {
+  it('getMatchingSpecialObject considers values which are objects to still be a match', () => {
     const specialObject: CustomObject = {
-      foo: {
-        bar: true,
-        baz: false
-      }
+      foo: true,
+      bar: true
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
-      foo: { bar: 'fizz', baz: 'buzz' }
+      foo: {
+        bim: 'bam'
+      },
+      bar: 'buzz'
     });
     expect(result).toEqual(specialObject);
   });
 
-  it('getMatchingSpecialObject Can handle nested special objects multiple layers deep', () => {
+  it('getMatchingSpecialObject considers values which are objects to still be a match for string matches', () => {
     const specialObject: CustomObject = {
-      foo: {
-        bar: {
-          baz: true,
-          bim: false
-        }
-      }
+      foo: true,
+      bar: 'foo'
     };
     const checker = new CustomObjectChecker([specialObject]);
     const result = checker.getMatchingCustomObject({
-      foo: { bar: { baz: 'fizz', bim: 'false' } }
+      foo: {
+        bim: 'bam'
+      },
+      bar: {
+        fizz: 'buzz'
+      }
     });
     expect(result).toEqual(specialObject);
   });

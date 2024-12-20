@@ -28,16 +28,6 @@ export class CustomObjectChecker {
     for (const key of Object.keys(value)) {
       if (!customObject.hasOwnProperty(key)) {
         return false;
-      } else if (Array.isArray(value[key])) {
-        continue;
-      } else if (value[key] && typeof value[key] === 'object') {
-        if (typeof customObject[key] !== 'object') {
-          return false;
-        }
-        const nestedCustomObjectIsValid = this.isCustomObject(value[key], customObject[key]);
-        if (!nestedCustomObjectIsValid) {
-          return false;
-        }
       }
     }
 

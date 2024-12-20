@@ -565,9 +565,8 @@ Features are ordered by priority.
 | 3. In-Place Redaction | **Complete** | Allow users to redact objects in-place instead of copying first |
 | 4. Extract Redactor Logic | **Complete** | Refactor to allow redactor logic to be re-used by CustomObjectRedactor |
 | 5.a Do not allow Nested Custom Objects | **Complete** | Remove concept of nested custom objects in preparation for "pass" logic |
-| 5.b Custom Object DeepSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
-| 5.c Custom Object FullSecret | Not Started | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
-| 5.d Custom Object Pass-Through | Not Started | Allow a fourth option in CustomObjects to denote that key should be evaluated by normal rules |
+| 5.b Custom Object DeepSecret | **In Progress** | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
+| 5.c Custom Object Type Enum | Not Started | Change CustomObject boolean flag to enum for Deep, Shallow, Pass-Through, Full, or Skip |
 | 6. Date Changes | Not Started | Change how Date parsing is handled |
 | 6a. ignoreDates | Not Started | Change ignoreDates to ignoreDateFormats to be more accurate to its use case |
 | 6b. ignoreDates | Not Started | Add option to ignore actual Date values |

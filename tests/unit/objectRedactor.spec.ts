@@ -334,6 +334,74 @@ describe('ObjectRedactor', () => {
     });
   });
 
+  it('Uses the secretManager to determine if a string-specified value is a deep secret key', async () => {
+    const specialObject: CustomObject = {
+      name: false,
+      kind: false,
+      value: 'name'
+    };
+
+    const deepSecretKeys: RegExp[] = [/email/];
+    secretManager = new SecretManager({ deepSecretKeys, secretKeys: [] });
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const obj = {
+      name: 'email',
+      kind: 'String',
+      value: {
+        foo: 'bar',
+        fizz: 'buzz'
+      }
+    };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'email',
+      kind: 'String',
+      value: {
+        foo: DEFAULT_REDACTED_TEXT,
+        fizz: DEFAULT_REDACTED_TEXT
+      }
+    });
+  });
+
+  it('Uses the secretManager to determine if a string-specified value is a deep secret key and can handle arrays', async () => {
+    const specialObject: CustomObject = {
+      name: false,
+      kind: false,
+      value: 'name'
+    };
+
+    const deepSecretKeys: RegExp[] = [/email/];
+    secretManager = new SecretManager({ deepSecretKeys, secretKeys: [] });
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const obj = {
+      name: 'email',
+      kind: 'String',
+      value: [
+        'fizz',
+        {
+          foo: 'bar',
+          fizz: 'buzz'
+        }
+      ]
+    };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'email',
+      kind: 'String',
+      value: [
+        DEFAULT_REDACTED_TEXT,
+        {
+          foo: DEFAULT_REDACTED_TEXT,
+          fizz: DEFAULT_REDACTED_TEXT
+        }
+      ]
+    });
+  });
+
   it('Uses the secretManager to determine if a string-specified value is a secret key and can handle arrays', async () => {
     const specialObject: CustomObject = {
       name: false,
@@ -346,12 +414,12 @@ describe('ObjectRedactor', () => {
     secretManager = new SecretManager({ secretKeys });
     const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
-    const obj = { name: 'email', kind: 'String', value: ['foo', 'bar'] };
+    const obj = { name: 'email', kind: 'String', value: ['foo', 'bar', { fizz: 'buzz' }] };
     await redactor.redactInPlace(obj);
     expect(obj).toEqual({
       name: 'email',
       kind: 'String',
-      value: [DEFAULT_REDACTED_TEXT, DEFAULT_REDACTED_TEXT]
+      value: [DEFAULT_REDACTED_TEXT, DEFAULT_REDACTED_TEXT, { fizz: 'buzz' }]
     });
   });
 
