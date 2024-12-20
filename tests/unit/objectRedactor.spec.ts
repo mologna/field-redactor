@@ -209,200 +209,7 @@ describe('ObjectRedactor', () => {
     expect(result.foo).toBe(hashedFoo);
   });
 
-  it('Can redact special objects', async () => {
-    const specialObjects = [
-      {
-        foo: true,
-        bar: false
-      }
-    ];
-
-    const input = {
-      mySpecial: {
-        foo: 'foo',
-        bar: 'bar'
-      }
-    };
-
-    customObjectChecker = new CustomObjectChecker(specialObjects);
-    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
-
-    const result = await redactor.redactInPlace(input);
-    expect(result.mySpecial.foo).toBe(DEFAULT_REDACTED_TEXT);
-    expect(result.mySpecial.bar).toBe(input.mySpecial.bar);
-  });
-
-  it('Can handle top-level special objects', async () => {
-    const specialObjects = [
-      {
-        foo: true,
-        bar: false
-      }
-    ];
-
-    const input = {
-      foo: 'foo',
-      bar: 'bar'
-    };
-
-    customObjectChecker = new CustomObjectChecker(specialObjects);
-    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
-
-    const result = await redactor.redactInPlace(input);
-    expect(result.foo).toBe(DEFAULT_REDACTED_TEXT);
-    expect(result.bar).toBe(input.bar);
-  });
-
-  it('Can handle special objects in arrays', async () => {
-    const specialObjects = [
-      {
-        foo: true,
-        bar: false
-      }
-    ];
-
-    const input = {
-      me: [
-        {
-          foo: 'foo',
-          bar: 'bar'
-        },
-        {
-          foo: 'foo',
-          bar: 'bar'
-        }
-      ]
-    };
-
-    customObjectChecker = new CustomObjectChecker(specialObjects);
-    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
-
-    const result = await redactor.redactInPlace(input);
-    result.me.forEach((value: any, index: number) => {
-      expect(value.foo).toBe(DEFAULT_REDACTED_TEXT);
-      expect(value.bar).toBe(input.me[index].bar);
-    });
-  });
-
-  it('Ignores null or undefined special object values by default', async () => {
-    const specialObject: CustomObject = {
-      foo: true,
-      bar: true
-    };
-
-    customObjectChecker = new CustomObjectChecker([specialObject]);
-    secretManager = new SecretManager({ secretKeys: [] });
-    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
-    const obj = { foo: null, bar: undefined };
-    await redactor.redactInPlace(obj);
-    expect(obj).toEqual({ foo: null, bar: undefined });
-  });
-
-  it('Redacts null or undefined special object values if specified', async () => {
-    const specialObject: CustomObject = {
-      foo: true,
-      bar: true
-    };
-    secretManager = new SecretManager({ secretKeys: [] });
-    customObjectChecker = new CustomObjectChecker([specialObject]);
-    primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false });
-    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
-
-    const obj = { foo: null, bar: undefined };
-    await redactor.redactInPlace(obj);
-    expect(obj).toEqual({ foo: DEFAULT_REDACTED_TEXT, bar: DEFAULT_REDACTED_TEXT });
-  });
-
-  it('Uses the secretManager to determine if a string-specified value is a secret key', async () => {
-    const specialObject: CustomObject = {
-      name: false,
-      kind: false,
-      value: 'name'
-    };
-
-    const secretKeys: RegExp[] = [/email/];
-    secretManager = new SecretManager({ secretKeys });
-    customObjectChecker = new CustomObjectChecker([specialObject]);
-
-    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
-    const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
-    await redactor.redactInPlace(obj);
-    expect(obj).toEqual({
-      name: 'email',
-      kind: 'String',
-      value: DEFAULT_REDACTED_TEXT
-    });
-  });
-
-  it('Uses the secretManager to determine if a string-specified value is a deep secret key', async () => {
-    const specialObject: CustomObject = {
-      name: false,
-      kind: false,
-      value: 'name'
-    };
-
-    const deepSecretKeys: RegExp[] = [/email/];
-    secretManager = new SecretManager({ deepSecretKeys, secretKeys: [] });
-    customObjectChecker = new CustomObjectChecker([specialObject]);
-    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
-
-    const obj = {
-      name: 'email',
-      kind: 'String',
-      value: {
-        foo: 'bar',
-        fizz: 'buzz'
-      }
-    };
-    await redactor.redactInPlace(obj);
-    expect(obj).toEqual({
-      name: 'email',
-      kind: 'String',
-      value: {
-        foo: DEFAULT_REDACTED_TEXT,
-        fizz: DEFAULT_REDACTED_TEXT
-      }
-    });
-  });
-
-  it('Uses the secretManager to determine if a string-specified value is a deep secret key and can handle arrays', async () => {
-    const specialObject: CustomObject = {
-      name: false,
-      kind: false,
-      value: 'name'
-    };
-
-    const deepSecretKeys: RegExp[] = [/email/];
-    secretManager = new SecretManager({ deepSecretKeys, secretKeys: [] });
-    customObjectChecker = new CustomObjectChecker([specialObject]);
-    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
-
-    const obj = {
-      name: 'email',
-      kind: 'String',
-      value: [
-        'fizz',
-        {
-          foo: 'bar',
-          fizz: 'buzz'
-        }
-      ]
-    };
-    await redactor.redactInPlace(obj);
-    expect(obj).toEqual({
-      name: 'email',
-      kind: 'String',
-      value: [
-        DEFAULT_REDACTED_TEXT,
-        {
-          foo: DEFAULT_REDACTED_TEXT,
-          fizz: DEFAULT_REDACTED_TEXT
-        }
-      ]
-    });
-  });
-
-  it('Can handle nested objects of various CustomObjectMatchTypes correctly', async () => {
+  it('Can handle CustomObjectMatchTypes correctly', async () => {
     const customObject: CustomObject = {
       full: CustomObjectMatchType.Full,
       deep: CustomObjectMatchType.Deep,
@@ -476,10 +283,182 @@ describe('ObjectRedactor', () => {
     expect(obj.ignore).toBe("bam");
   });
 
+  it('Can redact nested special objects', async () => {
+    const specialObjects = [
+      {
+        foo: CustomObjectMatchType.Shallow,
+        bar: CustomObjectMatchType.Ignore
+      }
+    ];
+
+    const input = {
+      mySpecial: {
+        foo: 'foo',
+        bar: 'bar'
+      }
+    };
+
+    customObjectChecker = new CustomObjectChecker(specialObjects);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const result = await redactor.redactInPlace(input);
+    expect(result.mySpecial.foo).toBe(DEFAULT_REDACTED_TEXT);
+    expect(result.mySpecial.bar).toBe(input.mySpecial.bar);
+  });
+
+  it('Can handle special objects in arrays', async () => {
+    const specialObjects = [
+      {
+        foo: CustomObjectMatchType.Shallow,
+        bar: CustomObjectMatchType.Ignore
+      }
+    ];
+
+    const input = {
+      me: [
+        {
+          foo: 'foo',
+          bar: 'bar'
+        },
+        {
+          foo: 'foo',
+          bar: 'bar'
+        }
+      ]
+    };
+
+    customObjectChecker = new CustomObjectChecker(specialObjects);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const result = await redactor.redactInPlace(input);
+    result.me.forEach((value: any, index: number) => {
+      expect(value.foo).toBe(DEFAULT_REDACTED_TEXT);
+      expect(value.bar).toBe(input.me[index].bar);
+    });
+  });
+
+  it('Ignores null or undefined special object values by default', async () => {
+    const specialObject: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
+    };
+
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    secretManager = new SecretManager({ secretKeys: [] });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+    const obj = { foo: null, bar: undefined };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({ foo: null, bar: undefined });
+  });
+
+  it('Redacts null or undefined special object values if specified', async () => {
+    const specialObject: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
+    };
+    secretManager = new SecretManager({ secretKeys: [] });
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const obj = { foo: null, bar: undefined };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({ foo: DEFAULT_REDACTED_TEXT, bar: DEFAULT_REDACTED_TEXT });
+  });
+
+  it('Uses the secretManager to determine if a string-specified value is a secret key', async () => {
+    const specialObject: CustomObject = {
+      name: CustomObjectMatchType.Ignore,
+      kind: CustomObjectMatchType.Ignore,
+      value: 'name'
+    };
+
+    const secretKeys: RegExp[] = [/email/];
+    secretManager = new SecretManager({ secretKeys });
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+    const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'email',
+      kind: 'String',
+      value: DEFAULT_REDACTED_TEXT
+    });
+  });
+
+  it('Uses the secretManager to determine if a string-specified value is a deep secret key', async () => {
+    const specialObject: CustomObject = {
+      name: CustomObjectMatchType.Ignore,
+      kind: CustomObjectMatchType.Ignore,
+      value: 'name'
+    };
+
+    const deepSecretKeys: RegExp[] = [/email/];
+    secretManager = new SecretManager({ deepSecretKeys, secretKeys: [] });
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const obj = {
+      name: 'email',
+      kind: 'String',
+      value: {
+        foo: 'bar',
+        fizz: 'buzz'
+      }
+    };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'email',
+      kind: 'String',
+      value: {
+        foo: DEFAULT_REDACTED_TEXT,
+        fizz: DEFAULT_REDACTED_TEXT
+      }
+    });
+  });
+
+  it('Uses the secretManager to determine if a string-specified value is a deep secret key and can handle arrays', async () => {
+    const specialObject: CustomObject = {
+      name: CustomObjectMatchType.Ignore,
+      kind: CustomObjectMatchType.Ignore,
+      value: 'name'
+    };
+
+    const deepSecretKeys: RegExp[] = [/email/];
+    secretManager = new SecretManager({ deepSecretKeys, secretKeys: [] });
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const obj = {
+      name: 'email',
+      kind: 'String',
+      value: [
+        'fizz',
+        {
+          foo: 'bar',
+          fizz: 'buzz'
+        }
+      ]
+    };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'email',
+      kind: 'String',
+      value: [
+        DEFAULT_REDACTED_TEXT,
+        {
+          foo: DEFAULT_REDACTED_TEXT,
+          fizz: DEFAULT_REDACTED_TEXT
+        }
+      ]
+    });
+  });
+
   it('Uses the secretManager to determine if a string-specified value is a secret key and can handle arrays', async () => {
     const specialObject: CustomObject = {
-      name: false,
-      kind: false,
+      name: CustomObjectMatchType.Ignore,
+      kind: CustomObjectMatchType.Ignore,
       value: 'name'
     };
 
@@ -499,8 +478,8 @@ describe('ObjectRedactor', () => {
 
   it('Does not redact a value if the string-specified field does not contain a secret key', async () => {
     const specialObject: CustomObject = {
-      name: false,
-      kind: false,
+      name: CustomObjectMatchType.Ignore,
+      kind: CustomObjectMatchType.Ignore,
       value: 'name'
     };
     const secretKeys: RegExp[] = [/email/];
@@ -523,8 +502,8 @@ describe('ObjectRedactor', () => {
 
   it('Does not redact a value or fail if the string-specified field does not exist', async () => {
     const specialObject: CustomObject = {
-      name: false,
-      kind: false,
+      name: CustomObjectMatchType.Ignore,
+      kind: CustomObjectMatchType.Ignore,
       value: 'foobar'
     };
 

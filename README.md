@@ -219,15 +219,26 @@ console.log(result); // 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b
 A custom object takes the following format:
 ```
 {
-  [key]: true | false | string
+  [key]: CustomObjectMatchType | string
 }
 ```
 * key: Specifies the key to match on
-* `true` - always redact
-* `false` - never redact
-* `string` redact if the sibling key with this name has a secret value
+* Value: Specifies manner in which to redact
+  * `CustomObjectMatchType` - see `CustomObjectMatchType section
+  * `string` - redacts if the sibling key with this name has a value which is a secret
+    * If the value is an object then it will be redacted according to if the matching key is a `secretKey` or `deepSecretKey`
 
-#### Example
+### CustomObjectMatchType Enum
+| Key | Description |
+| --- | ----------- |
+| `Full` | Similar in functionality to `fullSecretKeys`; stringify the value and redact |
+| `Deep` | Similar in functionality to `deepSecretKeys`; redact if primitive and redact all values if an object |
+| `Shallow` | Similar in functionality to `secretKeys`; redact if primitive and revert to normal rules if an object |
+| `Pass` | Do not redact if primitive value; revert to normal rules if an object |
+| `Ignore` | Do not redact whatsoever |
+
+### Example
+TODO UPDATE
 ```
 const myCustomObject = {
   name: false,

@@ -2,8 +2,16 @@ import moment from "moment";
 
 export type Redactor = (value: any) => Promise<string>;
 
+export enum CustomObjectMatchType {
+  Full,
+  Deep,
+  Shallow,
+  Pass,
+  Ignore
+};
+
 export type CustomObject = {
-  [key: string]: boolean | string;
+  [key: string]: boolean | CustomObjectMatchType | string;
 };
 
 export type PrimitiveRedactorConfig = {
