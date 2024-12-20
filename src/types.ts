@@ -4,17 +4,21 @@ export type CustomObject = {
   [key: string]: boolean | CustomObject | string;
 };
 
+export type PrimitiveRedactorConfig = {
+  redactor?: Redactor;
+  ignoreBooleans?: boolean;
+  ignoreDates?: boolean;
+  ignoreNullOrUndefined?: boolean;
+}
+
 export type SecretManagerConfig = {
   secretKeys?: RegExp[];
   deepSecretKeys?: RegExp[];
   fullSecretKeys?: RegExp[];
 };
 
-export type FieldRedactorConfig = SecretManagerConfig & {
-  redactNullOrUndefined?: boolean;
+export type FieldRedactorConfig = PrimitiveRedactorConfig & SecretManagerConfig & {
   replacementText?: string;
   redactor?: Redactor;
   customObjects?: CustomObject[];
-  ignoreBooleans?: boolean;
-  ignoreDates?: boolean;
 };

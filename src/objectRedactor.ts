@@ -1,27 +1,26 @@
-import { CustomObject, FieldRedactorConfig, Redactor } from './types';
+import { CustomObject, FieldRedactorConfig } from './types';
 import { SecretManager } from './secretManager';
 import { CustomObjectChecker } from './customObjectChecker';
+import { PrimitiveRedactor } from './primitiveRedactor';
 
 export class ObjectRedactor {
-  private static DEFAULT_REDACTED_TEXT = 'REDACTED';
   private secretManager: SecretManager;
-  private redactNullOrUndefined: boolean;
-  private redactor: Redactor;
+  private primitiveRedactor: PrimitiveRedactor;
   private checker: CustomObjectChecker;
-  private readonly ignoreBooleans: boolean = false;
-  private readonly ignoreDates: boolean = false;
   constructor(config?: FieldRedactorConfig) {
-    this.redactNullOrUndefined = config?.redactNullOrUndefined || false;
+    console.log(config?.ignoreNullOrUndefined);
+    this.primitiveRedactor = new PrimitiveRedactor({
+      redactor: config?.redactor,
+      ignoreBooleans: config?.ignoreBooleans,
+      ignoreDates: config?.ignoreDates,
+      ignoreNullOrUndefined: config?.ignoreNullOrUndefined
+    })
     this.secretManager = new SecretManager({
       secretKeys: config?.secretKeys,
       deepSecretKeys: config?.deepSecretKeys,
       fullSecretKeys: config?.fullSecretKeys
     });
-    const replacementText = config?.replacementText || ObjectRedactor.DEFAULT_REDACTED_TEXT;
-    this.redactor = config?.redactor || ((val: any) => Promise.resolve(replacementText));
     this.checker = new CustomObjectChecker(config?.customObjects);
-    this.ignoreBooleans = config?.ignoreBooleans || false;
-    this.ignoreDates = config?.ignoreDates || false;
   }
 
   public async redactInPlace(value: any): Promise<any> {
@@ -39,7 +38,7 @@ export class ObjectRedactor {
     for (const key of Object.keys(object)) {
       const value: any = object[key];
       if (this.secretManager.isFullSecretKey(key)) {
-        object[key] = await this.redactValue(JSON.stringify(value));
+        object[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value));
       } else if (!this.isObject(object[key])) {
         object[key] = await this.redactFields(key, value, forceDeepRedaction, false);
       } else {
@@ -52,6 +51,7 @@ export class ObjectRedactor {
         }
       }
     }
+    console.log(object);
   }
 
   private async redactArrayFieldsInPlace(key: string, array: any[], forceDeepRedaction: boolean, forceShallowRedaction: boolean): Promise<any[]> {
@@ -85,7 +85,7 @@ export class ObjectRedactor {
         !!value[customObject[key]] &&
         this.secretManager.isSecretKey(value[customObject[key]])
       ) {
-        value[key] = await this.redactFields(key, value[key], false, true);
+        value[key] = await this.redactFields(value[customObject[key]], value[key], false, true);
       }
     }
   }
@@ -95,56 +95,21 @@ export class ObjectRedactor {
   }
 
   private async redactFields(key: string, value: any, forceDeepRedaction: boolean, forceShallowRedaction: boolean): Promise<any> {
-    if (!value) {
-      return this.redactNullOrUndefinedValue(key, value, forceDeepRedaction);
-    } else if (Array.isArray(value)) {
+    if (Array.isArray(value)) {
       return this.redactArrayFieldsInPlace(key, value, forceDeepRedaction, forceShallowRedaction);
     } else {
-      return this.redactObjectFieldIfSecret(key, value, forceDeepRedaction || forceShallowRedaction);
+      return this.redactObjectFieldIfSecret(key, value, forceDeepRedaction, forceShallowRedaction);
     }
   }
 
-  private async redactObjectFieldIfSecret(key: string, value: any, forceRedaction: boolean): Promise<any> {
-    if (forceRedaction || this.secretManager.isSecretKey(key)) {
-      return this.redactValue(value);
+  private async redactObjectFieldIfSecret(key: string, value: any, forceDeepRedactin: boolean, forceShallowRedaction: boolean): Promise<any> {
+    if (forceShallowRedaction) {
+      return this.primitiveRedactor.redactValue(value);
+    } else if (forceDeepRedactin || this.secretManager.isSecretKey(key)) {
+      const result = await this.primitiveRedactor.redactValue(value);
+      return result;
+    } else {
+      return value;
     }
-
-    return value;
-  }
-
-  private async redactValue(value: any) {
-    if (typeof value === 'boolean') {
-      return this.redactBoolean(value);
-    } else if (value instanceof Date) {
-      return this.redactDate(value);
-    }
-
-    return this.redactAny(value);
-  }
-
-  private async redactNullOrUndefinedValue(
-    key: string,
-    value: null | undefined,
-    forceRedaction: boolean
-  ): Promise<null | undefined | string> {
-    if (!this.redactNullOrUndefined) {
-      return Promise.resolve(value);
-    } else if (forceRedaction || this.secretManager.isSecretKey(key)) {
-      return this.redactor(value);
-    }
-
-    return Promise.resolve(value);
-  }
-
-  private async redactBoolean(value: boolean): Promise<boolean | string> {
-    return this.ignoreBooleans ? Promise.resolve(value) : this.redactor(value);
-  }
-
-  private async redactDate(value: Date): Promise<Date | string> {
-    return this.ignoreDates ? Promise.resolve(value) : this.redactor(value);
-  }
-
-  private async redactAny(value: any): Promise<string> {
-    return this.redactor(value);
   }
 }
