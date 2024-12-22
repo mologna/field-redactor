@@ -654,7 +654,7 @@ Features are ordered by priority.
 | 5.a Do not allow Nested Custom Objects | **Complete** | Remove concept of nested custom objects in preparation for "pass" logic |
 | 5.b Custom Object DeepSecret | **Complete** | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
 | 5.c Custom Object Type Enum | **Complete** | Change CustomObject boolean flag to enum for Deep, Shallow, Pass-Through, Full, or Skip |
-| 5.d Custom Object Full Secret | Not Started | Allow FullSecret Redaction for Custom Objects |
+| 5.d Custom Object Full Secret | *In Progress* | Allow FullSecret Redaction for Custom Objects |
 | 6. Date Changes | Not Started | Change how Date parsing is handled |
 | 6a. ignoreDates | Not Started | Change ignoreDates to ignoreDateFormats to be more accurate to its use case |
 | 6b. ignoreDates | Not Started | Add option to ignore actual Date values |
