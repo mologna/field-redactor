@@ -69,28 +69,9 @@ export class ObjectRedactor {
     for (const key of Object.keys(customObject)) {
       if (this.isObject(value[key]) || Array.isArray(value[key])) {
         await this.handleCustomObjectValueIfObjectOrArray(value, key, customObject);
-      } else if (typeof customObject[key] === 'number') {
-        value[key] = await this.handleCustomObjectMatchValueIfPrimitive(value[key], customObject[key]);
-      } else if (this.shouldForceShallowRedactionOfCustomObjectKey(value, customObject, key)) {
-        value[key] = await this.redactFields(value[customObject[key] as string], value[key], false, true);
+      } else {
+        await this.handleCustomObjectValueIfPrimitive(value, customObject, key);
       }
-    }
-  }
-
-  private async handleCustomObjectMatchValueIfPrimitive(
-    value: any,
-    matchValue: CustomObjectMatchType | boolean
-  ): Promise<any> {
-    switch (matchValue) {
-      case CustomObjectMatchType.Full:
-        return this.primitiveRedactor.redactValue(JSON.stringify(value));
-      case CustomObjectMatchType.Deep:
-      case CustomObjectMatchType.Shallow:
-      case CustomObjectMatchType.Pass:
-      case true:
-        return this.primitiveRedactor.redactValue(value);
-      default:
-        return Promise.resolve(value);
     }
   }
 
@@ -136,17 +117,47 @@ export class ObjectRedactor {
     }
   }
 
+  private async handleCustomObjectValueIfPrimitive(value: any, customObject: CustomObject, key: string) {
+    if (typeof customObject[key] === 'number') {
+      value[key] = await this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(value[key], customObject[key]);
+    } else {
+      value[key] = await this.handleCustomObjectPrimitiveValueIfStringKeySpecified(value, customObject, key);
+    }
+  }
+
+  private async handleCustomObjectPrimitiveValueIfMatchTypeSpecified(
+    value: any,
+    matchValue: CustomObjectMatchType | boolean
+  ): Promise<any> {
+    switch (matchValue) {
+      case CustomObjectMatchType.Full:
+        return this.primitiveRedactor.redactValue(JSON.stringify(value));
+      case CustomObjectMatchType.Deep:
+      case CustomObjectMatchType.Shallow:
+      case CustomObjectMatchType.Pass:
+      case true:
+        return this.primitiveRedactor.redactValue(value);
+      default:
+        return Promise.resolve(value);
+    }
+  }
+
+  private async handleCustomObjectPrimitiveValueIfStringKeySpecified(value: any, customObject: CustomObject, key: string) {
+    const secretKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
+    if (!secretKey) {
+      return value[key];
+    }
+
+    if (this.secretManager.isSecretKey(secretKey) || this.secretManager.isDeepSecretKey(secretKey) || this.secretManager.isFullSecretKey(secretKey)) {
+      return this.redactFields(value[customObject[key] as string], value[key], false, true);
+    }
+
+    return value[key];
+  }
+
   private getStringSpecifiedCustomObjectSecretKeyValueIfExists(value: any, customObject: CustomObject, key: string): string | null {
     const hasSecretKey = typeof customObject[key] === 'string' && !!value[customObject[key]];
     return hasSecretKey ? value[customObject[key]] : null;
-  }
-
-  private shouldForceShallowRedactionOfCustomObjectKey(value: any, customObject: CustomObject, key: string): boolean {
-    const secretKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
-    if (!secretKey) {
-      return false;
-    }
-    return this.secretManager.isSecretKey(secretKey) || this.secretManager.isDeepSecretKey(secretKey) || this.secretManager.isFullSecretKey(secretKey);
   }
 
   private isObject(value: any) {
