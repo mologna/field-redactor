@@ -227,7 +227,8 @@ A custom object takes the following format:
 * Value: Specifies manner in which to redact
   * `CustomObjectMatchType` - see `CustomObjectMatchType section
   * `string` - redacts if the sibling key with this name has a value which is a secret
-    * If the value is an object then it will be redacted according to if the matching key is a `secretKey` or `deepSecretKey`
+    * If the value is an object then it will be redacted according to if the matching key is a `secretKey`, `deepSecretKey`, or `fullSecretKey`.
+    * `fullSecret` takes precedence over `deepSecret` which takes precedence over `secret`.
 
 ### CustomObjectMatchType Enum
 | Key | Description |
@@ -243,8 +244,10 @@ A custom object takes the following format:
 const myCustomObject = {
   name: CustomObjectMatchType.Ignore,
   type: CustomObjectMatchType.Ignore,
+  significance: CustomObjectMatchType.Ignore,
   shallowValue: "name",
   deepValue: "type",
+  fullValue: "significance"
   shallow: CustomObjectMatchType.Shallow,
   deep: CustomObjectMatchType.Deep,
   full: CustomObjectMatchType.Full,
@@ -259,8 +262,10 @@ const myJsonObject = {
     {
       name: "email",
       type: "Secure",
+      significance: "meta"
       shallowValue: "foo.bar@example.com",
       deepValue: "foobar",
+      fullValue: "hello",
       shallow: "hello",
       deep: "hello",
       full: "hello",
@@ -270,7 +275,12 @@ const myJsonObject = {
     {
       name: "email",
       type: "Secure",
+      significance: "meta",
       shallowValue: {
+        hello: "world",
+        email: "foobar"
+      },
+      deepValue: {
         hello: "world",
         email: "foobar"
       },
@@ -304,6 +314,7 @@ const myJsonObject = {
 const fieldRedactor = new FieldRedactor({
   secretKeys: [/email/],
   deepSecretKeys: [/secure/i],
+  fullSecretKeys: [/meta/i],
   customObjects: [myCustomObject]
 });
 const result = await fieldRedactor.redact(myJsonObject);
@@ -321,6 +332,7 @@ Yields the following to the console:
       type: "Secure",
       shallowValue: "REDACTED",
       deepValue: "REDACTED",
+      fullValue: "REDACTED",
       shallow: "REDACTED",
       deep: "REDACTED",
       full: "REDACTED",
@@ -338,6 +350,7 @@ Yields the following to the console:
         hello: "REDACTED",
         email: "REDACTED"
       },
+      fullValue: "REDACTED",
       shallow: {
         hello: "world",
         email: "REDACTED"
@@ -362,9 +375,11 @@ Yields the following to the console:
 * Both objects in the data array matched the custom object and were redacted accordingly
 * `name` and `type` field were never redacted because `CustomObjectMatchType` was `Ignore`
 * `shallowValue` had key specifier `name`, the value of which was `email` which matched shallowKey `/email/`
-  * Value was redacted when primitive and according to `shallowKeys` rules when an object
+  * Value was redacted when primitive and according to `secretKeys` rules when an object
 * `deepValue` had key specifier `type`, the value of which was `Secure` which matched deepKey `/secure/i`
-  * Value was redacted when primitive and according to `deepKeys` rules when an object
+  * Value was redacted when primitive and according to `deepSecretKeys` rules when an object
+* `fullValue` had key specifier `significance`, the value of which was `meta` which matched fullKey `/meta/i`
+  * Value was redacted when primitive and according to `fullSecretKeys` rules when an object
 * `shallow` field was redacted when primitive and assessed normally when object because `CustomObjectMatchType` was `Shallow`
 * `deep` field was redacted when primitive and fully redacted because `CustomObjectMatchType` was `Deep`
 * `full` field was always stringified and redacted regardless of type because `CustomObjectMatchType` was `Full`
@@ -654,7 +669,7 @@ Features are ordered by priority.
 | 5.a Do not allow Nested Custom Objects | **Complete** | Remove concept of nested custom objects in preparation for "pass" logic |
 | 5.b Custom Object DeepSecret | **Complete** | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
 | 5.c Custom Object Type Enum | **Complete** | Change CustomObject boolean flag to enum for Deep, Shallow, Pass-Through, Full, or Skip |
-| 5.d Custom Object Full Secret | *In Progress* | Allow FullSecret Redaction for Custom Objects |
+| 5.d Custom Object Full Secret | **Complete** | Allow FullSecret Redaction for Custom Objects |
 | 6. Date Changes | Not Started | Change how Date parsing is handled |
 | 6a. ignoreDates | Not Started | Change ignoreDates to ignoreDateFormats to be more accurate to its use case |
 | 6b. ignoreDates | Not Started | Add option to ignore actual Date values |
