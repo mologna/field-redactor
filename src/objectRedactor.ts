@@ -100,9 +100,12 @@ export class ObjectRedactor {
     customObject: CustomObject
   ): Promise<void> {
     if (typeof customObject[key] === 'string' && !!value[customObject[key]]) {
-      if (this.secretManager.isDeepSecretKey(value[customObject[key]])) {
+      const stringKey = value[customObject[key]];
+      if (this.secretManager.isFullSecretKey(stringKey)) {
+        value[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value[key]));
+      } else if (this.secretManager.isDeepSecretKey(stringKey)) {
         await this.redactObjectFieldsInPlace(value[key], true);
-      } else if (this.secretManager.isSecretKey(value[customObject[key]])) {
+      } else if (this.secretManager.isSecretKey(stringKey)) {
         if (Array.isArray(value[key])) {
           value[key] = await this.redactArrayFieldsInPlace(key, value[key], false, true);
         } else {
@@ -126,11 +129,12 @@ export class ObjectRedactor {
   }
 
   private shouldForceShallowRedactionOfCustomObjectKey(value: any, customObject: CustomObject, key: string): boolean {
-    return (
-      typeof customObject[key] === 'string' &&
-      !!value[customObject[key]] &&
-      this.secretManager.isSecretKey(value[customObject[key]])
-    );
+    if (typeof customObject[key] === 'string' && !!value[customObject[key]]) {
+      const secretKey = value[customObject[key]];
+      return this.secretManager.isSecretKey(secretKey) || this.secretManager.isDeepSecretKey(secretKey);
+    }
+
+    return false;
   }
 
   private isObject(value: any) {

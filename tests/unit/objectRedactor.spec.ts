@@ -507,6 +507,35 @@ describe('ObjectRedactor', () => {
     });
   });
 
+  it('Can redact a fullSecret string-specified customobject key', async () => {
+    const specialObject: CustomObject = {
+      name: CustomObjectMatchType.Ignore,
+      kind: CustomObjectMatchType.Ignore,
+      value: 'name'
+    };
+    const fullSecretKeys: RegExp[] = [/email/];
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    secretManager = new SecretManager({ secretKeys: [], fullSecretKeys });
+    const primitiveRedactor = new PrimitiveRedactor({ redactor: async (val) => Promise.resolve(JSON.stringify(val))});
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const nestedObj = {
+      foo: "bar",
+      value: "foo.bar@gmail.com"
+    };
+    const obj = {
+      name: 'email',
+      kind: 'String',
+      value: nestedObj
+    };
+    await redactor.redactInPlace(obj);
+    expect(obj).toEqual({
+      name: 'email',
+      kind: 'String',
+      value: JSON.stringify(JSON.stringify(nestedObj))
+    });
+  });
+
   it('Does not redact a value or fail if the string-specified field does not exist', async () => {
     const specialObject: CustomObject = {
       name: CustomObjectMatchType.Ignore,
