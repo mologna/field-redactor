@@ -516,12 +516,12 @@ describe('ObjectRedactor', () => {
     const fullSecretKeys: RegExp[] = [/email/];
     customObjectChecker = new CustomObjectChecker([specialObject]);
     secretManager = new SecretManager({ secretKeys: [], fullSecretKeys });
-    const primitiveRedactor = new PrimitiveRedactor({ redactor: async (val) => Promise.resolve(JSON.stringify(val))});
+    const primitiveRedactor = new PrimitiveRedactor({ redactor: async (val) => Promise.resolve(JSON.stringify(val)) });
     const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
     const nestedObj = {
-      foo: "bar",
-      value: "foo.bar@gmail.com"
+      foo: 'bar',
+      value: 'foo.bar@gmail.com'
     };
     const obj = {
       name: 'email',
