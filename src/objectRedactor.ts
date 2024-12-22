@@ -99,42 +99,54 @@ export class ObjectRedactor {
     key: string,
     customObject: CustomObject
   ): Promise<void> {
-    if (typeof customObject[key] === 'string' && !!value[customObject[key]]) {
-      const stringKey = value[customObject[key]];
-      if (this.secretManager.isFullSecretKey(stringKey)) {
-        value[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value[key]));
-      } else if (this.secretManager.isDeepSecretKey(stringKey)) {
-        await this.redactObjectFieldsInPlace(value[key], true);
-      } else if (this.secretManager.isSecretKey(stringKey)) {
-        if (Array.isArray(value[key])) {
-          value[key] = await this.redactArrayFieldsInPlace(key, value[key], false, true);
-        } else {
-          await this.redactObjectFieldsInPlace(value[key], false);
-        }
-      }
+    const stringKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
+    if (stringKey) {
+      await this.handleCustomObjectObjectValueIfStringKeySpecified(value, key, stringKey);
     } else {
-      switch (customObject[key]) {
-        case CustomObjectMatchType.Full:
-          value[key] = JSON.stringify(value[key]);
-          return Promise.resolve();
-        case CustomObjectMatchType.Deep:
-          return this.redactObjectFieldsInPlace(value[key], true);
-        case CustomObjectMatchType.Shallow:
-        case CustomObjectMatchType.Pass:
-          return this.redactObjectFieldsInPlace(value[key], false);
-        case CustomObjectMatchType.Ignore:
-          return Promise.resolve();
+      await this.handleCustomObjectOjectValueIfMatchTypeSpecified(value, key, customObject[key] as CustomObjectMatchType);
+    }
+  }
+
+  private async handleCustomObjectObjectValueIfStringKeySpecified(value: any, key: string, stringKey: string) {
+    if (this.secretManager.isFullSecretKey(stringKey)) {
+      value[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value[key]));
+    } else if (this.secretManager.isDeepSecretKey(stringKey)) {
+      await this.redactObjectFieldsInPlace(value[key], true);
+    } else if (this.secretManager.isSecretKey(stringKey)) {
+      if (Array.isArray(value[key])) {
+        value[key] = await this.redactArrayFieldsInPlace(key, value[key], false, true);
+      } else {
+        await this.redactObjectFieldsInPlace(value[key], false);
       }
     }
   }
 
-  private shouldForceShallowRedactionOfCustomObjectKey(value: any, customObject: CustomObject, key: string): boolean {
-    if (typeof customObject[key] === 'string' && !!value[customObject[key]]) {
-      const secretKey = value[customObject[key]];
-      return this.secretManager.isSecretKey(secretKey) || this.secretManager.isDeepSecretKey(secretKey);
+  private async handleCustomObjectOjectValueIfMatchTypeSpecified(value: any, key: string, matchType: CustomObjectMatchType) {
+    switch (matchType) {
+      case CustomObjectMatchType.Full:
+        value[key] = JSON.stringify(value[key]);
+        return Promise.resolve();
+      case CustomObjectMatchType.Deep:
+        return this.redactObjectFieldsInPlace(value[key], true);
+      case CustomObjectMatchType.Shallow:
+      case CustomObjectMatchType.Pass:
+        return this.redactObjectFieldsInPlace(value[key], false);
+      case CustomObjectMatchType.Ignore:
+        return Promise.resolve();
     }
+  }
 
-    return false;
+  private getStringSpecifiedCustomObjectSecretKeyValueIfExists(value: any, customObject: CustomObject, key: string): string | null {
+    const hasSecretKey = typeof customObject[key] === 'string' && !!value[customObject[key]];
+    return hasSecretKey ? value[customObject[key]] : null;
+  }
+
+  private shouldForceShallowRedactionOfCustomObjectKey(value: any, customObject: CustomObject, key: string): boolean {
+    const secretKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
+    if (!secretKey) {
+      return false;
+    }
+    return this.secretManager.isSecretKey(secretKey) || this.secretManager.isDeepSecretKey(secretKey) || this.secretManager.isFullSecretKey(secretKey);
   }
 
   private isObject(value: any) {
