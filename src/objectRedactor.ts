@@ -26,17 +26,23 @@ export class ObjectRedactor {
       const value: any = object[key];
       if (this.secretManager.isFullSecretKey(key)) {
         object[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value));
-      } else if (!this.isObject(object[key])) {
-        object[key] = await this.redactFields(key, value, forceDeepRedaction, false);
+      } else if (Array.isArray(object[key])) {
+        object[key] = await this.redactArrayFieldsInPlace(key, object[key], forceDeepRedaction || this.secretManager.isDeepSecretKey(key), this.secretManager.isSecretKey(key));
+      } else if (this.isObject(object[key])) {
+        await this.redactObjectFieldObjectValueInPlace(object[key], key, forceDeepRedaction);
       } else {
-        const customObject = this.checker.getMatchingCustomObject(value);
-        if (customObject) {
-          await this.redactCustomObjectInPlace(value, customObject);
-        } else {
-          const secretObject = forceDeepRedaction || this.secretManager.isDeepSecretKey(key);
-          await this.redactObjectFieldsInPlace(value, secretObject);
-        }
+        object[key] = await this.redactFields(key, value, forceDeepRedaction);
       }
+    }
+  }
+
+  private async redactObjectFieldObjectValueInPlace(value: any, key: string, forceDeepRedaction: boolean) {
+    const customObject = this.checker.getMatchingCustomObject(value);
+    if (customObject) {
+      await this.redactCustomObjectInPlace(value, customObject);
+    } else {
+      const secretObject = forceDeepRedaction || this.secretManager.isDeepSecretKey(key);
+      await this.redactObjectFieldsInPlace(value, secretObject);
     }
   }
 
@@ -48,7 +54,11 @@ export class ObjectRedactor {
   ): Promise<any[]> {
     const promises: Promise<any>[] = array.map(async (value) => {
       if (!this.isObject(value)) {
-        return this.redactFields(key, value, forceDeepRedaction, forceShallowRedaction);
+        if (forceShallowRedaction) {
+          return this.primitiveRedactor.redactValue(value);
+        } else {
+          return this.redactFields(key, value, forceDeepRedaction);
+        }
       } else {
         const customObject = this.checker.getMatchingCustomObject(value);
         if (customObject) {
@@ -149,7 +159,7 @@ export class ObjectRedactor {
     }
 
     if (this.secretManager.isSecretKey(secretKey) || this.secretManager.isDeepSecretKey(secretKey) || this.secretManager.isFullSecretKey(secretKey)) {
-      return this.redactFields(value[customObject[key] as string], value[key], false, true);
+      return this.primitiveRedactor.redactValue(value[key]);
     }
 
     return value[key];
@@ -167,25 +177,21 @@ export class ObjectRedactor {
   private async redactFields(
     key: string,
     value: any,
-    forceDeepRedaction: boolean,
-    forceShallowRedaction: boolean
+    forceDeepRedaction: boolean
   ): Promise<any> {
     if (Array.isArray(value)) {
-      return this.redactArrayFieldsInPlace(key, value, forceDeepRedaction, forceShallowRedaction);
+      return this.redactArrayFieldsInPlace(key, value, forceDeepRedaction, false);
     } else {
-      return this.redactObjectFieldIfSecret(key, value, forceDeepRedaction, forceShallowRedaction);
+      return this.redactObjectFieldIfSecret(key, value, forceDeepRedaction);
     }
   }
 
   private async redactObjectFieldIfSecret(
     key: string,
     value: any,
-    forceDeepRedactin: boolean,
-    forceShallowRedaction: boolean
+    forceDeepRedactin: boolean
   ): Promise<any> {
-    if (forceShallowRedaction) {
-      return this.primitiveRedactor.redactValue(value);
-    } else if (forceDeepRedactin || this.secretManager.isSecretKey(key)) {
+    if (forceDeepRedactin || this.secretManager.isSecretKey(key) || this.secretManager.isDeepSecretKey(key)) {
       const result = await this.primitiveRedactor.redactValue(value);
       return result;
     } else {
