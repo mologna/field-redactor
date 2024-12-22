@@ -27,11 +27,11 @@ export class ObjectRedactor {
       if (this.secretManager.isFullSecretKey(key)) {
         object[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value));
       } else if (Array.isArray(object[key])) {
-        object[key] = await this.redactArrayFieldsInPlace(key, object[key], forceDeepRedaction || this.secretManager.isDeepSecretKey(key), this.secretManager.isSecretKey(key));
+        object[key] = await this.redactArrayFieldsInPlace(key, object[key], forceDeepRedaction || this.secretManager.isDeepSecretKey(key));
       } else if (this.isObject(object[key])) {
         await this.redactObjectFieldObjectValueInPlace(object[key], key, forceDeepRedaction);
       } else {
-        object[key] = await this.redactFields(key, value, forceDeepRedaction);
+        object[key] = await this.redactPrimitiveValueIfSecret(key, value, forceDeepRedaction);
       }
     }
   }
@@ -49,16 +49,13 @@ export class ObjectRedactor {
   private async redactArrayFieldsInPlace(
     key: string,
     array: any[],
-    forceDeepRedaction: boolean,
-    forceShallowRedaction: boolean
+    forceDeepRedaction: boolean
   ): Promise<any[]> {
     const promises: Promise<any>[] = array.map(async (value) => {
-      if (!this.isObject(value)) {
-        if (forceShallowRedaction) {
-          return this.primitiveRedactor.redactValue(value);
-        } else {
-          return this.redactFields(key, value, forceDeepRedaction);
-        }
+      if (Array.isArray(value)) {
+        return this.redactArrayFieldsInPlace(key, value, forceDeepRedaction);
+      } else if (!this.isObject(value)) {
+        return this.redactPrimitiveValueIfSecret(key, value, forceDeepRedaction);
       } else {
         const customObject = this.checker.getMatchingCustomObject(value);
         if (customObject) {
@@ -105,7 +102,7 @@ export class ObjectRedactor {
       await this.redactObjectFieldsInPlace(value[key], true);
     } else if (this.secretManager.isSecretKey(stringKey)) {
       if (Array.isArray(value[key])) {
-        value[key] = await this.redactArrayFieldsInPlace(key, value[key], false, true);
+        value[key] = await this.redactArrayFieldsInPlace(stringKey, value[key], false);
       } else {
         await this.redactObjectFieldsInPlace(value[key], false);
       }
@@ -158,11 +155,7 @@ export class ObjectRedactor {
       return value[key];
     }
 
-    if (this.secretManager.isSecretKey(secretKey) || this.secretManager.isDeepSecretKey(secretKey) || this.secretManager.isFullSecretKey(secretKey)) {
-      return this.primitiveRedactor.redactValue(value[key]);
-    }
-
-    return value[key];
+    return this.redactPrimitiveValueIfSecret(secretKey, value[key], false);
   }
 
   private getStringSpecifiedCustomObjectSecretKeyValueIfExists(value: any, customObject: CustomObject, key: string): string | null {
@@ -174,26 +167,15 @@ export class ObjectRedactor {
     return !!value && typeof value === 'object' && !(value instanceof Date) && !Array.isArray(value);
   }
 
-  private async redactFields(
+  private async redactPrimitiveValueIfSecret(
     key: string,
     value: any,
     forceDeepRedaction: boolean
   ): Promise<any> {
-    if (Array.isArray(value)) {
-      return this.redactArrayFieldsInPlace(key, value, forceDeepRedaction, false);
-    } else {
-      return this.redactObjectFieldIfSecret(key, value, forceDeepRedaction);
-    }
-  }
-
-  private async redactObjectFieldIfSecret(
-    key: string,
-    value: any,
-    forceDeepRedactin: boolean
-  ): Promise<any> {
-    if (forceDeepRedactin || this.secretManager.isSecretKey(key) || this.secretManager.isDeepSecretKey(key)) {
-      const result = await this.primitiveRedactor.redactValue(value);
-      return result;
+    if (this.secretManager.isFullSecretKey(key)) {
+      return this.primitiveRedactor.redactValue(JSON.stringify(value));
+    } else if (forceDeepRedaction || this.secretManager.isSecretKey(key) || this.secretManager.isDeepSecretKey(key)) {
+      return this.primitiveRedactor.redactValue(value);
     } else {
       return value;
     }
