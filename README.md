@@ -670,10 +670,8 @@ Features are ordered by priority.
 | 5.b Custom Object DeepSecret | **Complete** | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
 | 5.c Custom Object Type Enum | **Complete** | Change CustomObject boolean flag to enum for Deep, Shallow, Pass-Through, Full, or Skip |
 | 5.d Custom Object Full Secret | **Complete** | Allow FullSecret Redaction for Custom Objects |
-| 6. Date Changes | **In Progress** | Change how Date parsing is handled |
-| 6a. ignoreDates | Not Started | Change ignoreDates to ignoreDateFormats to be more accurate to its use case |
-| 6b. ignoreDates | **In Progress**  | Add option to ignore actual Date values |
-| 6c. Moment.js removal | **In Progress** | Remove dependency on Moment.js as its no longer supported |
+| 6. Moment.js removal | *Skipped* | Remove dependency on Moment.js as its no longer supported - skipping for now as other libraries don't offer the support we need |
 | 6. Separate Custom Secrets | Not Started | Allow users to configure custom objects with separate secrets |
 | 7. Integration Tests | Not Started | Implement a much more full-fledged suite of integration tests |
 | 8. Remove ReplacementText config | Not Started | Remove replacement text config that's no longer needed |
+| 9. Performance Improvements | Not Started | Use stopwatches and timers to make perfomance improvements |
