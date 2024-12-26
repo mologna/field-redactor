@@ -94,7 +94,7 @@ export class ObjectRedactor {
     }
   }
 
-  public async redactCustomObject(value: any, customObject: CustomObject): Promise<void> {
+  private async redactCustomObject(value: any, customObject: CustomObject): Promise<void> {
     for (const key of Object.keys(customObject)) {
       if (Array.isArray(value[key])) {
         await this.handleCustomObjectValueIfArray(value, key, customObject);

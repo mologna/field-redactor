@@ -32,6 +32,7 @@ export class FieldRedactor {
       deepSecretKeys,
       fullSecretKeys
     });
+
     const customObjectChecker = new CustomObjectChecker(customObjects);
 
     this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);

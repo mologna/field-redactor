@@ -29,7 +29,6 @@ export type SecretManagerConfig = {
 
 export type FieldRedactorConfig = PrimitiveRedactorConfig &
   SecretManagerConfig & {
-    replacementText?: string;
     redactor?: Redactor;
     customObjects?: CustomObject[];
   };

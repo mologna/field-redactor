@@ -21,7 +21,8 @@ export class SecretManager {
     if (!this.secretKeys) {
       return true;
     }
-    return this.valueIsSecret(key, this.secretKeys);
+
+    return SecretManager.valueMatchesAnyRegexValue(key, this.secretKeys);
   }
 
   /**
@@ -33,7 +34,8 @@ export class SecretManager {
     if (!this.deepSecretKeys) {
       return false;
     }
-    return this.valueIsSecret(key, this.deepSecretKeys);
+
+    return SecretManager.valueMatchesAnyRegexValue(key, this.deepSecretKeys);
   }
 
   /**
@@ -46,24 +48,11 @@ export class SecretManager {
     if (!this.fullSecretKeys) {
       return false;
     }
-    return this.valueIsSecret(key, this.fullSecretKeys);
+    
+    return SecretManager.valueMatchesAnyRegexValue(key, this.fullSecretKeys);
   }
 
-  private valueIsSecret(value: string, regexes?: RegExp[]): boolean {
-    if (!regexes) {
-      return true;
-    }
-
-    return this.valueMatchesAnyRegexValue(value, regexes);
-  }
-
-  private valueMatchesAnyRegexValue(value: string, regexes: RegExp[]): boolean {
-    for (const regex of regexes) {
-      if (regex.test(value)) {
-        return true;
-      }
-    }
-
-    return false;
+  private static valueMatchesAnyRegexValue(value: string, regexes: RegExp[]): boolean {
+    return regexes.some((regex) => regex.test(value));
   }
 }
