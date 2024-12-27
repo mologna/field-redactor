@@ -672,6 +672,7 @@ Features are ordered by priority.
 | 5.d Custom Object Full Secret | **Complete** | Allow FullSecret Redaction for Custom Objects |
 | 6. Moment.js removal | *Skipped* | Remove dependency on Moment.js as its no longer supported - skipping for now as other libraries don't offer the support we need |
 | 6. Separate Custom Secrets | *Skipped* | Allow users to configure custom objects with separate secrets |
-| 7. Integration Tests | Not Started | Implement a much more full-fledged suite of integration tests |
+| 7. Integration Tests | *In Progress* | Implement a much more full-fledged suite of integration tests |
+| 8. README.md cleanups | Not Started | Clean up and polish README.md with all the latest changes |
 | 8. Remove ReplacementText config | **Complete** | Remove replacement text config that's no longer needed |
 | 9. Performance Improvements | Not Started | Use stopwatches and timers to make perfomance improvements |
