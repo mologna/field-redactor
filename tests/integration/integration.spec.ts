@@ -1,16 +1,16 @@
 import * as crypto from 'crypto';
 import { FieldRedactor } from '../../src/fieldRedactor';
 import { CustomObject, CustomObjectMatchType, Redactor } from '../../src/types';
+import { logDataToRedact } from '../mocks/logMocks';
 import {
-  logDataToRedact,
   sha256HashedAddress,
   sha256HashedBalance,
   sha256HashedCity,
   sha256HashedEmail,
+  sha256HashedFullName,
   sha256HashedMdn,
-  sha256HashedName,
   sha256HashedUserId
-} from '../mocks/logMocks';
+} from '../mocks/cryptoMockValues';
 
 describe('FieldRedactor Integration Test', () => {
   it('Should redact all secret fields in a document with custom objects', async () => {
@@ -53,7 +53,7 @@ describe('FieldRedactor Integration Test', () => {
     expect(result.transactionId).toEqual(logDataToRedact.transactionId);
     expect(result.destinations).toEqual({
       email: sha256HashedEmail,
-      fullName: sha256HashedName,
+      fullName: sha256HashedFullName,
       mdn: sha256HashedMdn
     });
     expect(result.user.id).toEqual(sha256HashedUserId);
