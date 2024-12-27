@@ -23,3 +23,6 @@ export const sha256HashedBalance = crypto.createHash('sha256').update(mockBalanc
 
 export const mockUserId = 12345;
 export const sha256HashedUserId = crypto.createHash('sha256').update(mockUserId.toString()).digest('hex');
+
+export const mockAuthKey = 'cf388510-a4f2-qqqq-840a-659a2b212b43';
+export const sha256MhashedMockAuthKey = crypto.createHash('sha256').update(mockAuthKey.toString()).digest('hex');

@@ -1,6 +1,6 @@
-import { mockEmail, mockFirstName, mockFullName, mockLastName, mockMdn } from './cryptoMockValues';
+import { mockAuthKey, mockEmail, mockFirstName, mockFullName, mockLastName, mockMdn } from './cryptoMockValues';
 
-export const sqaLog1 = {
+export const eventProcessingLogsMock = {
   '@timestamp': '2024-12-27T16:52:51.293Z',
   appId: '271',
   approvedCampaigns: [],
@@ -56,4 +56,40 @@ export const sqaLog1 = {
   timestamp: '2024-12-27T16:52:51.293Z',
   transactionId: 'cf388510-158f-4791-840a-659a2b212b43',
   unapprovedCampaigns: ['Foobar']
+};
+
+export const kafkaAdapterLogMock = {
+  '@timestamp': '2024-12-27T17:22:26.426Z',
+  buildVersion: '1.0.117',
+  correlationId: '6f181c4b-e956-4021-ab4f-4bb46be731qq',
+  event: {
+    appAuthKey: mockAuthKey,
+    appId: '271',
+    clientName: 'CLIENT_1',
+    correlationId: '6f181c4b-e956-4021-ab4f-4bb46be731qq',
+    data: [
+      { name: 'impliedTransType', value: 'A' },
+      { name: 'clientChannelId', value: 'C10D49A78FF26637E0539B39030AA612' },
+      { name: 'clientProductSKUNumber', value: 'HOMEPRO' },
+      { name: 'firstName', value: mockFirstName },
+      { name: 'lastName', value: mockLastName },
+      { name: 'fullName', value: mockFullName },
+      { name: 'email', value: mockEmail },
+      { name: 'agreementPurchaseDate', value: '2024-11-19T17:22:12.276Z' },
+      { name: 'mdn', value: mockMdn },
+      { name: 'subscriptionNumber', value: '12345' },
+      { name: 'sourceRefID1', value: '12345' },
+      { name: 'sourceRefID2', value: '12345' },
+      { name: 'sourceRefID3', value: '4428c2d8-c32a-4959-b930-4f714613d81b' }
+    ],
+    name: 'SOME-NAME-VALUE',
+    owner: 'event-streaming',
+    parentSystem: 'Kafka',
+    transactionId: 'b1f0ec41-1514-4346-b512-251281179f93'
+  },
+  level: 'info',
+  message: 'Kafka message queued for processing...',
+  serviceName: 'kafka-adapter',
+  timestamp: '2024-12-27T17:22:26.426Z',
+  transactionId: 'b1f0ec41-1514-4346-b512-251281179f93'
 };
