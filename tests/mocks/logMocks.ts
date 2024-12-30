@@ -1,16 +1,30 @@
-import { mockAddress, mockBalance, mockCity, mockEmail, mockFullName, mockMdn, mockUserId } from './cryptoMockValues';
+import {
+  mockAddress,
+  mockBalance,
+  mockCity,
+  mockClientName,
+  mockEmail,
+  mockFullName,
+  mockMdn,
+  mockUserId
+} from './cryptoMockValues';
 
 export const logDataToRedact = {
   '@timestamp': '2024-12-01T22:07:26.448Z',
   level: 'info',
   appId: 271,
-  clientName: 'FOOBAR',
+  clientName: mockClientName,
   parentSystem: 'SOME_SYSTEM',
   owner: 'some_owner',
+  someNullValue: null,
+  someUndefinedValue: undefined,
+  someBooleanValue: true,
+  someFalseBooleanValue: false,
   executedCampaigns: [],
   otherCampaigns: [],
   correlationId: '1234-5678-9012-3456',
   transactionId: '1234-5678-9012-1111',
+  zuluFormattedDate: '2024-12-01T22:07:26.448Z',
   destinations: {
     email: mockEmail,
     fullName: mockFullName,
