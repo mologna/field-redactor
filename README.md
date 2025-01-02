@@ -654,24 +654,3 @@ Yields the following to the console:
 * All object data in `someDeepSecretData` was redacted as it was specified as a `deepSecretKey`.
 * object data in `actions` matched the `actionsCustomObject` so the value was conditionally redacted if the `field` value was a secret/deepSecret
 * object data in `metadata` matched the `metadataCustomObject` so the value was conditionally redacted if the `name` value was a secret/deepSecret
-
----
-
-# Feature Development Chart
-Features are ordered by priority.
-
-| Feature | Status | Comments |
-| ------- | ------ | -------- |
-| 1. Asynchronous Support | **Complete** | Allow for asynchronous encryption schemes |
-| 2. Full Redaction | **Complete** | Allow the entire array/object to be stringified and redacted
-| 3. In-Place Redaction | **Complete** | Allow users to redact objects in-place instead of copying first |
-| 4. Extract Redactor Logic | **Complete** | Refactor to allow redactor logic to be re-used by CustomObjectRedactor |
-| 5.a Do not allow Nested Custom Objects | **Complete** | Remove concept of nested custom objects in preparation for "pass" logic |
-| 5.b Custom Object DeepSecret | **Complete** | Allow CustomObjects to utilize DeepSecret logic when encrypting values, not just Secret logic |
-| 5.c Custom Object Type Enum | **Complete** | Change CustomObject boolean flag to enum for Deep, Shallow, Pass-Through, Full, or Skip |
-| 5.d Custom Object Full Secret | **Complete** | Allow FullSecret Redaction for Custom Objects |
-| 6. Moment.js removal | **Complete** | Remove dependency on Moment.js as its no longer supported - skipping for now as other libraries don't offer the support we need |
-| 7. Integration Tests | **Complete** | Implement a much more full-fledged suite of integration tests |
-| 8. README.md cleanups | Not Started | Clean up and polish README.md with all the latest changes |
-| 8. Remove ReplacementText config | **Complete** | Remove replacement text config that's no longer needed |
-| 9. Performance Improvements | Not Started | Use stopwatches and timers to make perfomance improvements |

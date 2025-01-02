@@ -1,14 +1,32 @@
 {
   "name": "field-redactor",
   "version": "1.0.0",
-  "description": "Utility for redacting values and PII in JSON objects",
-  "main": "index.js",
+  "description": "Utility for redacting PII from complex JSON objects for which simpler redaction tools are insufficient.",
+  "keywords": [
+    "redaction",
+    "pii",
+    "json",
+    "utility",
+    "redact"
+  ],
+  "homepage": "https://github.com/mologna/field-redactor",
+  "bugs": "https://github.com/mologna/field-redactor/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mologna/field-redactor"
+  },
+  "main": "./src/index.ts",
   "scripts": {
     "test": "jest",
+    "test:unit": "yarn test /tests/unit",
+    "test:integration": "yarn test /tests/integration",
     "tsc": "tsc"
   },
-  "author": "",
-  "license": "ISC",
+  "author": { 
+    "name": "Andrew Molony",
+    "url": "https://github.com/mologna"
+  },
+  "license": "ISC -- todo: UPDATE THIS",
   "dependencies": {
     "@types/moment": "^2.13.0",
     "rfdc": "^1.4.1",
