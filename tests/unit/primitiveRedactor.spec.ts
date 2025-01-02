@@ -31,7 +31,7 @@ describe('PrimitiveRedactor', () => {
     await expect(redactor.redactValue(undefined)).resolves.toBe(DEFAULT_REDACTED_TEXT);
   });
 
-  it('Redacts dates and booleans by default', async () => {
+  it('Redacts booleans by default', async () => {
     const redactor = new PrimitiveRedactor({});
 
     await expect(redactor.redactValue(true)).resolves.toBe(DEFAULT_REDACTED_TEXT);

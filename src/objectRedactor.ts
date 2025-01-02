@@ -150,14 +150,17 @@ export class ObjectRedactor {
   ) {
     switch (matchType) {
       case CustomObjectMatchType.Full:
-        value[key] = JSON.stringify(value[key]);
+        value[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value[key]));
         return Promise.resolve();
       case CustomObjectMatchType.Deep:
-        return this.redactAllArrayValues(value[key], true);
+        value[key] = await this.redactAllArrayValues(value[key], true);
+        return Promise.resolve();
       case CustomObjectMatchType.Shallow:
-        return this.redactAllArrayValues(value[key], false);
+        value[key] = await this.redactAllArrayValues(value[key], false);
+        return Promise.resolve();
       case CustomObjectMatchType.Pass:
-      case CustomObjectMatchType.Ignore:
+        value[key] = await this.redactArrayInObject(value[key], key, false);
+      default:
         return Promise.resolve();
     }
   }
