@@ -1,5 +1,3 @@
-import moment from 'moment';
-
 export type Redactor = (value: any) => Promise<string>;
 
 export enum CustomObjectMatchType {
