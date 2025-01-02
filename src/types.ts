@@ -17,7 +17,6 @@ export type CustomObject = {
 export type PrimitiveRedactorConfig = {
   redactor?: Redactor;
   ignoreBooleans?: boolean;
-  ignoreDates?: moment.MomentBuiltinFormat[];
   ignoreNullOrUndefined?: boolean;
 };
 

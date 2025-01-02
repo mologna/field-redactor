@@ -1,9 +1,7 @@
-import moment from 'moment';
 import { PrimitiveRedactorConfig, Redactor } from './types';
 
 export class PrimitiveRedactor {
   private static DEFAULT_REDACTED_TEXT = 'REDACTED';
-  private ignoreDates?: moment.MomentBuiltinFormat[];
   private ignoreBooleans: boolean;
   private ignoreNullOrUndefined: boolean;
   private redactor: Redactor = (val: any) => Promise.resolve(PrimitiveRedactor.DEFAULT_REDACTED_TEXT);
@@ -11,7 +9,6 @@ export class PrimitiveRedactor {
     if (config.redactor) {
       this.redactor = config.redactor;
     }
-    this.ignoreDates = config?.ignoreDates;
     this.ignoreBooleans = !!config?.ignoreBooleans;
     if (typeof config?.ignoreNullOrUndefined === 'boolean') {
       this.ignoreNullOrUndefined = config.ignoreNullOrUndefined;
@@ -25,8 +22,6 @@ export class PrimitiveRedactor {
       return this.redactBoolean(value);
     } else if (!value) {
       return this.redactNullOrUndefinedValue(value);
-    } else if (this.ignoreDates && moment(value, this.ignoreDates, true).isValid()) {
-      return Promise.resolve(value);
     }
 
     return this.redactAny(value);

@@ -11,7 +11,6 @@ export class FieldRedactor {
   constructor(config?: FieldRedactorConfig) {
     const {
       ignoreBooleans,
-      ignoreDates,
       ignoreNullOrUndefined,
       redactor,
       secretKeys,
@@ -22,7 +21,6 @@ export class FieldRedactor {
 
     const primitiveRedactor = new PrimitiveRedactor({
       ignoreBooleans,
-      ignoreDates,
       ignoreNullOrUndefined,
       redactor
     });

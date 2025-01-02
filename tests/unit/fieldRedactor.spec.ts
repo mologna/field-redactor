@@ -1,4 +1,3 @@
-import moment from 'moment';
 import { FieldRedactor } from '../../src/fieldRedactor';
 import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { SecretManager } from '../../src/secretManager';
@@ -18,7 +17,6 @@ describe('FieldRedactor', () => {
     it('Should create the PrimitiveRedactor with the correct configuration', () => {
       const config = {
         ignoreBooleans: true,
-        ignoreDates: [moment.ISO_8601],
         ignoreNullOrUndefined: true,
         redactor: () => Promise.resolve('foobar')
       };

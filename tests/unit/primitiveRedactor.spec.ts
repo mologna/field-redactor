@@ -1,4 +1,3 @@
-import * as moment from 'moment';
 import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 
 describe('PrimitiveRedactor', () => {
@@ -49,16 +48,5 @@ describe('PrimitiveRedactor', () => {
 
     await expect(redactor.redactValue(true)).resolves.toBe(true);
     await expect(redactor.redactValue(false)).resolves.toBe(false);
-  });
-
-  it('Ignores dates when specified, but only in the specified formats', async () => {
-    const redactor = new PrimitiveRedactor({
-      ignoreDates: [moment.ISO_8601]
-    });
-
-    const myDate = new Date();
-    await expect(redactor.redactValue(myDate)).resolves.toBe(myDate);
-    await expect(redactor.redactValue(myDate.toISOString())).resolves.toBe(myDate.toISOString());
-    await expect(redactor.redactValue(myDate.toDateString())).resolves.toBe('REDACTED');
   });
 });

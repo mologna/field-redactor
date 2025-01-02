@@ -1,5 +1,4 @@
 import * as crypto from 'crypto';
-import * as moment from 'moment';
 import { FieldRedactor } from '../../src/fieldRedactor';
 import { CustomObject, CustomObjectMatchType, Redactor } from '../../src/types';
 import { logDataToRedact } from '../mocks/logMocks';
@@ -82,12 +81,11 @@ describe('FieldRedactor Integration Test', () => {
       return Promise.resolve(crypto.createHash('sha256').update(val.toString()).digest('hex'));
     };
 
-    const secretKeys = [/clientName/, /someNullValue/i, /someUndefinedValue/i, /booleanValue/i, /zuluFormattedDate/i];
+    const secretKeys = [/clientName/, /someNullValue/i, /someUndefinedValue/i, /booleanValue/i];
     const deepSecretKeys = [/destination/i, /data/i];
     const fullSecretKeys = [/user/i];
     const fieldRedactor = new FieldRedactor({
       ignoreBooleans: false,
-      ignoreDates: [moment.ISO_8601],
       ignoreNullOrUndefined: false,
       redactor,
       secretKeys,
@@ -107,7 +105,6 @@ describe('FieldRedactor Integration Test', () => {
     expect(result.someUndefinedValue).toEqual('FOOBAR');
     expect(result.someBooleanValue).toEqual(sha256HashedTrue);
     expect(result.someFalseBooleanValue).toEqual(sha256HashedFalse);
-    expect(result.zuluFormattedDate).toEqual(logDataToRedact.zuluFormattedDate);
     result.data.forEach((data: any, index: number) => {
       expect(data.name).not.toEqual(logDataToRedact.data[index].name);
       expect(data.type).not.toEqual(logDataToRedact.data[index].type);
