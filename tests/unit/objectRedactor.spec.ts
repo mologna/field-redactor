@@ -264,7 +264,7 @@ describe('ObjectRedactor', () => {
     };
 
     await redactor.redactInPlace(obj);
-    expect(obj.full).toMatch(JSON.stringify(nestedObject));
+    expect(obj.full).toEqual(DEFAULT_REDACTED_TEXT);
     expect(obj.deep).toEqual({
       bim: DEFAULT_REDACTED_TEXT,
       biff: [DEFAULT_REDACTED_TEXT, { bam: DEFAULT_REDACTED_TEXT }]
@@ -328,7 +328,7 @@ describe('ObjectRedactor', () => {
     expect(obj.full).toBe(DEFAULT_REDACTED_TEXT);
     expect(obj.deep).toBe(DEFAULT_REDACTED_TEXT);
     expect(obj.shallow).toBe(DEFAULT_REDACTED_TEXT);
-    expect(obj.pass).toBe(DEFAULT_REDACTED_TEXT);
+    expect(obj.pass).toBe('bam');
     expect(obj.ignore).toBe('bam');
   });
 

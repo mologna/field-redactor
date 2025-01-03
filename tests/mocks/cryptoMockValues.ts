@@ -5,8 +5,14 @@ export const sha256HashedEmail = crypto.createHash('sha256').update(mockEmail).d
 export const mockAddress = '123 Main St';
 export const sha256HashedAddress = crypto.createHash('sha256').update(mockAddress).digest('hex');
 
+export const mockId = 111;
+export const sha256HashedId = crypto.createHash('sha256').update(mockId.toString()).digest('hex');
+
 export const mockClientName = 'CLIENT_1';
 export const sha256HashedMockClientName = crypto.createHash('sha256').update(mockClientName).digest('hex');
+
+export const mockOwner = 'OWNER_1';
+export const sha256HashedOwner = crypto.createHash('sha256').update(mockOwner).digest('hex');
 
 export const mockCity = 'Anytown';
 export const sha256HashedCity = crypto.createHash('sha256').update(mockCity).digest('hex');
