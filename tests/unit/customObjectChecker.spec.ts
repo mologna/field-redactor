@@ -172,4 +172,67 @@ describe('CustomObjectChecker', () => {
     });
     expect(undefinedCheckerResult).toBeUndefined();
   });
+
+  it('Throws an error if two identical custom objects are given', () => {
+    const cust1: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
+    };
+    const cust2: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
+    };
+    expect(() => new CustomObjectChecker([cust1, cust2])).toThrow(
+      `Custom Objects at indexes 0 and 1 cannot have identical keys: foo,bar`
+    );
+  });
+
+  it('Throws an error if two custom objects are given with same keys', () => {
+    const cust1: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
+    };
+    const cust2: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: 'foo'
+    };
+    expect(() => new CustomObjectChecker([cust1, cust2])).toThrow(
+      `Custom Objects at indexes 0 and 1 cannot have identical keys: foo,bar`
+    );
+  });
+
+  it('Throws an error if identical custom objects are given in a large set', () => {
+    const cust1: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
+    };
+    const cust2: CustomObject = {
+      fizz: CustomObjectMatchType.Shallow,
+      buz: CustomObjectMatchType.Shallow
+    };
+    const cust3: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bam: CustomObjectMatchType.Shallow
+    };
+    const cust4: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
+    };
+    expect(() => new CustomObjectChecker([cust1, cust2, cust3, cust4])).toThrow(
+      `Custom Objects at indexes 0 and 3 cannot have identical keys: foo,bar`
+    );
+  });
+
+  it('Does not throw an error if one custom object is a superset of another', () => {
+    const cust1: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow
+    };
+    const cust2: CustomObject = {
+      foo: CustomObjectMatchType.Shallow,
+      bar: CustomObjectMatchType.Shallow,
+      fizz: CustomObjectMatchType.Shallow
+    };
+    expect(() => new CustomObjectChecker([cust1, cust2])).not.toThrow();
+  });
 });
