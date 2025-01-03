@@ -25,7 +25,7 @@ export class ObjectRedactor {
     for (const key of Object.keys(object)) {
       const value: any = object[key];
       if (this.secretManager.isFullSecretKey(key)) {
-        object[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value));
+        object[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value));
       } else if (Array.isArray(object[key])) {
         object[key] = await this.redactArrayInObject(value, key, forceDeepRedaction);
       } else if (this.isObject(object[key])) {
@@ -134,12 +134,22 @@ export class ObjectRedactor {
 
   private async handleCustomObjectArrayValueIfStringKeySpecified(value: any, key: string, stringKey: string) {
     if (this.secretManager.isFullSecretKey(stringKey)) {
-      value[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value[key]));
+      value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
     }
 
     const isDeepSecretKey = this.secretManager.isDeepSecretKey(stringKey);
     if (isDeepSecretKey || this.secretManager.isSecretKey(stringKey)) {
       value[key] = await this.redactAllArrayValues(value[key], isDeepSecretKey);
+    }
+  }
+
+  private getStringValue(val: any) {
+    if (this.isObject(val) || Array.isArray(val)) {
+      return JSON.stringify(val);
+    } else if (val === null || val === undefined) {
+      return val;
+    } else {
+      return val.toString();
     }
   }
 
@@ -150,7 +160,7 @@ export class ObjectRedactor {
   ) {
     switch (matchType) {
       case CustomObjectMatchType.Full:
-        value[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value[key]));
+        value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
         return Promise.resolve();
       case CustomObjectMatchType.Deep:
         value[key] = await this.redactAllArrayValues(value[key], true);
@@ -167,7 +177,7 @@ export class ObjectRedactor {
 
   private async handleCustomObjectObjectValueIfStringKeySpecified(value: any, key: string, stringKey: string) {
     if (this.secretManager.isFullSecretKey(stringKey)) {
-      value[key] = await this.primitiveRedactor.redactValue(JSON.stringify(value[key]));
+      value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
     } else if (this.secretManager.isDeepSecretKey(stringKey)) {
       await this.redactSecretObjectFields(value[key], true);
     } else if (this.secretManager.isSecretKey(stringKey)) {
@@ -182,7 +192,7 @@ export class ObjectRedactor {
   ) {
     switch (matchType) {
       case CustomObjectMatchType.Full:
-        value[key] = JSON.stringify(value[key]);
+        value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
         return Promise.resolve();
       case CustomObjectMatchType.Deep:
         return this.redactSecretObjectFields(value[key], true);
@@ -208,12 +218,11 @@ export class ObjectRedactor {
   ): Promise<any> {
     switch (matchValue) {
       case CustomObjectMatchType.Full:
-        return this.primitiveRedactor.redactValue(JSON.stringify(value));
+        return this.primitiveRedactor.redactValue(this.getStringValue(value));
       case CustomObjectMatchType.Deep:
       case CustomObjectMatchType.Shallow:
-      case CustomObjectMatchType.Pass:
-      case true:
         return this.primitiveRedactor.redactValue(value);
+      case CustomObjectMatchType.Pass:
       default:
         return Promise.resolve(value);
     }
@@ -247,7 +256,7 @@ export class ObjectRedactor {
 
   private async redactPrimitiveValueIfSecret(key: string, value: any, forceDeepRedaction: boolean): Promise<any> {
     if (this.secretManager.isFullSecretKey(key)) {
-      return this.primitiveRedactor.redactValue(JSON.stringify(value));
+      return this.primitiveRedactor.redactValue(this.getStringValue(value));
     } else if (forceDeepRedaction || this.secretManager.isSecretKey(key) || this.secretManager.isDeepSecretKey(key)) {
       return this.primitiveRedactor.redactValue(value);
     } else {
