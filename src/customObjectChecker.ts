@@ -4,6 +4,7 @@ export class CustomObjectChecker {
   private customObjects: CustomObject[] = [];
 
   constructor(customObjects?: CustomObject[]) {
+    this.validateCustomObjects(customObjects);
     this.customObjects = customObjects ? customObjects : [];
   }
 
@@ -42,5 +43,24 @@ export class CustomObjectChecker {
     }
 
     return true;
+  }
+
+  private validateCustomObjects(customObjects?: CustomObject[]): void {
+    if (!customObjects || customObjects.length <= 1) {
+      return;
+    }
+
+    for (let i = 0; i < customObjects.length - 1; i++) {
+      const current: CustomObject = customObjects[i];
+      const keys = Object.keys(current);
+      for (let j = i + 1; j < customObjects.length; j++) {
+        const other: CustomObject = customObjects[j];
+        const otherKeys = Object.keys(other);
+        const commonKeys = keys.filter((key) => otherKeys.includes(key));
+        if (commonKeys.length === keys.length && commonKeys.length === otherKeys.length) {
+          throw new Error(`Custom Objects at indexes ${i} and ${j} cannot have identical keys: ${commonKeys}`);
+        }
+      }
+    }
   }
 }
