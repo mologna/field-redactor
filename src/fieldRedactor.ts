@@ -4,6 +4,7 @@ import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
 import { CustomObjectChecker } from './customObjectChecker';
+import { FieldRedactorValidationError } from './errors';
 
 export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
@@ -58,7 +59,7 @@ export class FieldRedactor {
 
   private validateInput(value: any) {
     if (!value || typeof value !== 'object' || value instanceof Date) {
-      throw new Error('Input value must be a JSON object');
+      throw new FieldRedactorValidationError('Input value must be a JSON object');
     }
   }
 }

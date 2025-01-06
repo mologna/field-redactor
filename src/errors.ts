@@ -11,3 +11,10 @@ export class FieldRedactorConfigurationError extends FieldRedactorError {
     this.name = 'FieldRedactorConfigurationError';
   }
 }
+
+export class FieldRedactorValidationError extends FieldRedactorError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'FieldRedactorValidationError';
+  }
+}

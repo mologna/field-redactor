@@ -3,6 +3,7 @@ import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { SecretManager } from '../../src/secretManager';
 import { CustomObjectChecker } from '../../src/customObjectChecker';
 import { ObjectRedactor } from '../../src/objectRedactor';
+import { FieldRedactorValidationError } from '../../src/errors';
 jest.mock('../../src/primitiveRedactor');
 jest.mock('../../src/secretManager');
 jest.mock('../../src/customObjectChecker');
@@ -65,14 +66,30 @@ describe('FieldRedactor', () => {
   describe('redact', () => {
     it('Should throw an exception on invalid input', async () => {
       const fieldRedactor = new FieldRedactor();
-      expect(() => fieldRedactor.redact(null)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redact(undefined)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redact('foo')).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redact(1)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redact(false)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redact(true)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redact(new Date())).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redact(() => {})).rejects.toThrow('Input value must be a JSON object');
+      expect(() => fieldRedactor.redact(null)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redact(undefined)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redact('foo')).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redact(1)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redact(false)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redact(true)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redact(new Date())).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redact(() => {})).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
     });
 
     it('Should call objectRedactor redactInPlace with a copy of the input', async () => {
@@ -89,14 +106,30 @@ describe('FieldRedactor', () => {
   describe('redactInPlace', () => {
     it('Should throw an exception on invalid input', async () => {
       const fieldRedactor = new FieldRedactor();
-      expect(() => fieldRedactor.redactInPlace(null)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redactInPlace(undefined)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redactInPlace('foo')).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redactInPlace(1)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redactInPlace(false)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redactInPlace(true)).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redactInPlace(new Date())).rejects.toThrow('Input value must be a JSON object');
-      expect(() => fieldRedactor.redactInPlace(() => {})).rejects.toThrow('Input value must be a JSON object');
+      expect(() => fieldRedactor.redactInPlace(null)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redactInPlace(undefined)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redactInPlace('foo')).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redactInPlace(1)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redactInPlace(false)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redactInPlace(true)).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redactInPlace(new Date())).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
+      expect(() => fieldRedactor.redactInPlace(() => {})).rejects.toThrow(
+        new FieldRedactorValidationError('Input value must be a JSON object')
+      );
     });
 
     it('Should call objectRedactor redactInPlace with a copy of the input', async () => {
