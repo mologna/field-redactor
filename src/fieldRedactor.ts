@@ -43,13 +43,8 @@ export class FieldRedactor {
    * @returns The redacted JSON object.
    */
   public async redact(value: any): Promise<any> {
-    this.validateInput(value);
-    try {
-      const copy = this.deepCopy(value);
-      return this.objectRedactor.redactInPlace(copy);
-    } catch (e: any) {
-      throw new FieldRedactorError(e.message);
-    }
+    const copy = this.deepCopy(value);
+    return this.redactInPlace(copy);
   }
 
   /**
