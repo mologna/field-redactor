@@ -1,3 +1,4 @@
+import { FieldRedactorConfigurationError } from './errors';
 import { CustomObject } from './types';
 
 export class CustomObjectChecker {
@@ -58,7 +59,9 @@ export class CustomObjectChecker {
         const otherKeys = Object.keys(other);
         const commonKeys = keys.filter((key) => otherKeys.includes(key));
         if (commonKeys.length === keys.length && commonKeys.length === otherKeys.length) {
-          throw new Error(`Custom Objects at indexes ${i} and ${j} cannot have identical keys: ${commonKeys}`);
+          throw new FieldRedactorConfigurationError(
+            `Custom Objects at indexes ${i} and ${j} cannot have identical keys: ${commonKeys}`
+          );
         }
       }
     }

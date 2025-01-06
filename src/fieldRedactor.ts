@@ -4,6 +4,7 @@ import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
 import { CustomObjectChecker } from './customObjectChecker';
+import { FieldRedactorError, FieldRedactorValidationError } from './errors';
 
 export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
@@ -42,9 +43,8 @@ export class FieldRedactor {
    * @returns The redacted JSON object.
    */
   public async redact(value: any): Promise<any> {
-    this.validateInput(value);
     const copy = this.deepCopy(value);
-    return this.objectRedactor.redactInPlace(copy);
+    return this.redactInPlace(copy);
   }
 
   /**
@@ -53,12 +53,16 @@ export class FieldRedactor {
    */
   public async redactInPlace(value: any): Promise<void> {
     this.validateInput(value);
-    return this.objectRedactor.redactInPlace(value);
+    try {
+      return this.objectRedactor.redactInPlace(value);
+    } catch (e: any) {
+      throw new FieldRedactorError(e.message);
+    }
   }
 
   private validateInput(value: any) {
     if (!value || typeof value !== 'object' || value instanceof Date) {
-      throw new Error('Input value must be a JSON object');
+      throw new FieldRedactorValidationError('Input value must be a JSON object');
     }
   }
 }
