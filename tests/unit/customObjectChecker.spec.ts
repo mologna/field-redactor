@@ -1,4 +1,5 @@
 import { CustomObjectChecker } from '../../src/customObjectChecker';
+import { FieldRedactorConfigurationError } from '../../src/errors';
 import { CustomObject, CustomObjectMatchType } from '../../src/types';
 
 describe('CustomObjectChecker', () => {
@@ -183,7 +184,7 @@ describe('CustomObjectChecker', () => {
       bar: CustomObjectMatchType.Shallow
     };
     expect(() => new CustomObjectChecker([cust1, cust2])).toThrow(
-      `Custom Objects at indexes 0 and 1 cannot have identical keys: foo,bar`
+      new FieldRedactorConfigurationError('Custom Objects at indexes 0 and 1 cannot have identical keys: foo,bar')
     );
   });
 
@@ -197,7 +198,7 @@ describe('CustomObjectChecker', () => {
       bar: 'foo'
     };
     expect(() => new CustomObjectChecker([cust1, cust2])).toThrow(
-      `Custom Objects at indexes 0 and 1 cannot have identical keys: foo,bar`
+      new FieldRedactorConfigurationError(`Custom Objects at indexes 0 and 1 cannot have identical keys: foo,bar`)
     );
   });
 
@@ -219,7 +220,7 @@ describe('CustomObjectChecker', () => {
       bar: CustomObjectMatchType.Shallow
     };
     expect(() => new CustomObjectChecker([cust1, cust2, cust3, cust4])).toThrow(
-      `Custom Objects at indexes 0 and 3 cannot have identical keys: foo,bar`
+      new FieldRedactorConfigurationError(`Custom Objects at indexes 0 and 3 cannot have identical keys: foo,bar`)
     );
   });
 
