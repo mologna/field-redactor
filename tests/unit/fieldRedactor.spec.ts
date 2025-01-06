@@ -101,6 +101,18 @@ describe('FieldRedactor', () => {
       expect(argument).not.toBe(input);
       expect(argument).toEqual(input);
     });
+
+    it('Should wrap any thrown exceptions in a FieldRedactorError', async () => {
+      const errorText = 'foobar';
+      const fieldRedactor = new FieldRedactor();
+      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
+      mockObjectRedactor.redactInPlace.mockImplementation(async () => {
+        throw new Error(errorText);
+      });
+      expect(() => fieldRedactor.redactInPlace({ foo: 'bar' })).rejects.toThrow(
+        new FieldRedactorValidationError(errorText)
+      );
+    });
   });
 
   describe('redactInPlace', () => {
@@ -139,6 +151,18 @@ describe('FieldRedactor', () => {
       const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
       const argument = mockObjectRedactor.redactInPlace.mock.calls[0][0];
       expect(argument).toBe(input);
+    });
+
+    it('Should wrap any thrown exceptions in a FieldRedactorError', async () => {
+      const errorText = 'foobar';
+      const fieldRedactor = new FieldRedactor();
+      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
+      mockObjectRedactor.redactInPlace.mockImplementation(async () => {
+        throw new Error(errorText);
+      });
+      expect(() => fieldRedactor.redactInPlace({ foo: 'bar' })).rejects.toThrow(
+        new FieldRedactorValidationError(errorText)
+      );
     });
   });
 });

@@ -4,7 +4,7 @@ import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
 import { CustomObjectChecker } from './customObjectChecker';
-import { FieldRedactorValidationError } from './errors';
+import { FieldRedactorError, FieldRedactorValidationError } from './errors';
 
 export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
@@ -44,8 +44,12 @@ export class FieldRedactor {
    */
   public async redact(value: any): Promise<any> {
     this.validateInput(value);
-    const copy = this.deepCopy(value);
-    return this.objectRedactor.redactInPlace(copy);
+    try {
+      const copy = this.deepCopy(value);
+      return this.objectRedactor.redactInPlace(copy);
+    } catch (e: any) {
+      throw new FieldRedactorError(e.message);
+    }
   }
 
   /**
@@ -54,7 +58,11 @@ export class FieldRedactor {
    */
   public async redactInPlace(value: any): Promise<void> {
     this.validateInput(value);
-    return this.objectRedactor.redactInPlace(value);
+    try {
+      return this.objectRedactor.redactInPlace(value);
+    } catch (e: any) {
+      throw new FieldRedactorError(e.message);
+    }
   }
 
   private validateInput(value: any) {
