@@ -6,6 +6,11 @@ import { SecretManager } from './secretManager';
 import { CustomObjectChecker } from './customObjectChecker';
 import { FieldRedactorError, FieldRedactorValidationError } from './errors';
 
+/**
+ * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
+ * the secrets, deepSecrets, fullSecrets, and custom objects provided in the configuration. Refer to the README.md
+ * for more details.
+ */
 export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private readonly objectRedactor: ObjectRedactor;
@@ -38,8 +43,9 @@ export class FieldRedactor {
   }
 
   /**
-   * Redacts the fields of a JSON object based on the configuration provided.
-   * @param value The JSON value to redact
+   * Conditionally redacts fields in the JSON object based on the configuration provided in the constructor and returns the
+   * redacted result.
+   * @param value The JSON value to redact.
    * @returns The redacted JSON object.
    */
   public async redact(value: any): Promise<any> {
@@ -48,7 +54,7 @@ export class FieldRedactor {
   }
 
   /**
-   * Redacts the fields of a JSON object in place based on the configuration provided.
+   * Conditionally redacts fields in the JSON object in place based on the configuration provided in the constructor.
    * @param value The JSON value to redact in place.
    */
   public async redactInPlace(value: any): Promise<void> {

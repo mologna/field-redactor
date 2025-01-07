@@ -1,14 +1,26 @@
 import { FieldRedactorConfigurationError } from './errors';
 import { CustomObject } from './types';
 
+/**
+ * Utility for determining if a given object matches a CustomObject schema.
+ */
 export class CustomObjectChecker {
   private customObjects: CustomObject[] = [];
 
+  /**
+   * Creates a CustomObjectChecker with the specified CustomObjects.
+   * @param customObjects The CustomObjects to check against.
+   */
   constructor(customObjects?: CustomObject[]) {
     this.validateCustomObjects(customObjects);
     this.customObjects = customObjects ? customObjects : [];
   }
 
+  /**
+   * Determines if the input value matches any of the custom objects provided in the constructor.
+   * @param value The value to compare against the custom objects.
+   * @returns A matching custom object if one exists, otherwise undefined.
+   */
   public getMatchingCustomObject(value: any): CustomObject | undefined {
     for (const customObject of this.customObjects) {
       if (this.isCustomObject(value, customObject)) {

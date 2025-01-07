@@ -1,10 +1,21 @@
 import { PrimitiveRedactorConfig, Redactor } from './types';
 
+/**
+ * Redacts primitive values based on the configuration provided in the constructor. Uses the redactor
+ * privded in the constructor to redact values, or a basic redactor which returns 'REDACTED' if no redactor
+ * provided. Null and undefined values are ignored by default.
+ */
 export class PrimitiveRedactor {
   private static DEFAULT_REDACTED_TEXT = 'REDACTED';
   private ignoreBooleans: boolean;
   private ignoreNullOrUndefined: boolean;
   private redactor: Redactor = (val: any) => Promise.resolve(PrimitiveRedactor.DEFAULT_REDACTED_TEXT);
+
+  /**
+   * Creates a PrimitiveRedactor with the specified configuration.
+   * @param config The PrimitiveRedactor configuration which specifies the redactor to use, whether to
+   * ignore booleans, and whether to ignore null or undefined values.
+   */
   constructor(config: PrimitiveRedactorConfig) {
     if (config.redactor) {
       this.redactor = config.redactor;
@@ -17,6 +28,11 @@ export class PrimitiveRedactor {
     }
   }
 
+  /**
+   * Redacts the primitive value based on the configuration provided in the constructor.
+   * @param value The value to redact.
+   * @returns The redacted value.
+   */
   public async redactValue(value: any): Promise<any> {
     if (typeof value === 'boolean') {
       return this.redactBoolean(value);
