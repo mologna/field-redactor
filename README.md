@@ -20,7 +20,8 @@ If this object is placed in a data set with many others, and only some of these 
 ## Basic Usage
 Basic usage of the FieldRedactor is straightforward but not recommended. Object redaction can be performed either in-place or return the redacted object:
 
-```javascript
+```typescript
+import { FieldRedactor } from 'field-redactor';
 const myJsonObject = { foo: "bar", fizz: null };
 const fieldRedactor = new FieldRedactor();
 
@@ -62,7 +63,8 @@ Configures the redactor function used when a secret is encountered. Users should
 
 #### Example
 ##### Code
-```javascript
+```typescript
+import { FieldRedactor } from 'field-redactor';
 import * as crypto from 'crypto';
 const redactor: Redactor = (val: any) => Promise.resolve(crypto.createHash('sha256').update(val.toString()).digest('hex'));
 const fieldRedactor = new FieldRedactor({
@@ -91,7 +93,8 @@ Used to specify primitive that should be redacted. If none of `secretKeys`, `dee
 
 #### Example
 ##### Code
-```javascript
+```typescript
+import { FieldRedactor } from 'field-redactor';
 const myJsonObject = {
   timestamp: "2024-12-01T22:07:26.448Z",
   userId: 271,
@@ -147,7 +150,8 @@ Used to specify secrets which should be deeply redacted. Values which are object
 
 #### Example
 ##### Code
-```javascript
+```typescript
+import { FieldRedactor } from 'field-redactor';
 const myJsonObject = {
   timestamp: "2024-12-01T22:07:26.448Z",
   userId: 271,
@@ -210,7 +214,9 @@ Specifies values which should be stringified and passed to the redactor function
 
 #### Example
 ##### Code
-```javascript
+```typescript
+import { FieldRedactor } from 'field-redactor';
+
 const myJsonObject = {
   timestamp: "2024-12-01T22:07:26.448Z",
   userId: 271,
@@ -284,6 +290,8 @@ A custom object takes the following format:
 
 #### Example
 ```typescript
+import { FieldRedactor } from 'field-redactor';
+
 const myCustomObject = {
   name: CustomObjectMatchType.Ignore,
   type: CustomObjectMatchType.Ignore,
@@ -429,6 +437,8 @@ console.log(result);
 ### Example
 #### Code
 ```typescript
+import { FieldRedactor } from 'field-redactor';
+
 const myJsonObject = { 
   foo: "bar",
   fizz: false,
@@ -487,6 +497,7 @@ The following example illustrates the power and utility of this library when con
 
 ##### Code
 ```typescript
+import { FieldRedactor } from 'field-redactor';
 const myRedactor = (text: string) => Promise.resolve("REDACTED");
 const metadataCustomObject: CustomObject = {
   name: CustomObjectMatchTypes.Pass,
