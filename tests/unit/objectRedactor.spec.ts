@@ -132,6 +132,20 @@ describe('ObjectRedactor', () => {
     expect(result.testObject.bar).toBe(DEFAULT_REDACTED_TEXT);
   });
 
+  it('Assesses arrays even when they are not secret values to determine if they contain objects which should be assessed', async () => {
+    const secretKeys = [/email/];
+    const secretManager = new SecretManager({ secretKeys });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const obj = {
+      foo: ['bar', { email: 'foo.bar@gmail.com' }]
+    };
+
+    await redactor.redactInPlace(obj);
+    expect(obj.foo[0]).toBe('bar');
+    expect((obj.foo[1] as any).email).toBe(DEFAULT_REDACTED_TEXT);
+  });
+
   it('Can redact only specific keys', async () => {
     const secretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
     secretManager = new SecretManager({ secretKeys });
