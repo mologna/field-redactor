@@ -3,6 +3,12 @@ import { SecretManager } from './secretManager';
 import { CustomObjectChecker } from './customObjectChecker';
 import { PrimitiveRedactor } from './primitiveRedactor';
 
+/**
+ * Redacts fields in a JSON object using the secretManager, primitiveRedactor, and CustomObjectChecker provided in the
+ * constructor. The redaction is done in place and the redacted object is returned. CustomObjects take highest precedence,
+ * followed by fullSecretKeys, then deepSecretKeys, and finally secretKeys. If a field is an object or an array it is
+ * assessed recursively unless otherwise configured by a CustomObject or deepSecretKey.
+ */
 export class ObjectRedactor {
   constructor(
     private readonly primitiveRedactor: PrimitiveRedactor,
@@ -10,6 +16,12 @@ export class ObjectRedactor {
     private readonly checker: CustomObjectChecker
   ) {}
 
+  /**
+   * Conditionally redacts fields in the JSON object in place based on the configuration using the
+   * primitive redactor, custom object checker, and secret manager provided in the constructor.
+   * @param value The JSON value to redact in place.
+   * @returns The JSON value provided in the argument.
+   */
   public async redactInPlace(value: any): Promise<any> {
     const customObject = this.checker.getMatchingCustomObject(value);
     if (customObject) {

@@ -1,5 +1,9 @@
 import { SecretManagerConfig } from './types';
 
+/**
+ * Utility class for managing secrets and determining if a  given value is a secret of any type. If no secrets of
+ * any type are provided in the configuration then all values are considered secrets (but not deep or full secrets).
+ */
 export class SecretManager {
   private secretKeys?: RegExp[];
   private deepSecretKeys?: RegExp[];
@@ -17,8 +21,8 @@ export class SecretManager {
   }
 
   /**
-   * Determines if the given key is a secret. If no secrets provided then assumes
-   * all keys are secret.
+   * Determines if the given key is a secret. If no secrets of any type are provided then this function
+   * always returns true.
    * @param key The key to check.
    * @returns True if the key is a secret key or no secret keys exist, otherwise false.
    */
@@ -31,7 +35,7 @@ export class SecretManager {
   }
 
   /**
-   * Determines if a key is a deep secret. If no deep secrets provided then assumes false.
+   * Determines if a key is a deep secret based on the deepSecretKeys configuration provided in the constructor.
    * @param key The key to check.
    * @returns True if the key is a deep secret key, otherwise false.
    */
@@ -44,8 +48,7 @@ export class SecretManager {
   }
 
   /**
-   * Determines if a key is a secret object key which should be redacted. If no secret
-   * object keys are provided then assumes objects are not secret.
+   * Determines if a key is a full secret based on the fullSecretKeys configuration provided in the constructor.
    * @param key The key to check.
    * @returns True if the key is a full secret key, otherwise false.
    */
