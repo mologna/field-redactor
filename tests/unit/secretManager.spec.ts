@@ -11,6 +11,35 @@ describe('NewSecretManager', () => {
     expect(secretManager.isFullSecretKey('qux')).toBe(false);
   });
 
+  it('Should not consider all values secret if deepSecretKeys or fullSecretKeys are provided', () => {
+    // deep secret
+    const deepSecretManager = new SecretManager({
+      deepSecretKeys: [/foo/]
+    });
+    expect(deepSecretManager.isSecretKey('foo')).toBe(false);
+    expect(deepSecretManager.isSecretKey('bar')).toBe(false);
+    expect(deepSecretManager.isDeepSecretKey('foo')).toBe(true);
+
+    // full secret
+    const fullSecretManager = new SecretManager({
+      fullSecretKeys: [/foo/]
+    });
+    expect(fullSecretManager.isSecretKey('foo')).toBe(false);
+    expect(fullSecretManager.isSecretKey('bar')).toBe(false);
+    expect(fullSecretManager.isFullSecretKey('foo')).toBe(true);
+
+    // both
+    const combinedSecretManager = new SecretManager({
+      fullSecretKeys: [/foo/],
+      deepSecretKeys: [/bar/]
+    });
+    expect(combinedSecretManager.isSecretKey('foo')).toBe(false);
+    expect(combinedSecretManager.isSecretKey('bar')).toBe(false);
+    expect(combinedSecretManager.isSecretKey('hello')).toBe(false);
+    expect(combinedSecretManager.isFullSecretKey('foo')).toBe(true);
+    expect(combinedSecretManager.isDeepSecretKey('bar')).toBe(true);
+  });
+
   it('Returns true for secretKeys that match', () => {
     const secretManager = new SecretManager({
       secretKeys: [/foo/, /^pass/]
