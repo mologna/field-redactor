@@ -1,6 +1,5 @@
 import * as crypto from 'crypto';
-import { FieldRedactor } from '../../src/fieldRedactor';
-import { CustomObject, CustomObjectMatchType, Redactor } from '../../src/types';
+import { FieldRedactor, CustomObject, CustomObjectMatchType, Redactor } from '../../src';
 import {
   mockClientName,
   mockEmail,

@@ -1,6 +1,5 @@
 import * as crypto from 'crypto';
-import { CustomObject, CustomObjectMatchType, FieldRedactorConfig } from '../../src/types';
-import { FieldRedactor } from '../../src/fieldRedactor';
+import { CustomObject, CustomObjectMatchType, FieldRedactorConfig, FieldRedactor } from '../../src';
 import { eventProcessingLogsMock, kafkaAdapterLogMock } from '../mocks/realExampleMocks';
 import {
   sha256HashedEmail,
