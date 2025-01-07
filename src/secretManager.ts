@@ -6,9 +6,14 @@ export class SecretManager {
   private fullSecretKeys?: RegExp[];
 
   constructor(config: SecretManagerConfig) {
-    this.secretKeys = config.secretKeys;
     this.deepSecretKeys = config.deepSecretKeys;
     this.fullSecretKeys = config.fullSecretKeys;
+
+    if (!config.secretKeys && (config.deepSecretKeys || config.fullSecretKeys)) {
+      this.secretKeys = [];
+    } else {
+      this.secretKeys = config.secretKeys;
+    }
   }
 
   /**
@@ -48,7 +53,7 @@ export class SecretManager {
     if (!this.fullSecretKeys) {
       return false;
     }
-    
+
     return SecretManager.valueMatchesAnyRegexValue(key, this.fullSecretKeys);
   }
 
