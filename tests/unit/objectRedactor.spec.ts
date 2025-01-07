@@ -171,7 +171,11 @@ describe('ObjectRedactor', () => {
   });
 
   it('Can perform fullRedaction on objects and arrays when specified', async () => {
-    secretManager = new SecretManager({ fullSecretKeys: [/foo/, /bar/], secretKeys: [] });
+    const primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false });
+    secretManager = new SecretManager({
+      fullSecretKeys: [/foo/, /bar/, /undefinedValue/, /nullValue/],
+      secretKeys: []
+    });
     const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
     const input = {
@@ -183,12 +187,16 @@ describe('ObjectRedactor', () => {
         a: 'b'
       },
       bar: ['fizz', 'buzz'],
-      bim: 'bam'
+      bim: 'bam',
+      undefinedValue: undefined,
+      nullValue: null
     };
 
     const redacted = await redactor.redactInPlace(input);
     expect(redacted.foo).toBe(DEFAULT_REDACTED_TEXT);
     expect(redacted.bar).toBe(DEFAULT_REDACTED_TEXT);
+    expect(redacted.undefinedValue).toBe(DEFAULT_REDACTED_TEXT);
+    expect(redacted.nullValue).toBe(DEFAULT_REDACTED_TEXT);
     expect(redacted.bim).toBe('bam');
   });
 
@@ -235,10 +243,6 @@ describe('ObjectRedactor', () => {
     customObjectChecker = new CustomObjectChecker([customObject]);
     secretManager = new SecretManager({ secretKeys: [/fizz/, /fazz/] });
     const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
-    const nestedObject = {
-      bim: 'bam',
-      biff: ['buzz', { bam: 'bar' }]
-    };
     const obj = {
       full: {
         bim: 'bam',
@@ -353,6 +357,26 @@ describe('ObjectRedactor', () => {
     const result = await redactor.redactInPlace(input);
     expect(result.mySpecial.foo).toBe(DEFAULT_REDACTED_TEXT);
     expect(result.mySpecial.bar).toBe(input.mySpecial.bar);
+  });
+
+  it('Can redact special objects nested in an object already being redacted', async () => {
+    const specialObject = {
+      foo: CustomObjectMatchType.Deep,
+      bar: CustomObjectMatchType.Ignore
+    };
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    const deepSecretKeys: RegExp[] = [/email/];
+    const secretManager: SecretManager = new SecretManager({ deepSecretKeys });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+    const obj = {
+      email: {
+        foo: 'Redact me',
+        bar: 'Leave me'
+      }
+    };
+    await redactor.redactInPlace(obj);
+    expect(obj.email.foo).toBe(DEFAULT_REDACTED_TEXT);
+    expect(obj.email.bar).toBe('Leave me');
   });
 
   it('Can handle special objects in arrays', async () => {
@@ -580,6 +604,59 @@ describe('ObjectRedactor', () => {
       name: 'email',
       kind: 'String',
       value: 'foo.bar@gmail.com'
+    });
+  });
+
+  it('Handles precedence of secret keys and custom objects correctly', async () => {
+    const specialObject: CustomObject = {
+      name: CustomObjectMatchType.Ignore,
+      kind: CustomObjectMatchType.Ignore,
+      value: 'name'
+    };
+
+    const secretKeys: RegExp[] = [/email/, /account/, /customObject/, /userInfo/];
+    const deepSecretKeys: RegExp[] = [/account/, /customObject/, /userInfo/];
+    const fullSecretKeys = [/account/, /customObject/];
+    customObjectChecker = new CustomObjectChecker([specialObject]);
+    secretManager = new SecretManager({ secretKeys, deepSecretKeys, fullSecretKeys });
+    const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+
+    const obj = {
+      account: {
+        email: 'foobar',
+        field: 'should be fully redacted'
+      },
+      userInfo: {
+        email: 'foobar',
+        field: 'should be deeply redacted'
+      },
+      email: 'should be redacted',
+      customObject: {
+        name: 'account',
+        kind: 'Object',
+        value: {
+          name: 'email',
+          kind: 'String',
+          value: 'should be the only field redacted'
+        }
+      }
+    };
+
+    await redactor.redactInPlace(obj);
+    expect(obj.account).toEqual(DEFAULT_REDACTED_TEXT);
+    expect(obj.userInfo).toEqual({
+      email: DEFAULT_REDACTED_TEXT,
+      field: DEFAULT_REDACTED_TEXT
+    });
+    expect(obj.email).toBe(DEFAULT_REDACTED_TEXT);
+    expect(obj.customObject).toEqual({
+      name: 'account',
+      kind: 'Object',
+      value: {
+        name: 'email',
+        kind: 'String',
+        value: DEFAULT_REDACTED_TEXT
+      }
     });
   });
 });
