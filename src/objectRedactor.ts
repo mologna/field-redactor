@@ -24,7 +24,10 @@ export class ObjectRedactor {
   private async redactSecretObjectFields(object: any, forceDeepRedaction: boolean = false): Promise<void> {
     for (const key of Object.keys(object)) {
       const value: any = object[key];
-      if (this.secretManager.isFullSecretKey(key)) {
+      const customObject = this.checker.getMatchingCustomObject(value);
+      if (customObject) {
+        await this.redactCustomObject(value, customObject);
+      } else if (this.secretManager.isFullSecretKey(key)) {
         object[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value));
       } else if (Array.isArray(object[key])) {
         object[key] = await this.redactArrayInObject(value, key, forceDeepRedaction);
@@ -176,7 +179,10 @@ export class ObjectRedactor {
   }
 
   private async handleCustomObjectObjectValueIfStringKeySpecified(value: any, key: string, stringKey: string) {
-    if (this.secretManager.isFullSecretKey(stringKey)) {
+    const customObject = this.checker.getMatchingCustomObject(value[key]);
+    if (customObject) {
+      await this.redactCustomObject(value[key], customObject);
+    } else if (this.secretManager.isFullSecretKey(stringKey)) {
       value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
     } else if (this.secretManager.isDeepSecretKey(stringKey)) {
       await this.redactSecretObjectFields(value[key], true);
