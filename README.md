@@ -5,20 +5,22 @@ A utility `npm` module for redacting sensitive data from JSON objects using comp
 It can redact JSON values based on Regular Expression matching of key values, custom object logic for PII values identified by fields other than their key, deeply redact sensitive objects, and other PII redaction strategies that more simplistic approaches cannot handle.
 
 # History
-In many instances redaction of sensitive data from log output is fairly straightforward and can be accomplished through existing redaction libraries. However, I often encountered scenarios where such simplistic approaches were not sufficient. Take for example the following object:
-```
+In many instances, redaction of sensitive data from log output is fairly straightforward and can be accomplished through existing redaction libraries. However, I often encountered scenarios where such simplistic approaches were not sufficient. Take, for example, the following object:
+
+```json
 {
   "name": "email",
   "type": "String",
   "value": "foo.bar@example.com"
 }
 ```
-If this object is placed in a data set with many others, and only it and a few others have sensitive PII, redaction becomes quite troublesome. Of course, one could redact all `value` fields from these objects, but this creates another problem when using log data to trace or debug, as it has now all been redacted. The conditional determination of whether or not I want to redact the value lies in its `name` field, and I often found myself writing custom logic for specific types of objects that became brittle and a code maintenance nightmare. So I decided to write my own, more manageable plug-and-play solution that would require only minor configuration tweaks instead. Enter FieldRedactor!
 
-# Basic Usage
+If this object is placed in a data set with many others, and only some of these objects contain PII, redaction becomes quite troublesome. One could redact all `value` fields from these objects - but this merely renders the log output useless for debugging or tracing, as all values are now redacted. The value of the `name` field determines whether or not the `value` field should be redacted. I often found myself writing custom logic to make this determination, which led to brittle code that was difficult to maintain. In the end I decided to write a new, highly configurable plug-and-play solution that could redact sensitive data in various manners while requiring only minor configuration tweaks. Enter FieldRedactor!
+
+## Basic Usage
 Basic usage of the FieldRedactor is straightforward but not recommended. Object redaction can be performed either in-place or return the redacted object:
 
-```
+```javascript
 const myJsonObject = { foo: "bar", fizz: null };
 const fieldRedactor = new FieldRedactor();
 
@@ -31,33 +33,65 @@ console.log(result); // { foo: "REDACTED", fizz: null }
 await fieldRedactor.redactInPlace(myJsonObject);
 console.log(myJsonObject); // { foo: "REDACTED", fizz: null }
 ```
-* `null` and `undefined` values are not redacted by default.
-
-There are far more performant ways to perform global value redaction - the power of this tool comes from its customization.
-
-# Customization
-
-## Overview
-| Config Field | Type | Default | Effect |
-| ------------ | ---- | ------- | ------ |
-| redactor | (val: any) => Promise\<string\> | (val: any) => Promise.resolve("REDACTED") | The function to use when redacting values.
-| secretKeys   | RegExp[] | null | Specifies which values at any level of the JSON object should be redacted. Objects are not deeply redacted, but primitive values in arrays are. If not specified all values are considered secret. |
-| deepSecretKeys | RegExp[] | [] | Specifies which values at any level of the JSON object shold be deeply redacted. All values will be redacted and all children objects will have their values fully redacted unless matching a custom object. |
-| fullSecretKeys | RegExp[] | [] | Specifies which values at any level of the JSON object should be stringified and fully redacted. Primarily pertinent to objects and arrays.
-| customObjects | CustomObject | [] | Specifies custom objects which require more fine-tuned redaction logic such as referencing sibling keys. See custom objects section. |
-| ignoreBooleans | boolean | false | If true booleans will not be redacted even if secret. |
-| ignoreDates | moment.MomentBuiltinFormat[] | [] | If provided, dates and values which match the specified format will not be redacted |
-| ignoreNullOrUndefined | boolean | true | If true nulls and undefines will not be redacted |
+> **Note:** `null` and `undefined` values are not redacted by default.
 
 
-## secretKeys Configuration 
-* type: `RegExp[]`
-* If the key of an object or child object is a regular expression match its value will be redacted.
-* If the value of a `secretKey` is an object it will be assessed using identical logic.
-* If the value of a `secretKey` is an array then all primitives will be redacted, but objects will be assessed using the same logic.
 
-### Example
+## Customization
+The true power of this tool comes from its customization. FieldRedactor can be customized to redact only primtive values for certain keys, deeply redact others, while stringifying and fully redacting other keys. The redactor itself can be configured, and "Custom Objects" can be specified to handle certain object shapes in a highly specific and configurable way.
+
+### Overview
+| Config Field          | Type                            | Default                        | Effect                                                                 |
+|-----------------------|---------------------------------|--------------------------------|-----------------------------------------------------------------------|
+| `redactor`            | `(val: any) => Promise<string>` | `(val) => Promise.resolve("REDACTED")` | The function to use when redacting values.                             |
+| `secretKeys`          | `RegExp[]`                     | `null`                         | Specifies which values at any level of the JSON object should be redacted. Objects are not deeply redacted, but primitive values in arrays are. If not specified, all values are considered secret. |
+| `deepSecretKeys`      | `RegExp[]`                     | `[]`                           | Specifies keys at any level of the JSON object to be deeply redacted. All values within matching objects are fully redacted unless matching a custom object. |
+| `fullSecretKeys`      | `RegExp[]`                     | `[]`                           | Specifies keys at any level of the JSON object to be stringified and fully redacted. Primarily used for objects and arrays. |
+| `customObjects`       | `CustomObject[]`               | `[]`                           | Specifies custom objects requiring fine-tuned redaction logic, such as referencing sibling keys. See the "Custom Objects" section for details. |
+| `ignoreBooleans`      | `boolean`                      | `false`                        | If `true`, booleans will not be redacted even if secret.               |
+| `ignoreNullOrUndefined` | `boolean`                   | `true`                         | If `true`, `null` and `undefined` values will not be redacted.        |
+
+### `redactor` Configuration
+Configures the redactor function used when a secret is encountered. Users should typically provide this configuration.
+
+#### Details
+- **Type:** `(val: any) => Promise<string>`
+- **Effect:** The function used to redact values. 
+  - Value can only be null or undefined if `ignoreNullOrUndefined` is set to false. 
+  - Defaults to `() => Promise.resolve('REDACTED')`.
+
+#### Example
+##### Code
+```javascript
+import * as crypto from 'crypto';
+const redactor: Redactor = (val: any) => Promise.resolve(crypto.createHash('sha256').update(val.toString()).digest('hex'));
+const fieldRedactor = new FieldRedactor({
+  redactor
+});
+const result = await redactor.redact({foo: "bar"});
+console.log(result);
 ```
+
+##### Output
+```bash
+'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9'
+```
+
+### `secretKeys` Configuration
+Used to specify primitive that should be redacted. If none of `secretKeys`, `deepSecretKeys`, or `fullSecretKeys` specified then all values are considered secret. Users should almost always specify at least one of these three fields. Has the lowest precedence of all configurable secret fields.
+
+#### Details
+- **Type:** `RegExp[]`
+- **Default:** All values considered secret
+  - If `deepSecretKeys` or `fullSecretKeys` specified, defaults to `[]`
+- **Effect:** Matches keys in objects or child objects and redacts their values, if primitive. Arrays are processed recursively, with primitives redacted. 
+  - If the value is an object it will be assessed using the same logic, regardless of if its key value is a secret.
+  - if an array value is an object it will be assessed using the same logic, regardless of if its key value is a secret.
+  - Has lowest precedence when compared to `deepSecretKeys`, `fullSecretKeys`, and `customObjects` configurations.
+
+#### Example
+##### Code
+```javascript
 const myJsonObject = {
   timestamp: "2024-12-01T22:07:26.448Z",
   userId: 271,
@@ -78,35 +112,42 @@ const fieldRedactor = new FieldRedactor({
 const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
-Yields the following result:
-```
+
+##### Output
+```json
 {
-  timestamp: "2024-12-01T22:07:26.448Z",
-  userId: 271,
-  contactInfo: {
-    email: "REDACTED",
-    firstName: "REDACTED",
-    lastName: "REDACTED",
-    Salutation: "Mr.",
-    preference: "email",
-    lastUpdated: "2024-12-01T22:07:26.448Z"
+  "timestamp": "2024-12-01T22:07:26.448Z",
+  "userId": 271,
+  "contactInfo": {
+    "email": "REDACTED",
+    "firstName": "REDACTED",
+    "lastName": "REDACTED",
+    "Salutation": "Mr.",
+    "preference": "email",
+    "lastUpdated": "2024-12-01T22:07:26.448Z"
   },
-  someSecretData: ["REDACTED", "REDACTED", { deep: "is not redacted", name: "REDACTED" }],
-  hobbies: ["Basketball", "Baseball", "Tennis"]
+  "someSecretData": ["REDACTED", "REDACTED", { "deep": "is not redacted", "name": "REDACTED" }],
+  "hobbies": ["Basketball", "Baseball", "Tennis"]
 }
 ```
-* contactInfo was not fully redacted despite being specified as a secret key
-* email, firstName, and lastName fields were redacted in contactInfo as they matched regular expressions
-* primitives in `someSecretData` were redacted
-* Only the `name` field in the object in `someSecretData` was redacted as it was a regular expression match.
 
-## deepSecretKeys Configuration
-* type: `RegExp[]`
-* If the key of an object or child object is a regular expression match its value will be redacted.
-* If the value is an object then all values in that object - and its children - will be redacted (unless a custom object match).
-* If the value is an array then all values in that array - and their children - will be redacted (unless a custom object match).
-### Example
-```
+> - contactInfo was not redacted despite being a RegExp match as it is not a primitive.
+> - `email`, `firstName`, and `lastName` fields were redacted in contactInfo as they matched RegExes
+> - primitives in `someSecretData` array value were redacted
+> - object in `someSecretData` was evaluated separate from primitives in the same array
+
+### `deepSecretKeys` Configuration
+Used to specify secrets which should be deeply redacted. Values which are objects or arrays will have all their values redacted, including child objects and arrays, unless identified as a `fullSecretKey` or `customObject` which take higher precedence.
+
+#### Details
+- **Type:** `RegExp[]`
+- **Default:** `[]`
+- **Effect:** Matches keys in objects or child objects and deeply redacts all values, including values in child objects or objects within arrays. 
+  - Has higher precedence than `secretKeys` but lower precedence than `fullSecretKeys` and `customObjects`.
+
+#### Example
+##### Code
+```javascript
 const myJsonObject = {
   timestamp: "2024-12-01T22:07:26.448Z",
   userId: 271,
@@ -116,44 +157,60 @@ const myJsonObject = {
     lastName: "Bar",
     Salutation: "Mr.",
     preference: "email",
-    lastUpdated: "2024-12-01T22:07:26.448Z"
+    lastUpdated: "2024-12-01T22:07:26.448Z",
+    lastUpdatedBy: {
+      firstName: "John",
+      lastName: "Doe",
+      id: "12345"
+    }
   },
-  someSecretData: ["fizz", "buzz", { deep: "is not redacted", name: "foobar" }],
-  hobbies: ["Basketball", "Baseball", "Tennis"]
+  someSecretData: ["fizz", "buzz", { deep: "FOO", name: "BAR" }],
+  hobbies: ["Basketball", "Baseball", "Tennis", {contactInfo: "foobar"}]
 }
 const fieldRedactor = new FieldRedactor({
-  deepSecretKeys: [/someSecretData/i, /contactInfo/i],
+  deepSecretKeys: [/someSecretData/i, /contactInfo/i]
 });
 const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
-Yields the following result:
-```
+
+##### Output
+```json
 {
-  timestamp: "2024-12-01T22:07:26.448Z",
-  userId: 271,
-  contactInfo: {
-    email: "REDACTED",
-    firstName: "REDACTED",
-    lastName: "REDACTED",
-    Salutation: "REDACTED",
-    preference: "REDACTED",
-    lastUpdated: "REDACTED"
+  "timestamp": "2024-12-01T22:07:26.448Z",
+  "userId": 271,
+  "contactInfo": {
+    "email": "REDACTED",
+    "firstName": "REDACTED",
+    "lastName": "REDACTED",
+    "Salutation": "REDACTED",
+    "preference": "REDACTED",
+    "lastUpdated": "REDACTED",
+    "lastUpdatedBy": {
+      "firstName": "REDACTED",
+      "lastName": "REDACTED",
+      "id": "REDACTED"
+    }
   },
-  someSecretData: ["REDACTED", "REDACTED", { deep: "REDACTED", name: "REDACTED" }],
-  hobbies: ["Basketball", "Baseball", "Tennis"]
+  "someSecretData": ["REDACTED", "REDACTED", { "deep": "REDACTED", "name": "REDACTED" }],
+  "hobbies": ["Basketball", "Baseball", "Tennis", { "contactInfo": "REDACTED" }]
 }
 ```
-* Unlike `secretKeys`, all values in `contactInfo` were redacted as it matched the `deepSecretKeys` regular expression.
-* Similarly, all primitive values in `someSecretData` were redacted and all object values were likewise redacted.
+> - All values in `contactInfo` were redacted, including deep children
+> - All values in `someSecretData` were redacted, including object values
 
-## fullSecretKeys Configuration
-* type: `RegExp[]`
-* If the key of an object or child object is a regular expression match its value will be stringified and redacted.
-  * Useful for objects or array values where the entire value should be strified and redacted
+### `fullSecretKeys` Configuration
+Specifies values which should be stringified and passed to the redactor function. Has higher precedence than other secret types but lower precedence than `customObjects`. However, if value is stringified and contains a child object which is a custom object then it will, by definition, not be noticed.
 
-### Example
-```
+#### Details
+- **Type:** `RegExp[]`
+- **Default:** `[]`
+- **Effect:** Matches keys in objects or child objects and stringifies and fully redacts their values. 
+  - Has higher precedence than `secretKeys` and `deepSecretKeys` but lower precedence than `customObjects`.
+
+#### Example
+##### Code
+```javascript
 const myJsonObject = {
   timestamp: "2024-12-01T22:07:26.448Z",
   userId: 271,
@@ -174,73 +231,59 @@ const fieldRedactor = new FieldRedactor({
 const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
-Yields the following result:
-```
+
+##### Output
+```json
 {
-  timestamp: "2024-12-01T22:07:26.448Z",
-  userId: 271,
-  contactInfo: "REDACTED",
-  someSecretData: "REDACTED",
-  hobbies: ["Basketball", "Baseball", "Tennis"]
+  "timestamp": "2024-12-01T22:07:26.448Z",
+  "userId": 271,
+  "contactInfo": "REDACTED",
+  "someSecretData": "REDACTED",
+  "hobbies": ["Basketball", "Baseball", "Tennis"]
 }
 ```
-* Entirity of `contactInfo` was redacted.
-* Entirity of `someSecretData` was redacted.
+> - Entirity of `contactInfo` was redacted.
+> - Entirity of `someSecretData` was redacted.
 
-## customRedactor Configuration
-* type: `(val: any) => Promise<string>`
-* Takes in a primitive value, `Date`, or `Function` (if for some reason you have those) from the JSON object and returns a redacted value
-* If user has set the `allowNullOrUndefined` flag to true then the function should account for this possibility
-* **Users should provide this in most cases.**
+### `customObjects` Configuration
+**One of the most powerful features of this library and why it was written in the first place.** Combining `secretKeys`, `deepSecretKeys`, `fullSecretKeys`, and `customObjects` yields a powerful and highly customizable redaction tool capable of conditionally redacting a broad variety of input JSON objects correctly according to a single schema configuration.
 
-### Example
-```
-import * as crypto from 'crypto';
-const redactor: Redactor = (val: any) => Promise.resolve(crypto.createHash('sha256').update(val.toString()).digest('hex'));
-const fieldRedactor = new FieldRedactor({
-  redactor
-});
-const result = await redactor.redact({foo: "bar"});
-console.log(result); // 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9'
-```
+#### Details
+- **Type:** `CustomObject` (See `CustomObject` Schema Section)
+- **Default:** `[]`
+- **Effect:** Any object that matches the schema will be considered a custom object and redacted based on the schema configuration.
+  - Priority supercedes all others. If a `CustomObject` is nested inside a `deepSecretKey` value then the `CustomObject` configuration takes precedence.
+  - If a `CustomObject` is found inside another `CustomObject` then the new `CustomObject` takes precedence.
 
-## customObjects Configuration
-**One of the most powerful features of this library and why it was written in the first place.**
-* type: `CustomObject[]`
-* Any object that matches this custom object will be redacted based on the custom object configuration.
-* If a key is marked for redaction but its value is an object then it will be redacted according to normal rules.
-* **Priority supercedes all other redactions**
-  * if custom object located in a deeply nested `deepSecretKey` object then it will be evaluated according to custom object rules, not `deepSecretKey` rules.
-  * If a customObject is found inside another custom object being evaluated then its rules will supercede the parent
-* **CustomObjects MUST be an exact match**
-  * If a key exists which is not present in the object being evaluated it is not a match
-  * If the object being evaluated contains an extra key it is not a match
-
-### Schema
+#### `CustomObject` Schema
 A custom object takes the following format:
-```
+```typescript
 {
   [key]: CustomObjectMatchType | string
 }
 ```
-* key: Specifies the key to match on
-* Value: Specifies manner in which to redact
-  * `CustomObjectMatchType` - see `CustomObjectMatchType section
-  * `string` - redacts if the sibling key with this name has a value which is a secret
-    * If the value is an object then it will be redacted according to if the matching key is a `secretKey`, `deepSecretKey`, or `fullSecretKey`.
-    * `fullSecret` takes precedence over `deepSecret` which takes precedence over `secret`.
 
-### CustomObjectMatchType Enum
+- `key`
+  - **Type:** `string`
+  - **Effect:** Specifies the key for a custom object
+- `value`:
+  - **Type:** `CustomObjectMatchType | string`
+  - **Effect:** Specifies how the value should be redacted
+    - `string` - checks if the sibling key with this name has a value which is a `secretKey`, `deepSecretKey`, or `fullSecretKey` and redacts accordingly
+    - `CustomObjectMatchType` - Redacts according to the match type. See `CustomObjectMatchType` Enum Section.
+
+
+#### `CustomObjectMatchType` Enum
 | Key | Description |
 | --- | ----------- |
-| `Full` | Similar in functionality to `fullSecretKeys`; stringify the value and redact |
-| `Deep` | Similar in functionality to `deepSecretKeys`; redact if primitive and redact all values if an object |
-| `Shallow` | Similar in functionality to `secretKeys`; redact if primitive and revert to normal rules if an object |
-| `Pass` | Do not redact if primitive value; revert to normal rules if an object |
-| `Ignore` | Do not redact object whatsoever |
+| `Full` | Stringify value and redact. Functions identical to `fullSecretKeys`. |
+| `Deep` | Redact if primitive, deeply redact all values and children if object or array. Functions identical to `deepSecretKeys`. |
+| `Shallow` | Redact if primitive or array of primitives and revery to normal evaluation if object or array contains object. Functions identical to `secretKeys`. |
+| `Pass` | Do not redact if primitive value and revert to normal rules if an object. |
+| `Ignore` | Do not redact if primitive and skip evaluation entirely if object or array. |
 
-### Example
-```
+#### Example
+```typescript
 const myCustomObject = {
   name: CustomObjectMatchType.Ignore,
   type: CustomObjectMatchType.Ignore,
@@ -321,189 +364,150 @@ const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
 
-Yields the following to the console:
-```
+##### Output
+```json
 {
-  timestamp: "2024-12-01T22:07:26.448Z",
-  userId: 271,
-  data: [
+  "timestamp": "2024-12-01T22:07:26.448Z",
+  "userId": 271,
+  "data": [
     {
-      name: "email",
-      type: "Secure",
-      shallowValue: "REDACTED",
-      deepValue: "REDACTED",
-      fullValue: "REDACTED",
-      shallow: "REDACTED",
-      deep: "REDACTED",
-      full: "REDACTED",
-      pass: "hello",
-      ignore: "hello"
+      "name": "email",
+      "type": "Secure",
+      "shallowValue": "REDACTED",
+      "deepValue": "REDACTED",
+      "fullValue": "REDACTED",
+      "shallow": "REDACTED",
+      "deep": "REDACTED",
+      "full": "REDACTED",
+      "pass": "hello",
+      "ignore": "hello"
     },
     {
-      name: "email",
-      type: "Secure",
-      shallowValue: {
-        hello: "world",
-        email: "REDACTED"
+      "name": "email",
+      "type": "Secure",
+      "shallowValue": {
+        "hello": "world",
+        "email": "REDACTED"
       },
-      deepValue: {
-        hello: "REDACTED",
-        email: "REDACTED"
+      "deepValue": {
+        "hello": "REDACTED",
+        "email": "REDACTED"
       },
-      fullValue: "REDACTED",
-      shallow: {
-        hello: "world",
-        email: "REDACTED"
+      "fullValue": "REDACTED",
+      "shallow": {
+        "hello": "world",
+        "email": "REDACTED"
       },
-      deep: {
-        hello: "REDACTED",
-        email: "REDACTED"
+      "deep": {
+        "hello": "REDACTED",
+        "email": "REDACTED"
       },
-      full: "REDACTED",
-      pass: {
-        hello: "world",
-        email: "REDACTED"
+      "full": "REDACTED",
+      "pass": {
+        "hello": "world",
+        "email": "REDACTED"
       },
-      ignore: {
-        hello: "world",
-        email: "foobar"
+      "ignore": {
+        "hello": "world",
+        "email": "foobar"
       }
     }
   ]
 };
 ```
-* Both objects in the data array matched the custom object and were redacted accordingly
-* `name` and `type` field were never redacted because `CustomObjectMatchType` was `Ignore`
-* `shallowValue` had key specifier `name`, the value of which was `email` which matched shallowKey `/email/`
-  * Value was redacted when primitive and according to `secretKeys` rules when an object
-* `deepValue` had key specifier `type`, the value of which was `Secure` which matched deepKey `/secure/i`
-  * Value was redacted when primitive and according to `deepSecretKeys` rules when an object
-* `fullValue` had key specifier `significance`, the value of which was `meta` which matched fullKey `/meta/i`
-  * Value was redacted when primitive and according to `fullSecretKeys` rules when an object
-* `shallow` field was redacted when primitive and assessed normally when object because `CustomObjectMatchType` was `Shallow`
-* `deep` field was redacted when primitive and fully redacted because `CustomObjectMatchType` was `Deep`
-* `full` field was always stringified and redacted regardless of type because `CustomObjectMatchType` was `Full`
-* `pass` field was not redacted when primitive but assessed normally when object because `CustomObjectMatchType` was `Pass`
-* `ignore` field was completely ignored regardless of type
+> - Both objects in the data array matched the custom object and were redacted accordingly
+>   - The first object contains only primitives whereas the second contains objects to highlight the differences
+> - `name` and `type` field were never redacted in either object because `CustomObjectMatchType` was `Ignore`
+> - `shallowValue`, `deepValue`, and `fullValue` had string key specifiers which matched a `shallowKey`, `deepSecretKey`, and `fullSecretKey`, respectively, and were redacted according to those rules.
+> - `shallow`, `deep`, `full`, `pass`, and `ignore` fields were redacted according to their `CustomObjectMatchType` value specified in the schema. 
 
-As one can see, combining a list of secret keys, deep secret keys, and custom objects with sibling checks yields a quite powerful and customizable tool capable of conditionally redacting a broad variety of JSON inputs correctly according to a single configuration.
-
-## ignoreBooleans Configuration
-* type: `boolean`
-* default: `false`
-* effect: If set to true `boolean` values will never be redacted
+### `ignoreBooleans` Configuration
+- **Type:** `boolean`
+- **Default:** `false`
+- **Effect:** Specifies if boolean values should be redacted.
 
 ### Example
-```
+#### Code
+```typescript
 const myJsonObject = { 
   foo: "bar",
   fizz: false,
   buzz: true
-  };
+};
 const fieldRedactor = new FieldRedactor({
-  ignoreBooleans: true
+  ignoreBooleans: true,
+  secretKeys: [/foo/, /fizz/, /buzz/]
 });
 
-// return redacted result
 const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
-Yields the following result:
-```
+
+#### Output
+```json
 {
-  foo: "REDACTED",
-  fizz: false,
-  buzz: true
+  "foo": "REDACTED",
+  "fizz": false,
+  "buzz": true
 }
 ```
 
-## ignoreNullOrUndefined Configuration
-* type: `boolean`
-* default: `true`
-* effect: If set to true `null` and `undefined` values will never be redacted.
+### `ignoreNullOrUndefined` Configuration
+- **Type:** `boolean`
+- **Default:** `true`
+- **Effect:** Specifies if null or undefined values shold be redacted.
+  - *Note: Ensure custom redaction function can appropriately handle null or undefined if set to false.*
 
 ### Example
-```
+#### Code
+```typescript
 const myJsonObject = { 
   foo: "bar",
   fizz: null,
   buzz: undefined
-  };
+};
 const fieldRedactor = new FieldRedactor({
   ignoreNullOrUndefined: false
 });
 
-// return redacted result
 const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
-Yields the following result:
-```
+#### Output
+```json
 {
-  foo: "REDACTED",
-  fizz: "REDACTED",
-  buzz: "REDACTED"
+  "foo": "REDACTED",
+  "fizz": "REDACTED",
+  "buzz": "REDACTED"
 }
 ```
 
-## ignoreDates Configuration
-* type: `moment.MomentBuiltinFormat[]`
-* default: `[]`
-* effect: Dates with the given moment formats will be ignored.
-  * Useful if your application is globally redacting dates but wants to preserve certain values, such as timestamps.
-*Note: This will be replaced in the future as Moment.js is no longer a well-supported tool*
+## Full Example
+The following example illustrates the power and utility of this library when conditionally redacting JSON output for logging or other purposes. It allows users to specify the manner of redaction, which fields should be redacted and how, and specify custom object schemas with highly configurable redaction logic based on sibling keys or set rules. I find it a quite useful tool!
 
-### Example
-```
-const myJsonObject = { 
-  foo: "2024-12-20T19:10:03.042Z",
-  fizz: "Fri Dec 20 2024",
-  buzz: "2024/12/20"
-  };
-
-const fieldRedactor = new FieldRedactor({
-  ignoreDates: [moment.ISO_8601]
-});
-
-// return redacted result
-const result = await fieldRedactor.redact(myJsonObject);
-console.log(result);
-```
-Yields the following result:
-```
-{
-  foo: "REDACTED",
-  fizz: "Fri Dec 20 2024",
-  buzz: "2024/12/20"
-}
-```
-
-# Full Example Using All Configurations
-The following example illustrates the power and utility of this library when conditionally redacting JSON output for logging or other purposes. It allows users to specify the manner of redaction, which fields should be redacted, which fields should be deeply redacted, whether or not Dates should be redacted, and specify custom object logic where the key identifying whether or not a specific field should be redacted may not be the key for the field itself. I find it a quite useful tool!
-
-```
+##### Code
+```typescript
 const myRedactor = (text: string) => Promise.resolve("REDACTED");
-const metadataCustomObject = {
+const metadataCustomObject: CustomObject = {
   name: CustomObjectMatchTypes.Pass,
   type: CustomObjectMatchTypes.Pass,
   id: CustomObjectMatchTypes.Shallow,
   value: "name"
 };
 
-const actionsCustomObject = {
+const actionsCustomObject: CustomObject = {
   userId: CustomObjectMatchTypes.Pass,
   field: CustomObjectMatchTypes.Pass,
   action: CustomObjectMatchTypes.Pass,
   value: "field"
 }
 
-const fieldRedactor = new FieldRedactor({
+const fieldRedactor: FieldRedactor = new FieldRedactor({
   redactor: myRedactor,
   secretKeys: [/email/, /name/i, /someSecretData/, /children/],
   deepSecretKeys: [/accountInfo/i, /someDeepSecretData/i, /privateInfo/i],
   customObjects: [metadataCustomObject, actionsCustomObject],
-  ignoreNullOrUndefined: false,
-  redactDates: true
+  ignoreNullOrUndefined: false
 });
 
 const myJsonObjectToRedact = {
@@ -553,7 +557,13 @@ const myJsonObjectToRedact = {
       name: "children",
       type: "Array",
       id: 20,
-      value: ["John, "Paul","Ringo", "George"]
+      value: ["John", "Paul","Ringo", "George"]
+    },
+    {
+      name: "traceId",
+      type: "String",
+      id: 10,
+      value: "1234-6587"
     },
     {
       name: "privateInfo",
@@ -573,84 +583,84 @@ const myJsonObjectToRedact = {
     foo: "bar"
   },
   someFullSecretData2: ["a", 1, "12"]
-}
+};
 
 const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
 
-Yields the following to the console:
-```
+##### Output
+```json
 {
-  timestamp: "2024-12-01T22:07:26.448Z",
-  userId: 271,
-  contactInfo: {
-    email: "REDACTED",
-    salutation: "Mr.",
-    firstName: "REDACTED",
-    lastName: "REDACTED",
-    dob: "REDACTED",
-    backupEmail: "REDACTED",
-    preference: "email",
-    lastUpdated: "2024-12-01T22:07:26.448Z",
+  "timestamp": "2024-12-01T22:07:26.448Z",
+  "userId": 271,
+  "contactInfo": {
+    "email": "REDACTED",
+    "salutation": "Mr.",
+    "firstName": "REDACTED",
+    "lastName": "REDACTED",
+    "dob": "REDACTED",
+    "backupEmail": "REDACTED",
+    "preference": "email",
+    "lastUpdated": "2024-12-01T22:07:26.448Z",
   },
-  someSecretData: ["REDACTED", "REDACTED", { deep: "is not redacted", name: "REDACTED" }],
-  accountInfo: {
-    balance: "REDACTED",
-    institution: "REDACTED",
-    information: {
-      routingNumber: "REDACTED",
-      acctNumber: "REDACTED"
+  "someSecretData": ["REDACTED", "REDACTED", { "deep": "is not redacted", "name": "REDACTED" }],
+  "accountInfo": {
+    "balance": "REDACTED",
+    "institution": "REDACTED",
+    "information": {
+      "routingNumber": "REDACTED",
+      "acctNumber": "REDACTED"
     }
   },
-  actions: [
+  "actions": [
     {
-      userId: 271,
-      field: "email",
-      action: "CREATE",
-      value: "REDACTED"
+      "userId": 271,
+      "field": "email",
+      "action": "CREATE",
+      "value": "REDACTED"
     },
     {
-      userId: 271,
-      field: "preference",
-      action: "UPDATE",
-      value: "email"
+      "userId": 271,
+      "field": "preference",
+      "action": "UPDATE",
+      "value": "email"
     }
   ],
-  metadata: [
+  "metadata": [
     {
-      name: "mdn",
-      type: "Number",
-      id:  "REDACTED",
-      value: "REDACTED"
+      "name": "mdn",
+      "type": "Number",
+      "id":  "REDACTED",
+      "value": "REDACTED"
     },
     {
-      name: "children",
-      type: Array,
-      id:  "REDACTED",
-      value: ["REDACTED", "REDACTED", "REDACTED", "REDACTED"]
+      "name": "children",
+      "type": "Array",
+      "id":  "REDACTED",
+      "value": ["REDACTED", "REDACTED", "REDACTED", "REDACTED"]
     },
     {
-      name: "privateInfo",
-      type: "Object",
-      id: "REDACTED",
-      value: {
-        mySecretThings: {
-          a: "REDACTED",
-          b: "REDACTED"
+      "name": "traceId",
+      "type": "String",
+      "id": 10,
+      "value": "1234-6587"
+    },
+    {
+      "name": "privateInfo",
+      "type": "Object",
+      "id": "REDACTED",
+      "value": {
+        "mySecretThings": {
+          "a": "REDACTED",
+          "b": "REDACTED"
         }
       }
     }
   ],
-  hobbies: ["Basketball", "Baseball", "Tennis"],
-  someDeepSecretData: ["REDACTED", "REDACTED", { deep: "REDACTED", name: "REDACTED" }],
-  someFullSecretData: "REDACTED"
-  someFullSecretData2: "REDACTED"
+  "hobbies": ["Basketball", "Baseball", "Tennis"],
+  "someDeepSecretData": ["REDACTED", "REDACTED", { "deep": "REDACTED", "name": "REDACTED" }],
+  "someFullSecretData": "REDACTED",
+  "someFullSecretData2": "REDACTED"
 }
 ```
-* All data in `accountInfo` was redacted, including child objects, as it was a match for a `deepSecretKey`
-* Only data in `contactInfo` which matched a `secretKey` was redacted
-* Object data in someSecretData was only redacted if the key was a `secretKey`
-* All object data in `someDeepSecretData` was redacted as it was specified as a `deepSecretKey`.
-* object data in `actions` matched the `actionsCustomObject` so the value was conditionally redacted if the `field` value was a secret/deepSecret
-* object data in `metadata` matched the `metadataCustomObject` so the value was conditionally redacted if the `name` value was a secret/deepSecret
