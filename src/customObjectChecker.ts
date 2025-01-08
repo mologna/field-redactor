@@ -35,27 +35,11 @@ export class CustomObjectChecker {
       return false;
     }
 
-    if (!this.customObjectDoesNotHaveExtraKeys(value, customObject)) {
-      return false;
-    }
-
-    for (const key of Object.keys(value)) {
-      if (!customObject.hasOwnProperty(key)) {
-        return false;
-      }
-    }
-
-    return true;
+    return !this.objectHasExtraKeys(customObject, value) && !this.objectHasExtraKeys(value, customObject);
   }
 
-  private customObjectDoesNotHaveExtraKeys(value: any, customObject: CustomObject): boolean {
-    for (const key of Object.keys(customObject)) {
-      if (!value.hasOwnProperty(key)) {
-        return false;
-      }
-    }
-
-    return true;
+  private objectHasExtraKeys(object: any, objectToCompareTo: any): boolean {
+    return Object.keys(object).some((key) => !objectToCompareTo.hasOwnProperty(key));
   }
 
   private validateCustomObjects(customObjects?: CustomObject[]): void {
