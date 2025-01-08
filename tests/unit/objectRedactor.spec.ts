@@ -39,7 +39,7 @@ describe('ObjectRedactor', () => {
   };
 
   beforeEach(() => {
-    primitiveRedactor = new PrimitiveRedactor({});
+    primitiveRedactor = new PrimitiveRedactor({ ignoreBooleans: false, ignoreNullOrUndefined: true });
     secretManager = new SecretManager({});
     customObjectChecker = new CustomObjectChecker();
     basicObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
@@ -118,7 +118,7 @@ describe('ObjectRedactor', () => {
     });
 
     it('Can perform fullRedaction on objects and arrays when fullSecretKey matches', async () => {
-      const primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false });
+      const primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false, ignoreBooleans: true });
       secretManager = new SecretManager({
         fullSecretKeys: [/foo/, /bar/, /undefinedValue/, /nullValue/],
         secretKeys: []
@@ -153,7 +153,11 @@ describe('ObjectRedactor', () => {
       const customRedactor: Redactor = (value: any) => {
         return Promise.resolve(crypto.createHash('md5').update(value).digest('hex'));
       };
-      const primitiveRedactor = new PrimitiveRedactor({ redactor: customRedactor });
+      const primitiveRedactor = new PrimitiveRedactor({
+        redactor: customRedactor,
+        ignoreNullOrUndefined: true,
+        ignoreBooleans: false
+      });
       const simpleObject = {
         foo
       };
@@ -472,7 +476,7 @@ describe('ObjectRedactor', () => {
       };
       secretManager = new SecretManager({ secretKeys: [] });
       customObjectChecker = new CustomObjectChecker([specialObject]);
-      primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false });
+      primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false, ignoreBooleans: false });
       const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
 
       const obj = { foo: null, bar: undefined };
