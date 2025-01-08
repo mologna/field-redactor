@@ -49,7 +49,7 @@ describe('FieldRedactor', () => {
       expect(CustomObjectChecker).toHaveBeenCalledWith(config.customObjects);
     });
 
-    it('Should create the ObjectRedactor with the dependency-injected inputs', () => {
+    it('Should create the ObjectRedactor with the correct dependency-injected inputs', () => {
       const config = {};
       new FieldRedactor(config);
       expect(ObjectRedactor).toHaveBeenCalledTimes(1);
@@ -64,6 +64,16 @@ describe('FieldRedactor', () => {
   });
 
   describe('redact', () => {
+    it('Should call objectRedactor redactInPlace with a copy of the input', async () => {
+      const fieldRedactor = new FieldRedactor();
+      const input = { foo: 'bar' };
+      await fieldRedactor.redact(input);
+      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
+      const argument = mockObjectRedactor.redactInPlace.mock.calls[0][0];
+      expect(argument).not.toBe(input);
+      expect(argument).toEqual(input);
+    });
+
     it('Should throw an exception on invalid input', async () => {
       const fieldRedactor = new FieldRedactor();
       expect(() => fieldRedactor.redact(null)).rejects.toThrow(
@@ -92,16 +102,6 @@ describe('FieldRedactor', () => {
       );
     });
 
-    it('Should call objectRedactor redactInPlace with a copy of the input', async () => {
-      const fieldRedactor = new FieldRedactor();
-      const input = { foo: 'bar' };
-      await fieldRedactor.redact(input);
-      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
-      const argument = mockObjectRedactor.redactInPlace.mock.calls[0][0];
-      expect(argument).not.toBe(input);
-      expect(argument).toEqual(input);
-    });
-
     it('Should wrap any thrown exceptions in a FieldRedactorError', async () => {
       const errorText = 'foobar';
       const fieldRedactor = new FieldRedactor();
@@ -116,6 +116,15 @@ describe('FieldRedactor', () => {
   });
 
   describe('redactInPlace', () => {
+    it('Should call objectRedactor redactInPlace with a copy of the input', async () => {
+      const fieldRedactor = new FieldRedactor();
+      const input = { foo: 'bar' };
+      await fieldRedactor.redactInPlace(input);
+      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
+      const argument = mockObjectRedactor.redactInPlace.mock.calls[0][0];
+      expect(argument).toBe(input);
+    });
+    
     it('Should throw an exception on invalid input', async () => {
       const fieldRedactor = new FieldRedactor();
       expect(() => fieldRedactor.redactInPlace(null)).rejects.toThrow(
@@ -142,15 +151,6 @@ describe('FieldRedactor', () => {
       expect(() => fieldRedactor.redactInPlace(() => {})).rejects.toThrow(
         new FieldRedactorValidationError('Input value must be a JSON object')
       );
-    });
-
-    it('Should call objectRedactor redactInPlace with a copy of the input', async () => {
-      const fieldRedactor = new FieldRedactor();
-      const input = { foo: 'bar' };
-      await fieldRedactor.redactInPlace(input);
-      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
-      const argument = mockObjectRedactor.redactInPlace.mock.calls[0][0];
-      expect(argument).toBe(input);
     });
 
     it('Should wrap any thrown exceptions in a FieldRedactorError', async () => {
