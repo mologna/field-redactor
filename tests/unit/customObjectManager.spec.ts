@@ -1,8 +1,8 @@
-import { CustomObjectChecker } from '../../src/customObjectChecker';
+import { CustomObjectManager } from '../../src/customObjectManager';
 import { FieldRedactorConfigurationError } from '../../src/errors';
 import { CustomObject, CustomObjectMatchType } from '../../src/types';
 
-describe('CustomObjectChecker', () => {
+describe('CustomObjectManager', () => {
   describe('getMatchingSpecialObject', () => {
     it('can return a matching CustomObject with all CustomObjectMatchTypes', () => {
       const specialObject: CustomObject = {
@@ -12,7 +12,7 @@ describe('CustomObjectChecker', () => {
         bam: CustomObjectMatchType.Pass,
         buzz: CustomObjectMatchType.Ignore
       };
-      const checker = new CustomObjectChecker([specialObject]);
+      const checker = new CustomObjectManager([specialObject]);
       const result = checker.getMatchingCustomObject({
         foo: 'fizz',
         bar: 'buzz',
@@ -28,7 +28,7 @@ describe('CustomObjectChecker', () => {
         foo: CustomObjectMatchType.Full,
         bar: CustomObjectMatchType.Ignore
       };
-      const checker = new CustomObjectChecker([specialObject]);
+      const checker = new CustomObjectManager([specialObject]);
       const result = checker.getMatchingCustomObject({
         foo: null,
         bar: undefined
@@ -41,7 +41,7 @@ describe('CustomObjectChecker', () => {
         foo: CustomObjectMatchType.Shallow,
         bar: CustomObjectMatchType.Shallow
       };
-      const checker = new CustomObjectChecker([specialObject]);
+      const checker = new CustomObjectManager([specialObject]);
       const result = checker.getMatchingCustomObject({
         foo: ['fizz'],
         bar: ['buzz']
@@ -54,7 +54,7 @@ describe('CustomObjectChecker', () => {
         foo: CustomObjectMatchType.Shallow,
         bar: CustomObjectMatchType.Shallow
       };
-      const checker = new CustomObjectChecker([specialObject]);
+      const checker = new CustomObjectManager([specialObject]);
       const result = checker.getMatchingCustomObject({
         foo: {
           bim: 'bam'
@@ -69,7 +69,7 @@ describe('CustomObjectChecker', () => {
         foo: CustomObjectMatchType.Shallow,
         bar: 'foo'
       };
-      const checker = new CustomObjectChecker([specialObject]);
+      const checker = new CustomObjectManager([specialObject]);
       const result = checker.getMatchingCustomObject({
         foo: {
           bim: 'bam'
@@ -92,7 +92,7 @@ describe('CustomObjectChecker', () => {
           bam: CustomObjectMatchType.Shallow
         }
       ];
-      const checker = new CustomObjectChecker(specialObjects);
+      const checker = new CustomObjectManager(specialObjects);
       const result1 = checker.getMatchingCustomObject({
         foo: 'fizz',
         bar: 'buzz'
@@ -114,14 +114,14 @@ describe('CustomObjectChecker', () => {
     });
 
     it('Does not return a CustomObject but functions correctly when configured with an empty list of CustomObjects', async () => {
-      const emptyChecker = new CustomObjectChecker([]);
+      const emptyChecker = new CustomObjectManager([]);
       const emptyCheckerResult = emptyChecker.getMatchingCustomObject({
         foo: 'fizz',
         bar: 'buzz'
       });
       expect(emptyCheckerResult).toBeUndefined();
 
-      const undefinedChecker = new CustomObjectChecker();
+      const undefinedChecker = new CustomObjectManager();
       const undefinedCheckerResult = undefinedChecker.getMatchingCustomObject({
         foo: 'fizz',
         bar: 'buzz'
@@ -134,7 +134,7 @@ describe('CustomObjectChecker', () => {
         foo: CustomObjectMatchType.Shallow,
         bar: CustomObjectMatchType.Shallow
       };
-      const checker = new CustomObjectChecker([specialObject]);
+      const checker = new CustomObjectManager([specialObject]);
       const result1 = checker.getMatchingCustomObject(null);
       const result2 = checker.getMatchingCustomObject(undefined);
       const result3 = checker.getMatchingCustomObject([]);
@@ -152,7 +152,7 @@ describe('CustomObjectChecker', () => {
         foo: CustomObjectMatchType.Shallow,
         bar: CustomObjectMatchType.Shallow
       };
-      const checker = new CustomObjectChecker([specialObject]);
+      const checker = new CustomObjectManager([specialObject]);
       const result = checker.getMatchingCustomObject({
         foo: 'fizz',
         bar: 'buzz',
@@ -167,7 +167,7 @@ describe('CustomObjectChecker', () => {
         bar: CustomObjectMatchType.Shallow,
         bim: CustomObjectMatchType.Shallow
       };
-      const checker = new CustomObjectChecker([specialObject]);
+      const checker = new CustomObjectManager([specialObject]);
       const result = checker.getMatchingCustomObject({
         foo: 'fizz',
         bar: 'buzz'
@@ -184,7 +184,7 @@ describe('CustomObjectChecker', () => {
         foo: CustomObjectMatchType.Shallow,
         bar: CustomObjectMatchType.Shallow
       };
-      expect(() => new CustomObjectChecker([cust1, cust2])).toThrow(
+      expect(() => new CustomObjectManager([cust1, cust2])).toThrow(
         new FieldRedactorConfigurationError('Custom Objects at indexes 0 and 1 cannot have identical keys: foo,bar')
       );
     });
@@ -198,7 +198,7 @@ describe('CustomObjectChecker', () => {
         foo: CustomObjectMatchType.Shallow,
         bar: 'foo'
       };
-      expect(() => new CustomObjectChecker([cust1, cust2])).toThrow(
+      expect(() => new CustomObjectManager([cust1, cust2])).toThrow(
         new FieldRedactorConfigurationError(`Custom Objects at indexes 0 and 1 cannot have identical keys: foo,bar`)
       );
     });
@@ -220,7 +220,7 @@ describe('CustomObjectChecker', () => {
         foo: CustomObjectMatchType.Shallow,
         bar: CustomObjectMatchType.Shallow
       };
-      expect(() => new CustomObjectChecker([cust1, cust2, cust3, cust4])).toThrow(
+      expect(() => new CustomObjectManager([cust1, cust2, cust3, cust4])).toThrow(
         new FieldRedactorConfigurationError(`Custom Objects at indexes 0 and 3 cannot have identical keys: foo,bar`)
       );
     });
@@ -235,7 +235,7 @@ describe('CustomObjectChecker', () => {
         bar: CustomObjectMatchType.Shallow,
         fizz: CustomObjectMatchType.Shallow
       };
-      expect(() => new CustomObjectChecker([cust1, cust2])).not.toThrow();
+      expect(() => new CustomObjectManager([cust1, cust2])).not.toThrow();
     });
   });
 });

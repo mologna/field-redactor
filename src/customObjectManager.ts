@@ -4,7 +4,7 @@ import { CustomObject } from './types';
 /**
  * Utility for determining if a given object matches a CustomObject schema.
  */
-export class CustomObjectChecker {
+export class CustomObjectManager {
   private customObjects: CustomObject[] = [];
 
   /**

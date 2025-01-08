@@ -3,7 +3,7 @@ import { FieldRedactorConfig } from './types';
 import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
-import { CustomObjectChecker } from './customObjectChecker';
+import { CustomObjectManager } from './customObjectManager';
 import { FieldRedactorError, FieldRedactorValidationError } from './errors';
 
 /**
@@ -33,7 +33,7 @@ export class FieldRedactor {
       fullSecretKeys
     });
 
-    const customObjectChecker = new CustomObjectChecker(customObjects);
+    const customObjectChecker = new CustomObjectManager(customObjects);
 
     this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
   }

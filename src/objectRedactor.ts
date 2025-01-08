@@ -1,6 +1,6 @@
 import { CustomObject, CustomObjectMatchType } from './types';
 import { SecretManager } from './secretManager';
-import { CustomObjectChecker } from './customObjectChecker';
+import { CustomObjectManager } from './customObjectManager';
 import { PrimitiveRedactor } from './primitiveRedactor';
 
 /**
@@ -13,7 +13,7 @@ export class ObjectRedactor {
   constructor(
     private readonly primitiveRedactor: PrimitiveRedactor,
     private readonly secretManager: SecretManager,
-    private readonly checker: CustomObjectChecker
+    private readonly customObjManager: CustomObjectManager
   ) {}
 
   /**
@@ -23,7 +23,7 @@ export class ObjectRedactor {
    * @returns The JSON value provided in the argument.
    */
   public async redactInPlace(value: any): Promise<any> {
-    const customObject = this.checker.getMatchingCustomObject(value);
+    const customObject = this.customObjManager.getMatchingCustomObject(value);
     if (customObject) {
       await this.redactCustomObject(value, customObject);
     } else {
@@ -36,7 +36,7 @@ export class ObjectRedactor {
   private async redactSecretObjectFields(object: any, forceDeepRedaction: boolean = false): Promise<void> {
     for (const key of Object.keys(object)) {
       const value: any = object[key];
-      const customObject = this.checker.getMatchingCustomObject(value);
+      const customObject = this.customObjManager.getMatchingCustomObject(value);
       if (customObject) {
         await this.redactCustomObject(value, customObject);
       } else if (this.secretManager.isFullSecretKey(key)) {
@@ -63,7 +63,7 @@ export class ObjectRedactor {
   private async redactObjectsInArray(array: any[]): Promise<any[]> {
     const promises: Promise<any>[] = array.map(async (value: any) => {
       if (this.isObject(value)) {
-        const customObject = this.checker.getMatchingCustomObject(value);
+        const customObject = this.customObjManager.getMatchingCustomObject(value);
         if (customObject) {
           await this.redactCustomObject(value, customObject);
           return value;
@@ -85,7 +85,7 @@ export class ObjectRedactor {
       } else if (!this.isObject(value)) {
         return this.primitiveRedactor.redactValue(value);
       } else {
-        const customObject = this.checker.getMatchingCustomObject(value);
+        const customObject = this.customObjManager.getMatchingCustomObject(value);
         if (customObject) {
           await this.redactCustomObject(value, customObject);
           return Promise.resolve(value);
@@ -100,7 +100,7 @@ export class ObjectRedactor {
   }
 
   private async redactObjectInObject(value: any, key: string, forceDeepRedaction: boolean) {
-    const customObject = this.checker.getMatchingCustomObject(value);
+    const customObject = this.customObjManager.getMatchingCustomObject(value);
     if (customObject) {
       await this.redactCustomObject(value, customObject);
     } else {
@@ -191,7 +191,7 @@ export class ObjectRedactor {
   }
 
   private async handleCustomObjectObjectValueIfStringKeySpecified(value: any, key: string, stringKey: string) {
-    const customObject = this.checker.getMatchingCustomObject(value[key]);
+    const customObject = this.customObjManager.getMatchingCustomObject(value[key]);
     if (customObject) {
       await this.redactCustomObject(value[key], customObject);
     } else if (this.secretManager.isFullSecretKey(stringKey)) {
