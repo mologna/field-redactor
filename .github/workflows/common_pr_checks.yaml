@@ -1,0 +1,67 @@
+name: PR Unit Tests
+run-name: ${{ github.event.pull_request.head.sha }}
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+jobs:
+  unit_test:
+    name: PR Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        id: setup-node
+        with:
+          node-version-file: "./nvmrc"
+          cache: "yarn"
+          cache-dependency-path: "./yarn.lock"
+          
+      - if: steps.setup-node.outputs.src == 'true'
+        name: Install Dependencies
+        id: install
+        run: yarn install
+
+      - if: steps.install.outputs.src == 'true'
+        name: Run Unit Tests
+        id: test
+        run: yarn test:unit
+
+  integration_test:
+    name: PR Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        id: setup-node
+        with:
+          node-version-file: "./nvmrc"
+          cache: "yarn"
+          cache-dependency-path: "./yarn.lock"
+          
+      - if: steps.setup-node.outputs.src == 'true'
+        name: Install Dependencies
+        id: install
+        run: yarn install
+
+      - if: steps.install.outputs.src == 'true'
+        name: Run Unit Tests
+        id: test
+        run: yarn test:integration
