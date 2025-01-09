@@ -1,5 +1,5 @@
-name: PR Unit Tests
-run-name: ${{ github.event.pull_request.head.sha }}
+name: PR Tests
+run-name: ${{ github.event.pull_request.title }} - ${{ github.event.pull_request.head.sha }}
 on:
   pull_request_target:
     types:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   unit_test:
-    name: PR Unit Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,7 +38,7 @@ jobs:
         run: yarn test:unit
 
   integration_test:
-    name: PR Unit Tests
+    name: Integration Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
