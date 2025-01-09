@@ -20,12 +20,8 @@ export class PrimitiveRedactor {
     if (config.redactor) {
       this.redactor = config.redactor;
     }
-    this.ignoreBooleans = !!config?.ignoreBooleans;
-    if (typeof config?.ignoreNullOrUndefined === 'boolean') {
-      this.ignoreNullOrUndefined = config.ignoreNullOrUndefined;
-    } else {
-      this.ignoreNullOrUndefined = true;
-    }
+    this.ignoreBooleans = config.ignoreBooleans;
+    this.ignoreNullOrUndefined = config.ignoreNullOrUndefined;
   }
 
   /**

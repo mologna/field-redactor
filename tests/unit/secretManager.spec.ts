@@ -11,36 +11,7 @@ describe('NewSecretManager', () => {
     expect(secretManager.isFullSecretKey('qux')).toBe(false);
   });
 
-  it('Should not consider all values secret if deepSecretKeys or fullSecretKeys are provided', () => {
-    // deep secret
-    const deepSecretManager = new SecretManager({
-      deepSecretKeys: [/foo/]
-    });
-    expect(deepSecretManager.isSecretKey('foo')).toBe(false);
-    expect(deepSecretManager.isSecretKey('bar')).toBe(false);
-    expect(deepSecretManager.isDeepSecretKey('foo')).toBe(true);
-
-    // full secret
-    const fullSecretManager = new SecretManager({
-      fullSecretKeys: [/foo/]
-    });
-    expect(fullSecretManager.isSecretKey('foo')).toBe(false);
-    expect(fullSecretManager.isSecretKey('bar')).toBe(false);
-    expect(fullSecretManager.isFullSecretKey('foo')).toBe(true);
-
-    // both
-    const combinedSecretManager = new SecretManager({
-      fullSecretKeys: [/foo/],
-      deepSecretKeys: [/bar/]
-    });
-    expect(combinedSecretManager.isSecretKey('foo')).toBe(false);
-    expect(combinedSecretManager.isSecretKey('bar')).toBe(false);
-    expect(combinedSecretManager.isSecretKey('hello')).toBe(false);
-    expect(combinedSecretManager.isFullSecretKey('foo')).toBe(true);
-    expect(combinedSecretManager.isDeepSecretKey('bar')).toBe(true);
-  });
-
-  it('Returns true for secretKeys that match', () => {
+  it('Returns true for secretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
     const secretManager = new SecretManager({
       secretKeys: [/foo/, /^pass/]
     });
@@ -49,13 +20,31 @@ describe('NewSecretManager', () => {
     expect(secretManager.isSecretKey('pass')).toBe(true);
     expect(secretManager.isSecretKey('password')).toBe(true);
     expect(secretManager.isSecretKey('superpass')).toBe(false);
+
     expect(secretManager.isDeepSecretKey('foo')).toBe(false);
     expect(secretManager.isDeepSecretKey('pass')).toBe(false);
     expect(secretManager.isFullSecretKey('foo')).toBe(false);
     expect(secretManager.isFullSecretKey('pass')).toBe(false);
   });
 
-  it('Returns true for fullRedactionKeys that match', () => {
+  it('Returns true for deepSecretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
+    const secretManager = new SecretManager({
+      deepSecretKeys: [/foo/, /^pass/]
+    });
+
+    expect(secretManager.isDeepSecretKey('foo')).toBe(true);
+    expect(secretManager.isDeepSecretKey('bar')).toBe(false);
+    expect(secretManager.isDeepSecretKey('pass')).toBe(true);
+    expect(secretManager.isDeepSecretKey('password')).toBe(true);
+    expect(secretManager.isFullSecretKey('superpass')).toBe(false);
+
+    expect(secretManager.isFullSecretKey('foo')).toBe(false);
+    expect(secretManager.isFullSecretKey('pass')).toBe(false);
+    expect(secretManager.isSecretKey('foo')).toBe(false);
+    expect(secretManager.isSecretKey('pass')).toBe(false);
+  });
+
+  it('Returns true for fullSecretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
     const secretManager = new SecretManager({
       fullSecretKeys: [/foo/, /^pass/]
     });
@@ -68,9 +57,38 @@ describe('NewSecretManager', () => {
 
     expect(secretManager.isDeepSecretKey('foo')).toBe(false);
     expect(secretManager.isDeepSecretKey('pass')).toBe(false);
+    expect(secretManager.isSecretKey('foo')).toBe(false);
+    expect(secretManager.isSecretKey('pass')).toBe(false);
   });
 
-  it('Returns true for for matches on a SecretManager that includes all config types, otherwise false', () => {
+  it('Does not default to all values being secret if either deepSecretKeys, fullSecretKeys, or both are provided', () => {
+    // deep secret
+    const deepSecretManager = new SecretManager({
+      deepSecretKeys: [/foo/]
+    });
+    expect(deepSecretManager.isSecretKey('foo')).toBe(false);
+    expect(deepSecretManager.isSecretKey('bar')).toBe(false);
+    expect(deepSecretManager.isSecretKey('hello')).toBe(false);
+
+    // full secret
+    const fullSecretManager = new SecretManager({
+      fullSecretKeys: [/foo/]
+    });
+    expect(fullSecretManager.isSecretKey('foo')).toBe(false);
+    expect(fullSecretManager.isSecretKey('bar')).toBe(false);
+    expect(fullSecretManager.isSecretKey('hello')).toBe(false);
+
+    // both
+    const combinedSecretManager = new SecretManager({
+      fullSecretKeys: [/foo/],
+      deepSecretKeys: [/bar/]
+    });
+    expect(combinedSecretManager.isSecretKey('foo')).toBe(false);
+    expect(combinedSecretManager.isSecretKey('bar')).toBe(false);
+    expect(combinedSecretManager.isSecretKey('hello')).toBe(false);
+  });
+
+  it('Can return correct boolean values for a secret manager with all config types', () => {
     const secretManager = new SecretManager({
       secretKeys: [/foo/, /^pass/],
       deepSecretKeys: [/parentAccount/],

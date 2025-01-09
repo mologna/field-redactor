@@ -14,8 +14,8 @@ export type CustomObject = {
 
 export type PrimitiveRedactorConfig = {
   redactor?: Redactor;
-  ignoreBooleans?: boolean;
-  ignoreNullOrUndefined?: boolean;
+  ignoreBooleans: boolean;
+  ignoreNullOrUndefined: boolean;
 };
 
 export type SecretManagerConfig = {
@@ -24,7 +24,7 @@ export type SecretManagerConfig = {
   fullSecretKeys?: RegExp[];
 };
 
-export type FieldRedactorConfig = PrimitiveRedactorConfig &
+export type FieldRedactorConfig = Partial<PrimitiveRedactorConfig> &
   SecretManagerConfig & {
     redactor?: Redactor;
     customObjects?: CustomObject[];

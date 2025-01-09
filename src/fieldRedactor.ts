@@ -3,7 +3,7 @@ import { FieldRedactorConfig } from './types';
 import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
-import { CustomObjectChecker } from './customObjectChecker';
+import { CustomObjectManager } from './customObjectManager';
 import { FieldRedactorError, FieldRedactorValidationError } from './errors';
 
 /**
@@ -15,15 +15,11 @@ export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private readonly objectRedactor: ObjectRedactor;
   constructor(config?: FieldRedactorConfig) {
-    const {
-      ignoreBooleans,
-      ignoreNullOrUndefined,
-      redactor,
-      secretKeys,
-      deepSecretKeys,
-      fullSecretKeys,
-      customObjects
-    } = config || {};
+    const { redactor, secretKeys, deepSecretKeys, fullSecretKeys, customObjects } = config || {};
+
+    const ignoreNullOrUndefined =
+      typeof config?.ignoreNullOrUndefined === 'boolean' ? config.ignoreNullOrUndefined : true;
+    const ignoreBooleans = typeof config?.ignoreBooleans === 'boolean' ? config.ignoreBooleans : true;
 
     const primitiveRedactor = new PrimitiveRedactor({
       ignoreBooleans,
@@ -37,7 +33,7 @@ export class FieldRedactor {
       fullSecretKeys
     });
 
-    const customObjectChecker = new CustomObjectChecker(customObjects);
+    const customObjectChecker = new CustomObjectManager(customObjects);
 
     this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
   }
