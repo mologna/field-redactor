@@ -1,5 +1,5 @@
 {
-  "name": "@mologna/field-redactor",
+  "name": "field-redactor",
   "version": "1.0.0",
   "description": "Utility for redacting PII from complex JSON objects for which simpler redaction tools are insufficient.",
   "author": {
