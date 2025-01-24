@@ -1,3 +1,4 @@
 tests/**/*
 tmp/**/*
 src/**/*
+scripts/**/*
