@@ -1,5 +1,5 @@
 name: Receive PR
-run-name: ${{ github.event.pull_request.title }} - receive - ${{ github.event.pull_request.head.sha }}
+run-name: "${{ github.event.pull_request.title }}: generate artifact (${{ github.event.pull_request.head.sha }})"
 on:
   pull_request:
 jobs:

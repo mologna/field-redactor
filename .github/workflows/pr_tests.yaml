@@ -1,5 +1,5 @@
 name: PR Tests
-run-name: ${{ github.event.pull_request.title }} - test - ${{ github.event.pull_request.head.sha }}
+run-name: "${{ github.event.pull_request.title }}: test (${{ github.event.pull_request.head.sha }})
 on:
   workflow_run:
     workflows: ["Receive PR"]
@@ -14,7 +14,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
     steps:
       - name: "Download artifact"
-        uses: actions/github-script@v3.1.0
+        uses: actions/github-script@v4
         with:
           script: |
             var artifacts = await github.actions.listWorkflowRunArtifacts({
