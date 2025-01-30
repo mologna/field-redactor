@@ -4,7 +4,7 @@ import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
 import { CustomObjectManager } from './customObjectManager';
-import { FieldRedactorError, FieldRedactorValidationError } from './errors';
+import { FieldRedactorError } from './errors';
 
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
@@ -41,7 +41,8 @@ export class FieldRedactor {
   /**
    * Conditionally redacts fields in the JSON object based on the configuration provided in the constructor and returns the
    * redacted result.
-   * @param value The JSON value to redact.
+   * If the value is a primitive, undefined, or date, returns the value as-is.
+   * @param value The JSON value to redact. If primitive it will be resolved as-is.
    * @returns The redacted JSON object.
    */
   public async redact(value: any): Promise<any> {
@@ -51,10 +52,15 @@ export class FieldRedactor {
 
   /**
    * Conditionally redacts fields in the JSON object in place based on the configuration provided in the constructor.
-   * @param value The JSON value to redact in place.
+   * If the value is a primitive, undefined, or date, returns the value as-is.
+   * @param value The JSON value to redact in place. If primitive it will be resolved as-is.
+   * @returns The redacted JSON object.
    */
   public async redactInPlace(value: any): Promise<void> {
-    this.validateInput(value);
+    if (this.isPrimitiveOrUndefined(value)) {
+      return value;
+    }
+
     try {
       return this.objectRedactor.redactInPlace(value);
     } catch (e: any) {
@@ -62,9 +68,7 @@ export class FieldRedactor {
     }
   }
 
-  private validateInput(value: any) {
-    if (!value || typeof value !== 'object' || value instanceof Date) {
-      throw new FieldRedactorValidationError('Input value must be a JSON object');
-    }
+  private isPrimitiveOrUndefined(value: any) {
+    return !value || typeof value !== 'object' || value instanceof Date;
   }
 }

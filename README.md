@@ -18,7 +18,7 @@ In many instances, redaction of sensitive data from log output is fairly straigh
 If this object is placed in a data set with many others, and only some of these objects contain PII, redaction becomes quite troublesome. One could redact all `value` fields from these objects - but this merely renders the log output useless for debugging or tracing, as all values are now redacted. The value of the `name` field determines whether or not the `value` field should be redacted. I often found myself writing custom logic to make this determination, which led to brittle code that was difficult to maintain. In the end I decided to write a new, highly configurable plug-and-play solution that could redact sensitive data in various manners while requiring only minor configuration tweaks. Enter FieldRedactor!
 
 ## Basic Usage
-Basic usage of the FieldRedactor is straightforward but not recommended. Object redaction can be performed either in-place or return the redacted object:
+Basic usage of the FieldRedactor is straightforward but not recommended. Object redaction can be performed either in-place or return the redacted object. If redactor is given a string, primitive, Date, function, or null/undefined value then it returns the value without modification.
 
 ```typescript
 import { FieldRedactor } from 'field-redactor';
@@ -27,14 +27,17 @@ const fieldRedactor = new FieldRedactor();
 
 // return redacted result
 const result = await fieldRedactor.redact(myJsonObject);
+const primitiveResult = await fieldRedactor.redact("foobar");
 console.log(myJsonObject); // { foo: "bar", fizz: null }
 console.log(result); // { foo: "REDACTED", fizz: null }
+console.log(primitiveResult); // "foobar"
 
 // redact in place
 await fieldRedactor.redactInPlace(myJsonObject);
 console.log(myJsonObject); // { foo: "REDACTED", fizz: null }
 ```
 > **Note:** `null` and `undefined` values are not redacted by default.
+> **Note:** `null`, `undefined`, `string`, `Date`, `Function`, and primitive value inputs are completely ignored.
 
 
 

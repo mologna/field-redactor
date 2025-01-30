@@ -18,13 +18,3 @@ export class FieldRedactorConfigurationError extends FieldRedactorError {
     this.name = 'FieldRedactorConfigurationError';
   }
 }
-
-/**
- * Error thrown when the input value to the FieldRedactor fails validation, such as not being a JSON object.
- */
-export class FieldRedactorValidationError extends FieldRedactorError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'FieldRedactorValidationError';
-  }
-}
