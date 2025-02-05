@@ -89,6 +89,18 @@ describe('ObjectRedactor', () => {
       validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT, false, secretKeys);
     });
 
+    it('Can delete keys when specified as deleteSecretKeys', async () => {
+      const deleteSecretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
+      secretManager = new SecretManager({ deleteSecretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+      const copy = deepCopy(validInputWithAllTypes);
+      await redactor.redactInPlace(copy);
+      expect(copy).not.toBe(validInputWithAllTypes);
+      expect(copy.userId).toBeUndefined();
+      expect(copy.password).toBeUndefined();
+      expect(copy.acctBalance).toBeUndefined();
+    });
+
     it('Can perform deepRedaction on objects and arrays when deepSecretKey matches', async () => {
       const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
       const deepSecretKeys: RegExp[] = [/parentAccount/];
@@ -250,6 +262,54 @@ describe('ObjectRedactor', () => {
       expect(input.emails[0]).toBe(DEFAULT_REDACTED_TEXT);
       expect(input.emails[1][0]).toBe(DEFAULT_REDACTED_TEXT);
       expect(input.emails[1][1]).toBe(DEFAULT_REDACTED_TEXT);
+    });
+
+    it('Can delete keys when specified as deleteSecretKeys in nested objects', async () => {
+      const obj = {
+        foo: {
+          bar: {
+            fizz: 'buzz'
+          }
+        }
+      };
+      const deleteSecretKeys: RegExp[] = [/bar/];
+      secretManager = new SecretManager({ deleteSecretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+      await redactor.redactInPlace(obj);
+      expect(obj.foo.bar).toBeUndefined();
+    });
+
+    it('Can delete keys when specified as deleteSecretKeys in nested arrays and objects', async () => {
+      const obj = {
+        bar: ['this', 'is', 'an', 'array'],
+        fizz: [
+          {
+            buzz: 'buzz',
+            bar: 'bar'
+          }
+        ]
+      };
+      const deleteSecretKeys: RegExp[] = [/bar/];
+      secretManager = new SecretManager({ deleteSecretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+      await redactor.redactInPlace(obj);
+      expect(obj.bar).toBeUndefined();
+      expect(obj.fizz[0].bar).toBeUndefined();
+    });
+
+    it('Can delete keys when specified as deleteSecretKeys ', async () => {
+      const obj = {
+        foo: {
+          bar: {
+            fizz: 'buzz'
+          }
+        }
+      };
+      const deleteSecretKeys: RegExp[] = [/bar/];
+      secretManager = new SecretManager({ deleteSecretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+      await redactor.redactInPlace(obj);
+      expect(obj.foo.bar).toBeUndefined();
     });
   });
 
