@@ -164,6 +164,9 @@ export class ObjectRedactor {
     matchType: CustomObjectMatchType
   ) {
     switch (matchType) {
+      case CustomObjectMatchType.Delete:
+        delete value[key];
+        return Promise.resolve();
       case CustomObjectMatchType.Full:
         value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
         return Promise.resolve();
@@ -214,6 +217,9 @@ export class ObjectRedactor {
     matchType: CustomObjectMatchType
   ) {
     switch (matchType) {
+      case CustomObjectMatchType.Delete:
+        delete value[key];
+        return Promise.resolve();
       case CustomObjectMatchType.Full:
         value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
         return Promise.resolve();
@@ -229,7 +235,7 @@ export class ObjectRedactor {
 
   private async handleCustomObjectValueIfPrimitive(value: any, customObject: CustomObject, key: string) {
     if (typeof customObject[key] === 'number') {
-      value[key] = await this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(value[key], customObject[key]);
+      return this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(value, key, customObject[key]);
     } else {
       const secretKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
       if (!secretKey) {
@@ -242,17 +248,23 @@ export class ObjectRedactor {
 
   private async handleCustomObjectPrimitiveValueIfMatchTypeSpecified(
     value: any,
+    key: string,
     matchValue: CustomObjectMatchType | boolean
-  ): Promise<any> {
+  ): Promise<void> {
     switch (matchValue) {
+      case CustomObjectMatchType.Delete:
+        delete value[key];
+        return;
       case CustomObjectMatchType.Full:
-        return this.primitiveRedactor.redactValue(this.getStringValue(value));
+        value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
+        return;
       case CustomObjectMatchType.Deep:
       case CustomObjectMatchType.Shallow:
-        return this.primitiveRedactor.redactValue(value);
+        value[key] = await this.primitiveRedactor.redactValue(value[key]);
+        return;
       case CustomObjectMatchType.Pass:
       default:
-        return Promise.resolve(value);
+        return Promise.resolve();
     }
   }
 

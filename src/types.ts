@@ -1,6 +1,7 @@
 export type Redactor = (value: any) => Promise<string>;
 
 export enum CustomObjectMatchType {
+  Delete,
   Full,
   Deep,
   Shallow,

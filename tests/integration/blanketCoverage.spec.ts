@@ -46,6 +46,7 @@ export const fullCustomObject: CustomObject = {
   shallow: CustomObjectMatchType.Shallow,
   deep: CustomObjectMatchType.Deep,
   full: CustomObjectMatchType.Full,
+  delete: CustomObjectMatchType.Delete,
   secretName: CustomObjectMatchType.Ignore,
   deepSecretName: CustomObjectMatchType.Ignore,
   fullSecretName: CustomObjectMatchType.Ignore,
@@ -116,6 +117,7 @@ const blanketDataToRedact = {
     shallow: mockFirstName,
     deep: mockFirstName,
     full: mockFirstName,
+    delete: mockFirstName,
     secretName: 'email',
     deepSecretName: 'user',
     fullSecretName: 'account',
@@ -132,6 +134,7 @@ const blanketDataToRedact = {
     shallow: mockFirstName,
     deep: mockFirstName,
     full: mockFirstName,
+    delete: mockFirstName,
     secretName: 'foo',
     deepSecretName: 'foo',
     fullSecretName: 'foo',
@@ -162,6 +165,9 @@ const blanketDataToRedact = {
       email: mockEmail,
       foo: mockEmail
     },
+    delete: {
+      foo: "bar"
+    },
     secretName: 'email',
     deepSecretName: 'user',
     fullSecretName: 'account',
@@ -190,6 +196,7 @@ const blanketDataToRedact = {
     shallow: [mockEmail],
     deep: [mockEmail],
     full: [mockEmail],
+    delete: [mockEmail],
     secretName: 'email',
     deepSecretName: 'user',
     fullSecretName: 'account',
@@ -266,6 +273,7 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.customWithPrimitives.shallow).toBe(sha256HashedFirstName);
     expect(result.customWithPrimitives.deep).toBe(sha256HashedFirstName);
     expect(result.customWithPrimitives.full).toBe(sha256HashedFirstName);
+    expect(result.customWithPrimitives.delete).toBeUndefined();
     expect(result.customWithPrimitives.secretName).toBe(blanketDataToRedact.customWithPrimitives.secretName);
     expect(result.customWithPrimitives.deepSecretName).toBe(blanketDataToRedact.customWithPrimitives.deepSecretName);
     expect(result.customWithPrimitives.fullSecretName).toBe(blanketDataToRedact.customWithPrimitives.fullSecretName);
@@ -289,6 +297,7 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.customWithObjects.full).toBe(
       crypto.createHash('sha256').update(JSON.stringify(blanketDataToRedact.customWithObjects.full)).digest('hex')
     );
+    expect(result.customWithObjects.delete).toBeUndefined();
     expect(result.customWithObjects.secretName).toBe(blanketDataToRedact.customWithObjects.secretName);
     expect(result.customWithObjects.deepSecretName).toBe(blanketDataToRedact.customWithObjects.deepSecretName);
     expect(result.customWithObjects.fullSecretName).toBe(blanketDataToRedact.customWithObjects.fullSecretName);
@@ -319,6 +328,7 @@ describe('Blanket Coverage Integration Tests', () => {
         .update(JSON.stringify(blanketDataToRedact.customWithArrays.fullSecretValue))
         .digest('hex')
     );
+    expect(result.customWithArrays.delete).toBeUndefined();
     expect(result.customWithArrays.secretName).toBe(blanketDataToRedact.customWithArrays.secretName);
     expect(result.customWithArrays.deepSecretName).toBe(blanketDataToRedact.customWithArrays.deepSecretName);
     expect(result.customWithArrays.fullSecretName).toBe(blanketDataToRedact.customWithArrays.fullSecretName);
@@ -363,6 +373,9 @@ describe('Blanket Coverage Integration Tests', () => {
         a: [mockEmail],
         email: [mockEmail]
       },
+      delete: {
+        a: [mockEmail]
+      },
       secretName: 'email',
       deepSecretName: 'user',
       fullSecretName: 'account',
@@ -397,6 +410,7 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.full).toBe(
       crypto.createHash('sha256').update(JSON.stringify(rootLevelArraysInObjectsCustomObject.full)).digest('hex')
     );
+    expect(result.delete).toBeUndefined();
 
     expect(result.secretName).toBe(rootLevelArraysInObjectsCustomObject.secretName);
     expect(result.deepSecretName).toBe(rootLevelArraysInObjectsCustomObject.deepSecretName);
@@ -432,6 +446,7 @@ describe('Blanket Coverage Integration Tests', () => {
       shallow: [{ a: mockEmail, email: mockEmail }],
       deep: [{ a: mockEmail, email: mockEmail }],
       full: [{ a: mockEmail, email: mockEmail }],
+      delete: [{ a: mockEmail, email: mockEmail }],
       secretName: 'email',
       deepSecretName: 'user',
       fullSecretName: 'account',
@@ -455,6 +470,7 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.full).toBe(
       crypto.createHash('sha256').update(JSON.stringify(rootLevelArraysInObjectsCustomObject.full)).digest('hex')
     );
+    expect(result.delete).toBeUndefined();
 
     expect(result.secretName).toBe(rootLevelArraysInObjectsCustomObject.secretName);
     expect(result.deepSecretName).toBe(rootLevelArraysInObjectsCustomObject.deepSecretName);

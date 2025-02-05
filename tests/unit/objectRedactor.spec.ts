@@ -320,7 +320,8 @@ describe('ObjectRedactor', () => {
         deep: CustomObjectMatchType.Deep,
         shallow: CustomObjectMatchType.Shallow,
         pass: CustomObjectMatchType.Pass,
-        ignore: CustomObjectMatchType.Ignore
+        ignore: CustomObjectMatchType.Ignore,
+        delete: CustomObjectMatchType.Delete
       };
 
       customObjectManager = new CustomObjectManager([customObject]);
@@ -330,7 +331,8 @@ describe('ObjectRedactor', () => {
         deep: 'bam',
         shallow: 'bam',
         pass: 'bam',
-        ignore: 'bam'
+        ignore: 'bam',
+        delete: 'delete'
       };
       await redactor.redactInPlace(obj);
       expect(obj.full).toBe(DEFAULT_REDACTED_TEXT);
@@ -338,6 +340,7 @@ describe('ObjectRedactor', () => {
       expect(obj.shallow).toBe(DEFAULT_REDACTED_TEXT);
       expect(obj.pass).toBe('bam');
       expect(obj.ignore).toBe('bam');
+      expect(obj.delete).toBeUndefined();
     });
 
     it('Can handle CustomObjectMatchTypes correctly when value is an array', async () => {
@@ -346,7 +349,8 @@ describe('ObjectRedactor', () => {
         deep: CustomObjectMatchType.Deep,
         shallow: CustomObjectMatchType.Shallow,
         pass: CustomObjectMatchType.Pass,
-        ignore: CustomObjectMatchType.Ignore
+        ignore: CustomObjectMatchType.Ignore,
+        delete: CustomObjectMatchType.Delete
       };
 
       customObjectManager = new CustomObjectManager([customObject]);
@@ -357,7 +361,8 @@ describe('ObjectRedactor', () => {
         deep: ['foo', { foo: 'bar', fizz: 'buzz' }],
         shallow: ['foo', { foo: 'bar', fizz: 'buzz' }],
         pass: ['foo', { foo: 'bar', fizz: 'buzz' }],
-        ignore: ['foo', { foo: 'bar', fizz: 'buzz' }]
+        ignore: ['foo', { foo: 'bar', fizz: 'buzz' }],
+        delete: ['foo', { foo: 'bar', fizz: 'buzz' }]
       };
 
       await redactor.redactInPlace(obj);
@@ -366,6 +371,7 @@ describe('ObjectRedactor', () => {
       expect(obj.shallow).toEqual(['REDACTED', { foo: 'bar', fizz: 'REDACTED' }]);
       expect(obj.pass).toEqual(['foo', { foo: 'bar', fizz: 'REDACTED' }]);
       expect(obj.ignore).toEqual(['foo', { foo: 'bar', fizz: 'buzz' }]);
+      expect(obj.delete).toBeUndefined();
     });
 
     it('Can handle CustomObjectMatchTypes correctly when value is an object', async () => {
@@ -374,7 +380,8 @@ describe('ObjectRedactor', () => {
         deep: CustomObjectMatchType.Deep,
         shallow: CustomObjectMatchType.Shallow,
         pass: CustomObjectMatchType.Pass,
-        ignore: CustomObjectMatchType.Ignore
+        ignore: CustomObjectMatchType.Ignore,
+        delete: CustomObjectMatchType.Delete
       };
 
       customObjectManager = new CustomObjectManager([customObject]);
@@ -401,6 +408,10 @@ describe('ObjectRedactor', () => {
         ignore: {
           bam: 'bam',
           fizz: 'buzz'
+        },
+        delete: {
+          bam: 'bam',
+          fizz: 'buzz'
         }
       };
 
@@ -417,6 +428,7 @@ describe('ObjectRedactor', () => {
       });
       expect(obj.pass).toEqual({ bam: 'bam', fizz: DEFAULT_REDACTED_TEXT });
       expect(obj.ignore).toEqual({ bam: 'bam', fizz: 'buzz' });
+      expect(obj.delete).toBeUndefined();
     });
 
     it('Can redact CustomObjects correctly when they are nested in another object ', async () => {
