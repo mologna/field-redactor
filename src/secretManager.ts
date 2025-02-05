@@ -8,12 +8,14 @@ export class SecretManager {
   private secretKeys?: RegExp[];
   private deepSecretKeys?: RegExp[];
   private fullSecretKeys?: RegExp[];
+  private deleteSecretKeys?: RegExp[];
 
   constructor(config: SecretManagerConfig) {
     this.deepSecretKeys = config.deepSecretKeys;
     this.fullSecretKeys = config.fullSecretKeys;
+    this.deleteSecretKeys = config.deleteSecretKeys;
 
-    if (!config.secretKeys && (config.deepSecretKeys || config.fullSecretKeys)) {
+    if (!config.secretKeys && (config.deepSecretKeys || config.fullSecretKeys || config.deleteSecretKeys)) {
       this.secretKeys = [];
     } else {
       this.secretKeys = config.secretKeys;
@@ -58,6 +60,19 @@ export class SecretManager {
     }
 
     return SecretManager.valueMatchesAnyRegexValue(key, this.fullSecretKeys);
+  }
+
+  /**
+   * Determines if a key is a delete secret based on the deleteSecretKeys configuration provided in the constructor.
+   * @param key The key to check.
+   * @returns True if the key is a delete secret key, otherwise false.
+   */
+  public isDeleteSecretKey(key: string): boolean {
+    if (!this.deleteSecretKeys) {
+      return false;
+    }
+
+    return SecretManager.valueMatchesAnyRegexValue(key, this.deleteSecretKeys);
   }
 
   private static valueMatchesAnyRegexValue(value: string, regexes: RegExp[]): boolean {

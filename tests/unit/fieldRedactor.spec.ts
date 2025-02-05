@@ -31,7 +31,8 @@ describe('FieldRedactor', () => {
       const config = {
         secretKeys: [/password/],
         deepSecretKeys: [/token/],
-        fullSecretKeys: [/key/]
+        fullSecretKeys: [/key/],
+        deleteSecretKeys: [/delete/]
       };
 
       new FieldRedactor(config);

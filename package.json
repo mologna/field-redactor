@@ -1,6 +1,6 @@
 {
   "name": "field-redactor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Utility for redacting PII from complex JSON objects for which simpler redaction tools are insufficient.",
   "author": {
     "name": "Andrew Molony",

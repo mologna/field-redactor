@@ -89,6 +89,18 @@ describe('ObjectRedactor', () => {
       validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT, false, secretKeys);
     });
 
+    it('Can delete keys when specified as deleteSecretKeys', async () => {
+      const deleteSecretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
+      secretManager = new SecretManager({ deleteSecretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+      const copy = deepCopy(validInputWithAllTypes);
+      await redactor.redactInPlace(copy);
+      expect(copy).not.toBe(validInputWithAllTypes);
+      expect(copy.userId).toBeUndefined();
+      expect(copy.password).toBeUndefined();
+      expect(copy.acctBalance).toBeUndefined();
+    });
+
     it('Can perform deepRedaction on objects and arrays when deepSecretKey matches', async () => {
       const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
       const deepSecretKeys: RegExp[] = [/parentAccount/];
@@ -251,6 +263,54 @@ describe('ObjectRedactor', () => {
       expect(input.emails[1][0]).toBe(DEFAULT_REDACTED_TEXT);
       expect(input.emails[1][1]).toBe(DEFAULT_REDACTED_TEXT);
     });
+
+    it('Can delete keys when specified as deleteSecretKeys in nested objects', async () => {
+      const obj = {
+        foo: {
+          bar: {
+            fizz: 'buzz'
+          }
+        }
+      };
+      const deleteSecretKeys: RegExp[] = [/bar/];
+      secretManager = new SecretManager({ deleteSecretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+      await redactor.redactInPlace(obj);
+      expect(obj.foo.bar).toBeUndefined();
+    });
+
+    it('Can delete keys when specified as deleteSecretKeys in nested arrays and objects', async () => {
+      const obj = {
+        bar: ['this', 'is', 'an', 'array'],
+        fizz: [
+          {
+            buzz: 'buzz',
+            bar: 'bar'
+          }
+        ]
+      };
+      const deleteSecretKeys: RegExp[] = [/bar/];
+      secretManager = new SecretManager({ deleteSecretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+      await redactor.redactInPlace(obj);
+      expect(obj.bar).toBeUndefined();
+      expect(obj.fizz[0].bar).toBeUndefined();
+    });
+
+    it('Can delete keys when specified as deleteSecretKeys ', async () => {
+      const obj = {
+        foo: {
+          bar: {
+            fizz: 'buzz'
+          }
+        }
+      };
+      const deleteSecretKeys: RegExp[] = [/bar/];
+      secretManager = new SecretManager({ deleteSecretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+      await redactor.redactInPlace(obj);
+      expect(obj.foo.bar).toBeUndefined();
+    });
   });
 
   describe('Custom Object Redaction', () => {
@@ -260,7 +320,8 @@ describe('ObjectRedactor', () => {
         deep: CustomObjectMatchType.Deep,
         shallow: CustomObjectMatchType.Shallow,
         pass: CustomObjectMatchType.Pass,
-        ignore: CustomObjectMatchType.Ignore
+        ignore: CustomObjectMatchType.Ignore,
+        delete: CustomObjectMatchType.Delete
       };
 
       customObjectManager = new CustomObjectManager([customObject]);
@@ -270,7 +331,8 @@ describe('ObjectRedactor', () => {
         deep: 'bam',
         shallow: 'bam',
         pass: 'bam',
-        ignore: 'bam'
+        ignore: 'bam',
+        delete: 'delete'
       };
       await redactor.redactInPlace(obj);
       expect(obj.full).toBe(DEFAULT_REDACTED_TEXT);
@@ -278,6 +340,7 @@ describe('ObjectRedactor', () => {
       expect(obj.shallow).toBe(DEFAULT_REDACTED_TEXT);
       expect(obj.pass).toBe('bam');
       expect(obj.ignore).toBe('bam');
+      expect(obj.delete).toBeUndefined();
     });
 
     it('Can handle CustomObjectMatchTypes correctly when value is an array', async () => {
@@ -286,7 +349,8 @@ describe('ObjectRedactor', () => {
         deep: CustomObjectMatchType.Deep,
         shallow: CustomObjectMatchType.Shallow,
         pass: CustomObjectMatchType.Pass,
-        ignore: CustomObjectMatchType.Ignore
+        ignore: CustomObjectMatchType.Ignore,
+        delete: CustomObjectMatchType.Delete
       };
 
       customObjectManager = new CustomObjectManager([customObject]);
@@ -297,7 +361,8 @@ describe('ObjectRedactor', () => {
         deep: ['foo', { foo: 'bar', fizz: 'buzz' }],
         shallow: ['foo', { foo: 'bar', fizz: 'buzz' }],
         pass: ['foo', { foo: 'bar', fizz: 'buzz' }],
-        ignore: ['foo', { foo: 'bar', fizz: 'buzz' }]
+        ignore: ['foo', { foo: 'bar', fizz: 'buzz' }],
+        delete: ['foo', { foo: 'bar', fizz: 'buzz' }]
       };
 
       await redactor.redactInPlace(obj);
@@ -306,6 +371,7 @@ describe('ObjectRedactor', () => {
       expect(obj.shallow).toEqual(['REDACTED', { foo: 'bar', fizz: 'REDACTED' }]);
       expect(obj.pass).toEqual(['foo', { foo: 'bar', fizz: 'REDACTED' }]);
       expect(obj.ignore).toEqual(['foo', { foo: 'bar', fizz: 'buzz' }]);
+      expect(obj.delete).toBeUndefined();
     });
 
     it('Can handle CustomObjectMatchTypes correctly when value is an object', async () => {
@@ -314,7 +380,8 @@ describe('ObjectRedactor', () => {
         deep: CustomObjectMatchType.Deep,
         shallow: CustomObjectMatchType.Shallow,
         pass: CustomObjectMatchType.Pass,
-        ignore: CustomObjectMatchType.Ignore
+        ignore: CustomObjectMatchType.Ignore,
+        delete: CustomObjectMatchType.Delete
       };
 
       customObjectManager = new CustomObjectManager([customObject]);
@@ -341,6 +408,10 @@ describe('ObjectRedactor', () => {
         ignore: {
           bam: 'bam',
           fizz: 'buzz'
+        },
+        delete: {
+          bam: 'bam',
+          fizz: 'buzz'
         }
       };
 
@@ -357,6 +428,7 @@ describe('ObjectRedactor', () => {
       });
       expect(obj.pass).toEqual({ bam: 'bam', fizz: DEFAULT_REDACTED_TEXT });
       expect(obj.ignore).toEqual({ bam: 'bam', fizz: 'buzz' });
+      expect(obj.delete).toBeUndefined();
     });
 
     it('Can redact CustomObjects correctly when they are nested in another object ', async () => {

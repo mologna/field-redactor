@@ -39,6 +39,8 @@ export class ObjectRedactor {
       const customObject = this.customObjManager.getMatchingCustomObject(value);
       if (customObject) {
         await this.handleCustomObjectInPlace(value, customObject);
+      } else if (this.secretManager.isDeleteSecretKey(key)) {
+        delete object[key];
       } else if (this.secretManager.isFullSecretKey(key)) {
         object[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value));
       } else if (Array.isArray(object[key])) {
@@ -144,13 +146,15 @@ export class ObjectRedactor {
   }
 
   private async handleCustomObjectArrayValueIfStringKeySpecified(value: any, key: string, stringKey: string) {
-    if (this.secretManager.isFullSecretKey(stringKey)) {
+    if (this.secretManager.isDeleteSecretKey(stringKey)) {
+      delete value[key];
+    } else if (this.secretManager.isFullSecretKey(stringKey)) {
       value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
-    }
-
-    const isDeepSecretKey = this.secretManager.isDeepSecretKey(stringKey);
-    if (isDeepSecretKey || this.secretManager.isSecretKey(stringKey)) {
-      value[key] = await this.redactAllArrayValues(value[key], isDeepSecretKey);
+    } else {
+      const isDeepSecretKey = this.secretManager.isDeepSecretKey(stringKey);
+      if (isDeepSecretKey || this.secretManager.isSecretKey(stringKey)) {
+        value[key] = await this.redactAllArrayValues(value[key], isDeepSecretKey);
+      }
     }
   }
 
@@ -160,6 +164,9 @@ export class ObjectRedactor {
     matchType: CustomObjectMatchType
   ) {
     switch (matchType) {
+      case CustomObjectMatchType.Delete:
+        delete value[key];
+        return Promise.resolve();
       case CustomObjectMatchType.Full:
         value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
         return Promise.resolve();
@@ -193,6 +200,8 @@ export class ObjectRedactor {
     const customObject = this.customObjManager.getMatchingCustomObject(value[key]);
     if (customObject) {
       await this.handleCustomObjectInPlace(value[key], customObject);
+    } else if (this.secretManager.isDeleteSecretKey(stringKey)) {
+      delete value[key];
     } else if (this.secretManager.isFullSecretKey(stringKey)) {
       value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
     } else if (this.secretManager.isDeepSecretKey(stringKey)) {
@@ -208,6 +217,9 @@ export class ObjectRedactor {
     matchType: CustomObjectMatchType
   ) {
     switch (matchType) {
+      case CustomObjectMatchType.Delete:
+        delete value[key];
+        return Promise.resolve();
       case CustomObjectMatchType.Full:
         value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
         return Promise.resolve();
@@ -223,39 +235,45 @@ export class ObjectRedactor {
 
   private async handleCustomObjectValueIfPrimitive(value: any, customObject: CustomObject, key: string) {
     if (typeof customObject[key] === 'number') {
-      value[key] = await this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(value[key], customObject[key]);
+      return this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(value, key, customObject[key]);
     } else {
-      value[key] = await this.handleCustomObjectPrimitiveValueIfStringKeySpecified(value, customObject, key);
+      const secretKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
+      if (!secretKey) {
+        return;
+      }
+
+      await this.handleCustomObjectPrimitiveValueIfStringKeySpecified(value, secretKey, key);
     }
   }
 
   private async handleCustomObjectPrimitiveValueIfMatchTypeSpecified(
     value: any,
+    key: string,
     matchValue: CustomObjectMatchType | boolean
-  ): Promise<any> {
+  ): Promise<void> {
     switch (matchValue) {
+      case CustomObjectMatchType.Delete:
+        delete value[key];
+        return;
       case CustomObjectMatchType.Full:
-        return this.primitiveRedactor.redactValue(this.getStringValue(value));
+        value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
+        return;
       case CustomObjectMatchType.Deep:
       case CustomObjectMatchType.Shallow:
-        return this.primitiveRedactor.redactValue(value);
+        value[key] = await this.primitiveRedactor.redactValue(value[key]);
+        return;
       case CustomObjectMatchType.Pass:
       default:
-        return Promise.resolve(value);
+        return Promise.resolve();
     }
   }
 
-  private async handleCustomObjectPrimitiveValueIfStringKeySpecified(
-    value: any,
-    customObject: CustomObject,
-    key: string
-  ) {
-    const secretKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
-    if (!secretKey) {
-      return value[key];
+  private async handleCustomObjectPrimitiveValueIfStringKeySpecified(value: any, secretKey: string, key: string) {
+    if (this.secretManager.isDeleteSecretKey(secretKey)) {
+      delete value[key];
+    } else {
+      value[key] = await this.redactPrimitiveValueIfSecret(secretKey, value[key], false);
     }
-
-    return this.redactPrimitiveValueIfSecret(secretKey, value[key], false);
   }
 
   private getStringValue(val: any) {

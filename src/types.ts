@@ -1,6 +1,7 @@
 export type Redactor = (value: any) => Promise<string>;
 
 export enum CustomObjectMatchType {
+  Delete,
   Full,
   Deep,
   Shallow,
@@ -22,6 +23,7 @@ export type SecretManagerConfig = {
   secretKeys?: RegExp[];
   deepSecretKeys?: RegExp[];
   fullSecretKeys?: RegExp[];
+  deleteSecretKeys?: RegExp[];
 };
 
 export type FieldRedactorConfig = Partial<PrimitiveRedactorConfig> &
