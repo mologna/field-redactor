@@ -61,6 +61,23 @@ describe('NewSecretManager', () => {
     expect(secretManager.isSecretKey('pass')).toBe(false);
   });
 
+  it('Returns true for deleteSecretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
+    const secretManager = new SecretManager({
+      deleteSecretKeys: [/foo/, /^pass/]
+    });
+
+    expect(secretManager.isDeleteSecretKey('foo')).toBe(true);
+    expect(secretManager.isDeleteSecretKey('bar')).toBe(false);
+    expect(secretManager.isDeleteSecretKey('pass')).toBe(true);
+    expect(secretManager.isDeleteSecretKey('password')).toBe(true);
+    expect(secretManager.isDeleteSecretKey('superpass')).toBe(false);
+
+    expect(secretManager.isDeepSecretKey('foo')).toBe(false);
+    expect(secretManager.isDeepSecretKey('pass')).toBe(false);
+    expect(secretManager.isSecretKey('foo')).toBe(false);
+    expect(secretManager.isSecretKey('pass')).toBe(false);
+  });
+
   it('Does not default to all values being secret if either deepSecretKeys, fullSecretKeys, or both are provided', () => {
     // deep secret
     const deepSecretManager = new SecretManager({
@@ -92,7 +109,8 @@ describe('NewSecretManager', () => {
     const secretManager = new SecretManager({
       secretKeys: [/foo/, /^pass/],
       deepSecretKeys: [/parentAccount/],
-      fullSecretKeys: [/redactMe/]
+      fullSecretKeys: [/redactMe/],
+      deleteSecretKeys: [/deleteMe/]
     });
 
     // secretKeys
@@ -100,17 +118,27 @@ describe('NewSecretManager', () => {
     expect(secretManager.isSecretKey('foo')).toBe(true);
     expect(secretManager.isSecretKey('pass')).toBe(true);
     expect(secretManager.isSecretKey('redactMe')).toBe(false);
+    expect(secretManager.isSecretKey('deleteMe')).toBe(false);
 
     // deep secret keys
     expect(secretManager.isDeepSecretKey('foo')).toBe(false);
     expect(secretManager.isDeepSecretKey('pass')).toBe(false);
     expect(secretManager.isDeepSecretKey('redactMe')).toBe(false);
     expect(secretManager.isDeepSecretKey('parentAccount')).toBe(true);
+    expect(secretManager.isDeepSecretKey('deleteMe')).toBe(false);
 
     // full redaction keys
     expect(secretManager.isFullSecretKey('parentAccount')).toBe(false);
     expect(secretManager.isFullSecretKey('foo')).toBe(false);
     expect(secretManager.isFullSecretKey('pass')).toBe(false);
     expect(secretManager.isFullSecretKey('redactMe')).toBe(true);
+    expect(secretManager.isFullSecretKey('deleteMe')).toBe(false);
+
+    // delete redaction keys
+    expect(secretManager.isDeleteSecretKey('parentAccount')).toBe(false);
+    expect(secretManager.isDeleteSecretKey('foo')).toBe(false);
+    expect(secretManager.isDeleteSecretKey('pass')).toBe(false);
+    expect(secretManager.isDeleteSecretKey('redactMe')).toBe(false);
+    expect(secretManager.isDeleteSecretKey('deleteMe')).toBe(true);
   });
 });

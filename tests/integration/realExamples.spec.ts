@@ -30,6 +30,7 @@ describe('Real Examples', () => {
     const config: FieldRedactorConfig = {
       redactor: mockRedactor,
       secretKeys: [/email/i, /mdn/i, /phone/i, /.+name$/i, /auth/i],
+      deleteSecretKeys: [/authKey/i],
       customObjects: [eventDataCustomObject]
     };
 
@@ -46,6 +47,7 @@ describe('Real Examples', () => {
     expect(result.destinations.fullName).toEqual(sha256HashedFullName);
     expect(result.destinations.mdn).not.toEqual(eventProcessingLogsMock.destinations.mdn);
     expect(result.destinations.mdn).toEqual(sha256HashedMdn);
+    expect(result.appAuthKey).toBeUndefined();
 
     // test custom objects were redacted correctly
     validateEventArrayData(result.eventData, eventProcessingLogsMock.eventData);
@@ -54,9 +56,8 @@ describe('Real Examples', () => {
   it('Can correctly redact application logs from a real example - kafka adapter', async () => {
     const result = await fieldRedactor.redact(kafkaAdapterLogMock);
 
-    // test secrets were found correctly
-    expect(result.event.appAuthKey).not.toEqual(mockAuthKey);
-    expect(result.event.appAuthKey).toEqual(sha256MhashedMockAuthKey);
+    // test deep secrets were found correctly
+    expect(result.event.appAuthKey).toBeUndefined();
 
     // test custom objects were redacted correctly
     validateEventArrayData(result.event.data, kafkaAdapterLogMock.event.data);

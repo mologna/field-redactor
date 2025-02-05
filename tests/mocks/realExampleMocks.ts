@@ -3,6 +3,7 @@ import { mockAuthKey, mockEmail, mockFirstName, mockFullName, mockLastName, mock
 export const eventProcessingLogsMock = {
   '@timestamp': '2024-12-27T16:52:51.293Z',
   appId: '271',
+  appAuthKey: mockAuthKey,
   approvedCampaigns: [],
   buildVersion: '1.0.74',
   campaignExecutionDetails: {

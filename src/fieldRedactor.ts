@@ -15,7 +15,7 @@ export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private readonly objectRedactor: ObjectRedactor;
   constructor(config?: FieldRedactorConfig) {
-    const { redactor, secretKeys, deepSecretKeys, fullSecretKeys, customObjects } = config || {};
+    const { redactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects } = config || {};
 
     const ignoreNullOrUndefined =
       typeof config?.ignoreNullOrUndefined === 'boolean' ? config.ignoreNullOrUndefined : true;
@@ -30,7 +30,8 @@ export class FieldRedactor {
     const secretManager = new SecretManager({
       secretKeys,
       deepSecretKeys,
-      fullSecretKeys
+      fullSecretKeys,
+      deleteSecretKeys
     });
 
     const customObjectChecker = new CustomObjectManager(customObjects);

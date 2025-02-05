@@ -38,6 +38,7 @@ const secretKeys = [
 ];
 const deepSecretKeys = [/^user$/, /deepRedactMe/i];
 const fullSecretKeys = [/account/];
+const deleteSecretKeys = [/authKey/i, /authenticationKey/i];
 
 export const fullCustomObject: CustomObject = {
   ignore: CustomObjectMatchType.Ignore,
@@ -45,12 +46,15 @@ export const fullCustomObject: CustomObject = {
   shallow: CustomObjectMatchType.Shallow,
   deep: CustomObjectMatchType.Deep,
   full: CustomObjectMatchType.Full,
+  delete: CustomObjectMatchType.Delete,
   secretName: CustomObjectMatchType.Ignore,
   deepSecretName: CustomObjectMatchType.Ignore,
   fullSecretName: CustomObjectMatchType.Ignore,
+  deleteSecretName: CustomObjectMatchType.Ignore,
   secretValue: 'secretName',
   deepSecretValue: 'deepSecretName',
-  fullSecretValue: 'fullSecretName'
+  fullSecretValue: 'fullSecretName',
+  deleteSecretValue: 'deleteSecretName'
 };
 
 const smallCustomObject: CustomObject = {
@@ -69,6 +73,8 @@ const blanketDataToRedact = {
   '@timestamp': '2024-12-01T22:07:26.448Z',
   level: 'info',
   appId: 271,
+  // delete secret keys which should be redacted
+  appAuthKey: '12345',
   // secret keys which should be redacted
   clientName: mockClientName,
   owner: mockOwner,
@@ -111,12 +117,15 @@ const blanketDataToRedact = {
     shallow: mockFirstName,
     deep: mockFirstName,
     full: mockFirstName,
+    delete: mockFirstName,
     secretName: 'email',
     deepSecretName: 'user',
     fullSecretName: 'account',
+    deleteSecretName: 'authKey',
     secretValue: mockEmail,
     deepSecretValue: mockEmail,
-    fullSecretValue: mockEmail
+    fullSecretValue: mockEmail,
+    deleteSecretValue: '12345'
   },
   // custom object where all values are primitives and secrets are misses
   customWithPrimitivesAndSecretMisses: {
@@ -125,12 +134,15 @@ const blanketDataToRedact = {
     shallow: mockFirstName,
     deep: mockFirstName,
     full: mockFirstName,
+    delete: mockFirstName,
     secretName: 'foo',
     deepSecretName: 'foo',
     fullSecretName: 'foo',
+    deleteSecretName: 'foo',
     secretValue: mockEmail,
     deepSecretValue: mockEmail,
-    fullSecretValue: mockEmail
+    fullSecretValue: mockEmail,
+    deleteSecretValue: mockEmail
   },
   // custom object where all values are objects and secrets are hits
   customWithObjects: {
@@ -153,9 +165,13 @@ const blanketDataToRedact = {
       email: mockEmail,
       foo: mockEmail
     },
+    delete: {
+      foo: "bar"
+    },
     secretName: 'email',
     deepSecretName: 'user',
     fullSecretName: 'account',
+    deleteSecretName: 'authKey',
     secretValue: {
       email: mockEmail,
       foo: mockEmail
@@ -167,6 +183,10 @@ const blanketDataToRedact = {
     fullSecretValue: {
       email: mockEmail,
       foo: mockEmail
+    },
+    deleteSecretValue: {
+      email: mockEmail,
+      foo: mockEmail
     }
   },
   // custom object where all values are arrays and secrets are hits
@@ -176,12 +196,15 @@ const blanketDataToRedact = {
     shallow: [mockEmail],
     deep: [mockEmail],
     full: [mockEmail],
+    delete: [mockEmail],
     secretName: 'email',
     deepSecretName: 'user',
     fullSecretName: 'account',
+    deleteSecretName: 'authKey',
     secretValue: [mockEmail],
     deepSecretValue: [mockEmail],
-    fullSecretValue: [mockEmail]
+    fullSecretValue: [mockEmail],
+    deleteSecretValue: [mockEmail]
   }
 };
 
@@ -201,6 +224,7 @@ describe('Blanket Coverage Integration Tests', () => {
       secretKeys,
       deepSecretKeys,
       fullSecretKeys,
+      deleteSecretKeys,
       customObjects: [fullCustomObject, smallCustomObject],
       ignoreNullOrUndefined: false,
       ignoreBooleans: false
@@ -212,6 +236,7 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result['@timestamp']).toBe(blanketDataToRedact['@timestamp']);
     expect(result.level).toBe(blanketDataToRedact.level);
     expect(result.appId).toBe(blanketDataToRedact.appId);
+    expect(result.appAuthKey).toBeUndefined();
     expect(result.nullKey).toBe(NULL_OR_UNDEFINED_TEXT);
     expect(result.undefinedKey).toBe(NULL_OR_UNDEFINED_TEXT);
     expect(result.trueBooleanKey).toBe(sha256HashedTrue);
@@ -248,6 +273,7 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.customWithPrimitives.shallow).toBe(sha256HashedFirstName);
     expect(result.customWithPrimitives.deep).toBe(sha256HashedFirstName);
     expect(result.customWithPrimitives.full).toBe(sha256HashedFirstName);
+    expect(result.customWithPrimitives.delete).toBeUndefined();
     expect(result.customWithPrimitives.secretName).toBe(blanketDataToRedact.customWithPrimitives.secretName);
     expect(result.customWithPrimitives.deepSecretName).toBe(blanketDataToRedact.customWithPrimitives.deepSecretName);
     expect(result.customWithPrimitives.fullSecretName).toBe(blanketDataToRedact.customWithPrimitives.fullSecretName);
@@ -271,6 +297,7 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.customWithObjects.full).toBe(
       crypto.createHash('sha256').update(JSON.stringify(blanketDataToRedact.customWithObjects.full)).digest('hex')
     );
+    expect(result.customWithObjects.delete).toBeUndefined();
     expect(result.customWithObjects.secretName).toBe(blanketDataToRedact.customWithObjects.secretName);
     expect(result.customWithObjects.deepSecretName).toBe(blanketDataToRedact.customWithObjects.deepSecretName);
     expect(result.customWithObjects.fullSecretName).toBe(blanketDataToRedact.customWithObjects.fullSecretName);
@@ -301,6 +328,7 @@ describe('Blanket Coverage Integration Tests', () => {
         .update(JSON.stringify(blanketDataToRedact.customWithArrays.fullSecretValue))
         .digest('hex')
     );
+    expect(result.customWithArrays.delete).toBeUndefined();
     expect(result.customWithArrays.secretName).toBe(blanketDataToRedact.customWithArrays.secretName);
     expect(result.customWithArrays.deepSecretName).toBe(blanketDataToRedact.customWithArrays.deepSecretName);
     expect(result.customWithArrays.fullSecretName).toBe(blanketDataToRedact.customWithArrays.fullSecretName);
@@ -320,6 +348,7 @@ describe('Blanket Coverage Integration Tests', () => {
       secretKeys,
       deepSecretKeys,
       fullSecretKeys,
+      deleteSecretKeys,
       customObjects: [fullCustomObject]
     });
 
@@ -344,9 +373,13 @@ describe('Blanket Coverage Integration Tests', () => {
         a: [mockEmail],
         email: [mockEmail]
       },
+      delete: {
+        a: [mockEmail]
+      },
       secretName: 'email',
       deepSecretName: 'user',
       fullSecretName: 'account',
+      deleteSecretName: 'authKey',
       secretValue: {
         a: [mockEmail],
         email: [mockEmail]
@@ -358,6 +391,10 @@ describe('Blanket Coverage Integration Tests', () => {
       fullSecretValue: {
         a: [mockEmail],
         email: [mockEmail]
+      },
+      deleteSecretValue: {
+        a: [mockEmail],
+        b: [mockEmail]
       }
     };
 
@@ -373,10 +410,12 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.full).toBe(
       crypto.createHash('sha256').update(JSON.stringify(rootLevelArraysInObjectsCustomObject.full)).digest('hex')
     );
+    expect(result.delete).toBeUndefined();
 
     expect(result.secretName).toBe(rootLevelArraysInObjectsCustomObject.secretName);
     expect(result.deepSecretName).toBe(rootLevelArraysInObjectsCustomObject.deepSecretName);
     expect(result.fullSecretName).toBe(rootLevelArraysInObjectsCustomObject.fullSecretName);
+    expect(result.deleteSecretName).toBe(rootLevelArraysInObjectsCustomObject.deleteSecretName);
 
     expect(result.secretValue.a[0]).toBe(mockEmail);
     expect(result.secretValue.email[0]).toBe(sha256HashedEmail);
@@ -388,6 +427,7 @@ describe('Blanket Coverage Integration Tests', () => {
         .update(JSON.stringify(rootLevelArraysInObjectsCustomObject.fullSecretValue))
         .digest('hex')
     );
+    expect(result.deleteSecretValue).toBeUndefined();
   });
 
   it('Can handle root-level custom objects as well as array values with nested objects', async () => {
@@ -396,6 +436,7 @@ describe('Blanket Coverage Integration Tests', () => {
       secretKeys,
       deepSecretKeys,
       fullSecretKeys,
+      deleteSecretKeys,
       customObjects: [fullCustomObject]
     });
 
@@ -405,12 +446,15 @@ describe('Blanket Coverage Integration Tests', () => {
       shallow: [{ a: mockEmail, email: mockEmail }],
       deep: [{ a: mockEmail, email: mockEmail }],
       full: [{ a: mockEmail, email: mockEmail }],
+      delete: [{ a: mockEmail, email: mockEmail }],
       secretName: 'email',
       deepSecretName: 'user',
       fullSecretName: 'account',
+      deleteSecretName: 'authKey',
       secretValue: [{ a: mockEmail, email: mockEmail }],
       deepSecretValue: [{ a: mockEmail, email: mockEmail }],
-      fullSecretValue: [{ a: mockEmail, email: mockEmail }]
+      fullSecretValue: [{ a: mockEmail, email: mockEmail }],
+      deleteSecretValue: [{ a: mockEmail, email: mockEmail }]
     };
 
     const result = await fieldRedactor.redact(rootLevelArraysInObjectsCustomObject);
@@ -426,10 +470,12 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.full).toBe(
       crypto.createHash('sha256').update(JSON.stringify(rootLevelArraysInObjectsCustomObject.full)).digest('hex')
     );
+    expect(result.delete).toBeUndefined();
 
     expect(result.secretName).toBe(rootLevelArraysInObjectsCustomObject.secretName);
     expect(result.deepSecretName).toBe(rootLevelArraysInObjectsCustomObject.deepSecretName);
     expect(result.fullSecretName).toBe(rootLevelArraysInObjectsCustomObject.fullSecretName);
+    expect(result.deleteSecretName).toBe(rootLevelArraysInObjectsCustomObject.deleteSecretName);
 
     expect(result.secretValue[0].a).toBe(mockEmail);
     expect(result.secretValue[0].email).toBe(sha256HashedEmail);
@@ -441,6 +487,7 @@ describe('Blanket Coverage Integration Tests', () => {
         .update(JSON.stringify(rootLevelArraysInObjectsCustomObject.fullSecretValue))
         .digest('hex')
     );
+    expect(result.deleteSecretValue).toBeUndefined();
   });
 
   it('Can handle more realistic scenarios where multiple custom objects are specified with various input parameters', async () => {
