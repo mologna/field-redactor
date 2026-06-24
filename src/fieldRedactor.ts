@@ -32,15 +32,12 @@ export class FieldRedactor {
 
   /** Non-fatal configuration warnings from the last construction (empty when `strict` threw). */
   public readonly configWarnings: readonly string[];
-  private readonly schemaNames: readonly (string | undefined)[];
 
   constructor(config?: FieldRedactorConfig) {
     this.configWarnings = validateFieldRedactorConfig(config);
     for (const warning of this.configWarnings) {
       config?.onConfigWarning?.(warning);
     }
-
-    this.schemaNames = config?.schemaNames ?? [];
 
     const { redactor, syncRedactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects } =
       config || {};
@@ -66,7 +63,7 @@ export class FieldRedactor {
       deleteSecretKeys
     });
 
-    this.customObjectManager = new CustomObjectManager(customObjects);
+    this.customObjectManager = new CustomObjectManager(customObjects, config?.schemaNames);
     this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, this.customObjectManager);
   }
 
@@ -90,7 +87,7 @@ export class FieldRedactor {
    */
   public async dryRun<T extends RedactableInput>(value: T): Promise<DryRunResult<T>> {
     if (this.isPrimitiveOrUndefined(value)) {
-      return { result: value, report: EMPTY_DRY_RUN_REPORT };
+      return this.emptyDryRunResult(value);
     }
 
     const snapshot = this.deepCopy(value) as T;
@@ -102,17 +99,21 @@ export class FieldRedactor {
    */
   public dryRunSync<T extends RedactableInput>(value: T): DryRunResult<T> {
     if (this.isPrimitiveOrUndefined(value)) {
-      return { result: value, report: EMPTY_DRY_RUN_REPORT };
+      return this.emptyDryRunResult(value);
     }
 
     const snapshot = this.deepCopy(value) as T;
     return this.toDryRunResult(snapshot, this.redactSync(value));
   }
 
+  private emptyDryRunResult<T>(value: T): DryRunResult<T> {
+    return { result: value, report: EMPTY_DRY_RUN_REPORT };
+  }
+
   private toDryRunResult<T extends RedactableInput>(snapshot: T, result: T): DryRunResult<T> {
     return {
       result,
-      report: buildDryRunReport(snapshot as JsonValue, result as JsonValue, this.customObjectManager, this.schemaNames)
+      report: buildDryRunReport(snapshot as JsonValue, result as JsonValue, this.customObjectManager)
     };
   }
 

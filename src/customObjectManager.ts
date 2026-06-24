@@ -7,19 +7,26 @@ import { assertNoIdenticalCustomObjectSchemas } from './configValidator';
  * When multiple schemas match, the schema with the most keys is selected.
  */
 export class CustomObjectManager {
-  private customObjects: CustomObject[] = [];
+  private readonly customObjects: CustomObject[];
+  private readonly schemaNames: readonly (string | undefined)[];
 
   /**
    * Creates a CustomObjectChecker with the specified CustomObjects.
    * @param customObjects The CustomObjects to check against.
+   * @param schemaNames Optional labels parallel to `customObjects` for dry-run reports.
    */
-  constructor(customObjects?: CustomObject[]) {
+  constructor(customObjects?: CustomObject[], schemaNames?: readonly (string | undefined)[]) {
     assertNoIdenticalCustomObjectSchemas(customObjects);
-    this.customObjects = customObjects ? customObjects : [];
+    this.customObjects = customObjects ?? [];
+    this.schemaNames = schemaNames ?? [];
   }
 
   public getSchemaIndex(schema: CustomObject): number {
     return this.customObjects.indexOf(schema);
+  }
+
+  public getSchemaName(schemaIndex: number): string | undefined {
+    return this.schemaNames[schemaIndex];
   }
 
   /**

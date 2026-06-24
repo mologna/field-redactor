@@ -1,17 +1,12 @@
 import { CustomObjectManager } from './customObjectManager';
-import { DryRunReport, isJsonObject, JsonObject, JsonValue } from './types';
+import { isTraversableJson, joinPath, walkTraversableJson } from './jsonWalk';
+import { DryRunReport, isJsonObject, JsonValue } from './types';
 
 export const EMPTY_DRY_RUN_REPORT: DryRunReport = {
   redactedPaths: [],
   deletedPaths: [],
   matchedSchemas: []
 };
-
-const joinPath = (base: string, segment: string | number): string =>
-  typeof segment === 'number' ? (base ? `${base}[${segment}]` : `[${segment}]`) : base ? `${base}.${segment}` : segment;
-
-const isTraversable = (value: JsonValue | undefined): value is JsonObject | JsonValue[] =>
-  !!value && typeof value === 'object' && !(value instanceof Date);
 
 const pushPath = (report: DryRunReport, path: string, list: 'redactedPaths' | 'deletedPaths'): void => {
   if (path) {
@@ -29,7 +24,7 @@ const diffRedaction = (
     return;
   }
 
-  if (!isTraversable(before) || !isTraversable(after)) {
+  if (!isTraversableJson(before) || !isTraversableJson(after)) {
     pushPath(report, path, after === undefined && before !== undefined ? 'deletedPaths' : 'redactedPaths');
     return;
   }
@@ -70,47 +65,34 @@ const collectMatchedSchemas = (
   value: JsonValue | undefined,
   manager: CustomObjectManager,
   path: string,
-  report: DryRunReport,
-  schemaNames?: readonly (string | undefined)[]
+  report: DryRunReport
 ): void => {
-  if (!isTraversable(value)) {
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectMatchedSchemas(item, manager, joinPath(path, index), report, schemaNames));
-    return;
-  }
-
-  if (isJsonObject(value)) {
-    const schema = manager.getMatchingCustomObject(value);
-    if (schema) {
-      const schemaIndex = manager.getSchemaIndex(schema);
-      const schemaName = schemaNames?.[schemaIndex];
-      report.matchedSchemas.push({
-        path: path || '(root)',
-        schemaIndex,
-        ...(schemaName ? { schemaName } : {})
-      });
+  walkTraversableJson(value, path, (node, nodePath) => {
+    const schema = manager.getMatchingCustomObject(node);
+    if (!schema) {
+      return;
     }
 
-    for (const key of Object.keys(value)) {
-      collectMatchedSchemas(value[key], manager, joinPath(path, key), report, schemaNames);
-    }
-  }
+    const schemaIndex = manager.getSchemaIndex(schema);
+    const schemaName = manager.getSchemaName(schemaIndex);
+    report.matchedSchemas.push({
+      path: nodePath || '(root)',
+      schemaIndex,
+      ...(schemaName ? { schemaName } : {})
+    });
+  });
 };
 
 export const buildDryRunReport = (
   before: JsonValue | undefined,
   after: JsonValue | undefined,
-  manager: CustomObjectManager,
-  schemaNames?: readonly (string | undefined)[]
+  manager: CustomObjectManager
 ): DryRunReport => {
   const report: DryRunReport = { redactedPaths: [], deletedPaths: [], matchedSchemas: [] };
 
   if (before !== undefined) {
     diffRedaction(before, after, '', report);
-    collectMatchedSchemas(before, manager, '', report, schemaNames);
+    collectMatchedSchemas(before, manager, '', report);
   }
 
   return report;

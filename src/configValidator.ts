@@ -1,18 +1,12 @@
 import { FieldRedactorConfigurationError } from './errors';
+import { hasExplicitRedactionRules, SECRET_REGEX_FIELDS } from './redactionRules';
 import { CustomObject, FieldRedactorConfig } from './types';
 
-const SECRET_REGEX_FIELDS = ['secretKeys', 'deepSecretKeys', 'fullSecretKeys', 'deleteSecretKeys'] as const;
-
-const RULE_LIST_FIELDS = [...SECRET_REGEX_FIELDS, 'customObjects'] as const;
+export { hasExplicitRedactionRules };
 
 const regexIdentity = (regex: RegExp): string => `${regex.source}\0${regex.flags}`;
 
 const formatRegex = (regex: RegExp): string => `/${regex.source}/${regex.flags}`;
-
-const hasNonEmptyArray = <T>(value: T[] | undefined): value is T[] => value !== undefined && value.length > 0;
-
-export const hasExplicitRedactionRules = (config?: FieldRedactorConfig): boolean =>
-  RULE_LIST_FIELDS.some((field) => hasNonEmptyArray(config?.[field] as unknown[] | undefined));
 
 export const assertNoIdenticalCustomObjectSchemas = (customObjects?: CustomObject[]): void => {
   if (!customObjects || customObjects.length <= 1) {

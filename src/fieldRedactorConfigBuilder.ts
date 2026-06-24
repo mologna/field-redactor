@@ -1,4 +1,10 @@
 import { FieldRedactor } from './fieldRedactor';
+import {
+  appendRegexToConfig,
+  finalizeRegisteredSchemas,
+  RegisteredSchema,
+  SecretRegexField
+} from './redactionRules';
 import { CustomObject, FieldRedactorConfig, Redactor, SyncRedactor } from './types';
 
 export type SchemaOptions = {
@@ -6,14 +12,12 @@ export type SchemaOptions = {
   name?: string;
 };
 
-type RegexConfigField = 'secretKeys' | 'deepSecretKeys' | 'fullSecretKeys' | 'deleteSecretKeys';
-
 /**
  * Fluent builder for {@link FieldRedactorConfig} using doc labels (Shallow, Deep, Opaque, Remove, Schema).
  */
 export class FieldRedactorConfigBuilder {
   private config: FieldRedactorConfig = {};
-  private schemaNames: (string | undefined)[] = [];
+  private schemas: RegisteredSchema[] = [];
 
   static create(): FieldRedactorConfigBuilder {
     return new FieldRedactorConfigBuilder();
@@ -46,52 +50,40 @@ export class FieldRedactorConfigBuilder {
 
   /** Register an object schema (`customObjects`). */
   schema(customObject: CustomObject, options?: SchemaOptions): this {
-    this.config.customObjects = [...(this.config.customObjects ?? []), customObject];
-    this.schemaNames.push(options?.name);
+    this.schemas.push({ object: customObject, name: options?.name });
     return this;
   }
 
   redactor(fn: Redactor): this {
-    this.config.redactor = fn;
-    return this;
+    return this.set('redactor', fn);
   }
 
   syncRedactor(fn: SyncRedactor): this {
-    this.config.syncRedactor = fn;
-    return this;
+    return this.set('syncRedactor', fn);
   }
 
   ignoreBooleans(value: boolean): this {
-    this.config.ignoreBooleans = value;
-    return this;
+    return this.set('ignoreBooleans', value);
   }
 
   ignoreNullOrUndefined(value: boolean): this {
-    this.config.ignoreNullOrUndefined = value;
-    return this;
+    return this.set('ignoreNullOrUndefined', value);
   }
 
   cloneInput(value: boolean): this {
-    this.config.cloneInput = value;
-    return this;
+    return this.set('cloneInput', value);
   }
 
   strict(value = true): this {
-    this.config.strict = value;
-    return this;
+    return this.set('strict', value);
   }
 
   onConfigWarning(handler: (message: string) => void): this {
-    this.config.onConfigWarning = handler;
-    return this;
+    return this.set('onConfigWarning', handler);
   }
 
   build(): FieldRedactorConfig {
-    const config = { ...this.config };
-    if (this.schemaNames.some((name) => name !== undefined)) {
-      config.schemaNames = this.schemaNames;
-    }
-    return config;
+    return { ...this.config, ...finalizeRegisteredSchemas(this.schemas) };
   }
 
   buildRedactor(): FieldRedactor {
@@ -102,8 +94,13 @@ export class FieldRedactorConfigBuilder {
     return FieldRedactor.createSafe(this.build());
   }
 
-  private appendRegex(field: RegexConfigField, patterns: RegExp[]): this {
-    this.config[field] = [...(this.config[field] ?? []), ...patterns];
+  private appendRegex(field: SecretRegexField, patterns: RegExp[]): this {
+    appendRegexToConfig(this.config, field, patterns);
+    return this;
+  }
+
+  private set<K extends keyof FieldRedactorConfig>(key: K, value: FieldRedactorConfig[K]): this {
+    this.config[key] = value;
     return this;
   }
 }

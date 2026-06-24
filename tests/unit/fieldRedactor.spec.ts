@@ -60,7 +60,7 @@ describe('FieldRedactor', () => {
 
       new FieldRedactor(config);
       expect(CustomObjectManager).toHaveBeenCalledTimes(1);
-      expect(CustomObjectManager).toHaveBeenCalledWith(config.customObjects);
+      expect(CustomObjectManager).toHaveBeenCalledWith(config.customObjects, undefined);
     });
 
     it('Should create the ObjectRedactor with the correct dependency-injected inputs', () => {
