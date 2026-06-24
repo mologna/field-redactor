@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2026-06-24
+
+### Changed
+
+- **Unified JSON traversal** — `ObjectRedactorTraversal` handles sync in-place, copy-on-write, and async in-place redaction via a shared `ContainerMutation` adapter; `ObjectRedactor` is now a thin orchestrator.
+- **Shared custom-object handlers** — match-type dispatch consolidated in `objectRedactorCustomObject.ts` for sync and async paths.
+- **Release notes** — see [docs/release-notes/2.5.1.md](docs/release-notes/2.5.1.md).
+
+### Fixed
+
+- Async in-place redaction uses the same traversal adapter as sync, aligning nested object and array behavior across modes.
+
 ## [2.5.0] - 2026-06-24
 
 ### Added
@@ -104,6 +116,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[2.5.1]: https://github.com/mologna/field-redactor/compare/2.5.0...2.5.1
 [2.5.0]: https://github.com/mologna/field-redactor/compare/2.4.0...2.5.0
 [2.4.0]: https://github.com/mologna/field-redactor/compare/2.3.1...2.4.0
 [1.3.0]: https://github.com/mologna/field-redactor/compare/v1.2.2...v1.3.0
