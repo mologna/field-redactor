@@ -15,6 +15,7 @@ export {
   RedactedPrimitive,
   RedactorInput,
   SecretSpecifierValue,
+  SyncRedactor,
   TraversableJson,
   isJsonObject
 } from './types';

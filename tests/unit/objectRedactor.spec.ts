@@ -871,4 +871,16 @@ describe('ObjectRedactor', () => {
       });
     });
   });
+
+  describe('sync traversal', () => {
+    it('redactInPlaceSync produces the same result as redactInPlace for default configuration', async () => {
+      const asyncInput = deepCopy(validNestedInputWithAllTypes);
+      const syncInput = deepCopy(validNestedInputWithAllTypes);
+
+      await basicObjectRedactor.redactInPlace(asyncInput);
+      basicObjectRedactor.redactInPlaceSync(syncInput);
+
+      expect(syncInput).toEqual(asyncInput);
+    });
+  });
 });

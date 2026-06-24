@@ -48,7 +48,8 @@ The true power of this tool comes from its customization. FieldRedactor can be c
 ### Overview
 | Config Field          | Type                            | Default                        | Effect                                                                 |
 |-----------------------|---------------------------------|--------------------------------|-----------------------------------------------------------------------|
-| `redactor`            | `(val: any) => Promise<string>` | `(val) => Promise.resolve("REDACTED")` | The function to use when redacting values.                             |
+| `redactor`            | `(val: any) => Promise<string>` | `(val) => Promise.resolve("REDACTED")` | The async function to use when redacting values. When only `redactor` is set, traversal stays async. |
+| `syncRedactor`        | `(val: any) => string`          | `() => "REDACTED"` (when no `redactor`) | Synchronous redactor. When provided (or when using the default), traversal avoids per-field Promise overhead. |
 | `secretKeys`          | `RegExp[]`                     | `null`                         | Specifies which values at any level of the JSON object should be redacted. Objects are not deeply redacted, but primitive values in arrays are. If not specified, all values are considered secret. |
 | `deepSecretKeys`      | `RegExp[]`                     | `[]`                           | Specifies keys at any level of the JSON object to be deeply redacted. All values within matching objects are fully redacted unless matching a custom object. |
 | `fullSecretKeys`      | `RegExp[]`                     | `[]`                           | Specifies keys at any level of the JSON object to be stringified and fully redacted. Primarily used for objects and arrays. |
@@ -60,11 +61,41 @@ The true power of this tool comes from its customization. FieldRedactor can be c
 ### `redactor` Configuration
 Configures the redactor function used when a secret is encountered. Users should typically provide this configuration.
 
+When you only need synchronous redaction (for example hashing or returning a static token), prefer `syncRedactor` or the default redactor and call `redactSync()` / `redactInPlaceSync()` to avoid per-field Promise allocation. If you configure only an async `redactor`, `redact()` and `redactInPlace()` remain fully async. You can provide both: `syncRedactor` drives the sync path while `redactor` is used when async traversal is required.
+
 #### Details
 - **Type:** `(val: any) => Promise<string>`
-- **Effect:** The function used to redact values. 
-  - Value can only be null or undefined if `ignoreNullOrUndefined` is set to false. 
-  - Defaults to `() => Promise.resolve('REDACTED')`.
+- **Effect:** The function used to redact values asynchronously.
+  - Value can only be null or undefined if `ignoreNullOrUndefined` is set to false.
+  - When no custom async `redactor` is configured, `redact()` resolves without per-field Promises.
+
+### `syncRedactor` Configuration
+Optional synchronous counterpart to `redactor`. When `syncRedactor` is set, or when no custom `redactor` is provided, the library uses a synchronous traversal path.
+
+#### Details
+- **Type:** `(val: any) => string`
+- **Effect:** Redacts values without awaiting. Enables `redactSync()` and `redactInPlaceSync()` on `FieldRedactor`.
+
+#### Example
+```typescript
+import { FieldRedactor } from 'field-redactor';
+
+const fieldRedactor = new FieldRedactor({
+  secretKeys: [/password/],
+  syncRedactor: (val) => `REDACTED:${val}`
+});
+
+const result = fieldRedactor.redactSync({ username: 'alice', password: 'secret' });
+// { username: 'alice', password: 'REDACTED:secret' }
+```
+
+### Sync API
+| Method | Returns | Notes |
+|--------|---------|-------|
+| `redactSync(value)` | Deep-cloned redacted value | No per-field Promises when sync path is active |
+| `redactInPlaceSync(value)` | `void` | Mutates traversable input in place synchronously |
+
+`redact()` and `redactInPlace()` automatically use the sync path when no async-only `redactor` is configured, so existing `await fieldRedactor.redact(...)` call sites benefit without code changes.
 
 #### Example
 ##### Code

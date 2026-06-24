@@ -39,6 +39,9 @@ export type SecretSpecifierValue = string | number | boolean;
 
 export type Redactor = (value: RedactorInput) => Promise<string>;
 
+/** Synchronous redactor for use with {@link FieldRedactor.redactSync} without Promise overhead. */
+export type SyncRedactor = (value: RedactorInput) => string;
+
 export enum CustomObjectMatchType {
   Delete,
   Full,
@@ -55,6 +58,7 @@ export type CustomObject = {
 
 export type PrimitiveRedactorConfig = {
   redactor?: Redactor;
+  syncRedactor?: SyncRedactor;
   ignoreBooleans: boolean;
   ignoreNullOrUndefined: boolean;
 };
@@ -69,6 +73,7 @@ export type SecretManagerConfig = {
 export type FieldRedactorConfig = Partial<PrimitiveRedactorConfig> &
   SecretManagerConfig & {
     redactor?: Redactor;
+    syncRedactor?: SyncRedactor;
     customObjects?: CustomObject[];
   };
 

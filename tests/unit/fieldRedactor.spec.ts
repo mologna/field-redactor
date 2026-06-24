@@ -11,6 +11,9 @@ jest.mock('../../src/objectRedactor');
 describe('FieldRedactor', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    (PrimitiveRedactor as any).mockImplementation(function (this: { usesAsyncRedactor: () => boolean }) {
+      this.usesAsyncRedactor = () => true;
+    });
   });
 
   describe('constructor', () => {
@@ -32,7 +35,8 @@ describe('FieldRedactor', () => {
       expect(PrimitiveRedactor).toHaveBeenCalledWith({
         ignoreBooleans: false,
         ignoreNullOrUndefined: true,
-        redactor: undefined
+        redactor: undefined,
+        syncRedactor: undefined
       });
     });
 

@@ -16,8 +16,11 @@ import { FieldRedactorError } from './errors';
 export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });
   private readonly objectRedactor: ObjectRedactor;
+  private readonly usesAsyncRedactor: boolean;
+
   constructor(config?: FieldRedactorConfig) {
-    const { redactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects } = config || {};
+    const { redactor, syncRedactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects } =
+      config || {};
 
     const ignoreNullOrUndefined =
       typeof config?.ignoreNullOrUndefined === 'boolean' ? config.ignoreNullOrUndefined : true;
@@ -26,8 +29,11 @@ export class FieldRedactor {
     const primitiveRedactor = new PrimitiveRedactor({
       ignoreBooleans,
       ignoreNullOrUndefined,
-      redactor
+      redactor,
+      syncRedactor
     });
+
+    this.usesAsyncRedactor = primitiveRedactor.usesAsyncRedactor();
 
     const secretManager = new SecretManager({
       secretKeys,
@@ -49,8 +55,21 @@ export class FieldRedactor {
    * @returns The redacted JSON object.
    */
   public async redact<T extends RedactableInput>(value: T): Promise<T> {
+    if (!this.usesAsyncRedactor) {
+      return Promise.resolve(this.redactSync(value));
+    }
+
     const copy = this.deepCopy(value) as T;
     await this.redactInPlace(copy);
+    return copy;
+  }
+
+  /**
+   * Synchronously redacts fields and returns a deep-cloned result without per-field Promise overhead.
+   */
+  public redactSync<T extends RedactableInput>(value: T): T {
+    const copy = this.deepCopy(value) as T;
+    this.redactInPlaceSync(copy);
     return copy;
   }
 
@@ -60,12 +79,38 @@ export class FieldRedactor {
    * @param value The JSON value to redact in place. If primitive it will be resolved as-is.
    */
   public async redactInPlace<T extends RedactableInput>(value: T): Promise<void> {
+    if (!this.usesAsyncRedactor) {
+      this.redactInPlaceSync(value);
+      return;
+    }
+
     if (this.isPrimitiveOrUndefined(value)) {
       return;
     }
 
     try {
       await this.objectRedactor.redactInPlace(value as TraversableJson);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      throw new FieldRedactorError(message);
+    }
+  }
+
+  /**
+   * Synchronously redacts fields in the JSON object in place without per-field Promise overhead.
+   * Requires a `syncRedactor` or the default redactor; throws when only an async `redactor` is configured.
+   */
+  public redactInPlaceSync<T extends RedactableInput>(value: T): void {
+    if (this.usesAsyncRedactor) {
+      throw new FieldRedactorError('redactInPlaceSync requires syncRedactor configuration or the default redactor');
+    }
+
+    if (this.isPrimitiveOrUndefined(value)) {
+      return;
+    }
+
+    try {
+      this.objectRedactor.redactInPlaceSync(value as TraversableJson);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       throw new FieldRedactorError(message);

@@ -56,4 +56,59 @@ describe('PrimitiveRedactor', () => {
 
     await expect(redactor.redactValue('foobar')).resolves.toBe('CUSTOM');
   });
+
+  it('Can redact values synchronously with the default redactor', () => {
+    const redactor = new PrimitiveRedactor({
+      ignoreNullOrUndefined: false,
+      ignoreBooleans: false
+    });
+
+    expect(redactor.redactValueSync('foobar')).toBe(DEFAULT_REDACTED_TEXT);
+    expect(redactor.usesAsyncRedactor()).toBe(false);
+  });
+
+  it('Can redact values synchronously with syncRedactor configuration', () => {
+    const redactor = new PrimitiveRedactor({
+      syncRedactor: () => 'CUSTOM',
+      ignoreBooleans: false,
+      ignoreNullOrUndefined: true
+    });
+
+    expect(redactor.redactValueSync('foobar')).toBe('CUSTOM');
+    expect(redactor.usesAsyncRedactor()).toBe(false);
+  });
+
+  it('Uses async mode when only async redactor is configured', () => {
+    const redactor = new PrimitiveRedactor({
+      redactor: (val) => Promise.resolve('CUSTOM'),
+      ignoreBooleans: false,
+      ignoreNullOrUndefined: true
+    });
+
+    expect(redactor.usesAsyncRedactor()).toBe(true);
+  });
+
+  it('Throws from redactValueSync when only async redactor is configured', () => {
+    const redactor = new PrimitiveRedactor({
+      redactor: (val) => Promise.resolve('CUSTOM'),
+      ignoreBooleans: false,
+      ignoreNullOrUndefined: false
+    });
+
+    expect(() => redactor.redactValueSync('foobar')).toThrow(
+      'Sync redaction is not available without syncRedactor configuration'
+    );
+  });
+
+  it('Redacts empty string and zero when ignoreNullOrUndefined is false', async () => {
+    const redactor = new PrimitiveRedactor({
+      ignoreNullOrUndefined: false,
+      ignoreBooleans: false
+    });
+
+    await expect(redactor.redactValue('')).resolves.toBe(DEFAULT_REDACTED_TEXT);
+    await expect(redactor.redactValue(0)).resolves.toBe(DEFAULT_REDACTED_TEXT);
+    expect(redactor.redactValueSync('')).toBe(DEFAULT_REDACTED_TEXT);
+    expect(redactor.redactValueSync(0)).toBe(DEFAULT_REDACTED_TEXT);
+  });
 });
