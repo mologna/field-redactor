@@ -724,6 +724,66 @@ describe('ObjectRedactor', () => {
       });
     });
 
+    it('Redacts primitive CustomObject values when sibling key value is falsy but matches a secret', async () => {
+      const specialObject: CustomObject = {
+        name: CustomObjectMatchType.Ignore,
+        kind: CustomObjectMatchType.Ignore,
+        value: 'name'
+      };
+      const secretKeys: RegExp[] = [/^$/];
+      customObjectManager = new CustomObjectManager([specialObject]);
+      secretManager = new SecretManager({ secretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+
+      const obj = { name: '', kind: 'String', value: 'foo.bar@gmail.com' };
+      await redactor.redactInPlace(obj);
+      expect(obj).toEqual({
+        name: '',
+        kind: 'String',
+        value: DEFAULT_REDACTED_TEXT
+      });
+    });
+
+    it('Redacts primitive CustomObject values when sibling key value is false and matches a secret', async () => {
+      const specialObject: CustomObject = {
+        name: CustomObjectMatchType.Ignore,
+        kind: CustomObjectMatchType.Ignore,
+        value: 'name'
+      };
+      const secretKeys: RegExp[] = [/^false$/];
+      customObjectManager = new CustomObjectManager([specialObject]);
+      secretManager = new SecretManager({ secretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+
+      const obj = { name: false, kind: 'Boolean', value: true };
+      await redactor.redactInPlace(obj);
+      expect(obj).toEqual({
+        name: false,
+        kind: 'Boolean',
+        value: DEFAULT_REDACTED_TEXT
+      });
+    });
+
+    it('Redacts primitive CustomObject values when sibling key value is zero and matches a secret', async () => {
+      const specialObject: CustomObject = {
+        name: CustomObjectMatchType.Ignore,
+        kind: CustomObjectMatchType.Ignore,
+        value: 'name'
+      };
+      const secretKeys: RegExp[] = [/^0$/];
+      customObjectManager = new CustomObjectManager([specialObject]);
+      secretManager = new SecretManager({ secretKeys });
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+
+      const obj = { name: 0, kind: 'Number', value: 12345 };
+      await redactor.redactInPlace(obj);
+      expect(obj).toEqual({
+        name: 0,
+        kind: 'Number',
+        value: DEFAULT_REDACTED_TEXT
+      });
+    });
+
     it('Gives CustomObjects highest precedence, followed by fullSecretKeys, deepSecretKeys, then secretKeys', async () => {
       const specialObject: CustomObject = {
         name: CustomObjectMatchType.Ignore,

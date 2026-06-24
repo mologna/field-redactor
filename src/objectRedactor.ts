@@ -125,7 +125,7 @@ export class ObjectRedactor {
 
   private async handleCustomObjectValueIfArray(value: any, key: string, customObject: CustomObject) {
     const stringKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
-    if (stringKey) {
+    if (stringKey !== undefined) {
       await this.handleCustomObjectArrayValueIfStringKeySpecified(value, key, stringKey);
     } else {
       await this.handleCustomObjectArrayValueIfMatchTypeSpecified(
@@ -140,12 +140,20 @@ export class ObjectRedactor {
     value: any,
     customObject: CustomObject,
     key: string
-  ): string | null {
-    const hasSecretKey = typeof customObject[key] === 'string' && !!value[customObject[key]];
-    return hasSecretKey ? value[customObject[key]] : null;
+  ): any | undefined {
+    const siblingKeyName = customObject[key];
+    if (typeof siblingKeyName !== 'string') {
+      return undefined;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(value, siblingKeyName)) {
+      return undefined;
+    }
+
+    return value[siblingKeyName];
   }
 
-  private async handleCustomObjectArrayValueIfStringKeySpecified(value: any, key: string, stringKey: string) {
+  private async handleCustomObjectArrayValueIfStringKeySpecified(value: any, key: string, stringKey: any) {
     if (this.secretManager.isDeleteSecretKey(stringKey)) {
       delete value[key];
     } else if (this.secretManager.isFullSecretKey(stringKey)) {
@@ -185,7 +193,7 @@ export class ObjectRedactor {
 
   private async handlecustomObjectValueIfObject(value: any, key: string, customObject: CustomObject): Promise<void> {
     const stringKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
-    if (stringKey) {
+    if (stringKey !== undefined) {
       await this.handleCustomObjectObjectValueIfStringKeySpecified(value, key, stringKey);
     } else {
       await this.handleCustomObjectOjectValueIfMatchTypeSpecified(
@@ -196,7 +204,7 @@ export class ObjectRedactor {
     }
   }
 
-  private async handleCustomObjectObjectValueIfStringKeySpecified(value: any, key: string, stringKey: string) {
+  private async handleCustomObjectObjectValueIfStringKeySpecified(value: any, key: string, stringKey: any) {
     const customObject = this.customObjManager.getMatchingCustomObject(value[key]);
     if (customObject) {
       await this.handleCustomObjectInPlace(value[key], customObject);
@@ -238,7 +246,7 @@ export class ObjectRedactor {
       return this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(value, key, customObject[key]);
     } else {
       const secretKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
-      if (!secretKey) {
+      if (secretKey === undefined) {
         return;
       }
 
@@ -268,7 +276,7 @@ export class ObjectRedactor {
     }
   }
 
-  private async handleCustomObjectPrimitiveValueIfStringKeySpecified(value: any, secretKey: string, key: string) {
+  private async handleCustomObjectPrimitiveValueIfStringKeySpecified(value: any, secretKey: any, key: string) {
     if (this.secretManager.isDeleteSecretKey(secretKey)) {
       delete value[key];
     } else {
