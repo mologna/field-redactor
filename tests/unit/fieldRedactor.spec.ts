@@ -1,9 +1,8 @@
-import { FieldRedactor } from '../../src/fieldRedactor';
+import { FieldRedactor, FieldRedactorError } from '../../src';
 import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { SecretManager } from '../../src/secretManager';
 import { CustomObjectManager } from '../../src/customObjectManager';
 import { ObjectRedactor } from '../../src/objectRedactor';
-import { FieldRedactorError } from '../../src/errors';
 jest.mock('../../src/primitiveRedactor');
 jest.mock('../../src/secretManager');
 jest.mock('../../src/customObjectManager');

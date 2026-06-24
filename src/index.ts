@@ -18,4 +18,5 @@ export {
   TraversableJson,
   isJsonObject
 } from './types';
+export { FieldRedactorError, FieldRedactorConfigurationError } from './errors';
 export { FieldRedactor };

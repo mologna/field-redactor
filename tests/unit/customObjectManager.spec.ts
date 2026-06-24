@@ -1,5 +1,5 @@
 import { CustomObjectManager } from '../../src/customObjectManager';
-import { FieldRedactorConfigurationError } from '../../src/errors';
+import { FieldRedactorConfigurationError } from '../../src';
 import { CustomObject, CustomObjectMatchType } from '../../src/types';
 
 describe('CustomObjectManager', () => {
