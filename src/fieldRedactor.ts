@@ -84,16 +84,9 @@ export class FieldRedactor {
       return;
     }
 
-    if (this.isPrimitiveOrUndefined(value)) {
-      return;
-    }
-
-    try {
+    await this.runTraversableRedactionAsync(value, async () => {
       await this.objectRedactor.redactInPlace(value as TraversableJson);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      throw new FieldRedactorError(message);
-    }
+    });
   }
 
   /**
@@ -105,16 +98,39 @@ export class FieldRedactor {
       throw new FieldRedactorError('redactInPlaceSync requires syncRedactor configuration or the default redactor');
     }
 
+    this.runTraversableRedactionSync(value, () => this.objectRedactor.redactInPlaceSync(value as TraversableJson));
+  }
+
+  private runTraversableRedactionSync<T extends RedactableInput>(value: T, redact: () => void): void {
     if (this.isPrimitiveOrUndefined(value)) {
       return;
     }
 
     try {
-      this.objectRedactor.redactInPlaceSync(value as TraversableJson);
+      redact();
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      throw new FieldRedactorError(message);
+      throw this.toFieldRedactorError(e);
     }
+  }
+
+  private async runTraversableRedactionAsync<T extends RedactableInput>(
+    value: T,
+    redact: () => Promise<void>
+  ): Promise<void> {
+    if (this.isPrimitiveOrUndefined(value)) {
+      return;
+    }
+
+    try {
+      await redact();
+    } catch (e: unknown) {
+      throw this.toFieldRedactorError(e);
+    }
+  }
+
+  private toFieldRedactorError(error: unknown): FieldRedactorError {
+    const message = error instanceof Error ? error.message : String(error);
+    return new FieldRedactorError(message);
   }
 
   private isPrimitiveOrUndefined(value: RedactableInput): value is Exclude<RedactableInput, JsonObject | JsonArray> {

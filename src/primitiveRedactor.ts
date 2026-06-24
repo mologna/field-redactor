@@ -1,4 +1,11 @@
-import { PrimitiveRedactorConfig, RedactablePrimitive, RedactedPrimitive, Redactor, SyncRedactor } from './types';
+import {
+  PrimitiveRedactorConfig,
+  RedactablePrimitive,
+  RedactedPrimitive,
+  Redactor,
+  RedactorInput,
+  SyncRedactor
+} from './types';
 
 /**
  * Redacts primitive values based on the configuration provided in the constructor. Uses the redactor
@@ -7,8 +14,8 @@ import { PrimitiveRedactorConfig, RedactablePrimitive, RedactedPrimitive, Redact
  */
 export class PrimitiveRedactor {
   private static DEFAULT_REDACTED_TEXT = 'REDACTED';
-  private ignoreBooleans: boolean;
-  private ignoreNullOrUndefined: boolean;
+  private readonly ignoreBooleans: boolean;
+  private readonly ignoreNullOrUndefined: boolean;
   private readonly useAsyncRedactor: boolean;
   private readonly syncRedactor: SyncRedactor;
   private readonly asyncRedactor?: Redactor;
@@ -22,16 +29,11 @@ export class PrimitiveRedactor {
     this.ignoreBooleans = config.ignoreBooleans;
     this.ignoreNullOrUndefined = config.ignoreNullOrUndefined;
     this.useAsyncRedactor = !!config.redactor && !config.syncRedactor;
-
-    if (config.syncRedactor) {
-      this.syncRedactor = config.syncRedactor;
-    } else if (!config.redactor) {
-      this.syncRedactor = () => PrimitiveRedactor.DEFAULT_REDACTED_TEXT;
-    } else {
-      this.syncRedactor = () => {
-        throw new Error('Sync redaction is not available without syncRedactor configuration');
-      };
-    }
+    this.syncRedactor = config.syncRedactor ?? (config.redactor
+      ? () => {
+          throw new Error('Sync redaction is not available without syncRedactor configuration');
+        }
+      : () => PrimitiveRedactor.DEFAULT_REDACTED_TEXT);
 
     if (config.redactor) {
       this.asyncRedactor = config.redactor;
@@ -52,63 +54,32 @@ export class PrimitiveRedactor {
       return this.redactValueSync(value);
     }
 
-    if (typeof value === 'boolean') {
-      return this.redactBoolean(value);
-    }
-
-    if (value === null || value === undefined) {
-      return this.redactNullOrUndefinedValue(value);
-    }
-
-    if (value === '' || value === 0) {
-      return this.ignoreNullOrUndefined ? value : this.asyncRedactor!(value);
-    }
-
-    return this.redactAny(value);
+    return this.redactWith(value, (input) => this.asyncRedactor!(input)) as Promise<RedactedPrimitive>;
   }
 
   /**
    * Synchronously redacts a primitive value without Promise allocation.
    */
   public redactValueSync(value: RedactablePrimitive): RedactedPrimitive {
+    return this.redactWith(value, (input) => this.syncRedactor(input)) as RedactedPrimitive;
+  }
+
+  private redactWith(
+    value: RedactablePrimitive,
+    apply: (input: RedactorInput) => RedactedPrimitive | Promise<RedactedPrimitive>
+  ): RedactedPrimitive | Promise<RedactedPrimitive> {
     if (typeof value === 'boolean') {
-      return this.redactBooleanSync(value);
+      return this.ignoreBooleans ? value : apply(value);
     }
 
     if (value === null || value === undefined) {
-      return this.redactNullOrUndefinedValueSync(value);
+      return this.ignoreNullOrUndefined ? value : apply(value);
     }
 
     if (value === '' || value === 0) {
-      return this.ignoreNullOrUndefined ? value : this.syncRedactor(value);
+      return this.ignoreNullOrUndefined ? value : apply(value);
     }
 
-    return this.syncRedactor(value);
-  }
-
-  private async redactNullOrUndefinedValue(value: null | undefined): Promise<null | undefined | string> {
-    if (this.ignoreNullOrUndefined) {
-      return value;
-    }
-    return this.asyncRedactor!(value);
-  }
-
-  private redactNullOrUndefinedValueSync(value: null | undefined): null | undefined | string {
-    if (this.ignoreNullOrUndefined) {
-      return value;
-    }
-    return this.syncRedactor(value);
-  }
-
-  private async redactBoolean(value: boolean): Promise<boolean | string> {
-    return this.ignoreBooleans ? value : this.asyncRedactor!(value);
-  }
-
-  private redactBooleanSync(value: boolean): boolean | string {
-    return this.ignoreBooleans ? value : this.syncRedactor(value);
-  }
-
-  private async redactAny(value: string | number): Promise<string> {
-    return this.asyncRedactor!(value);
+    return apply(value);
   }
 }
