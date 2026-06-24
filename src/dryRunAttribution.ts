@@ -2,23 +2,40 @@ import { CustomObjectManager } from './customObjectManager';
 import { getStringSpecifiedCustomObjectSecretKeyValueIfExists } from './objectRedactorHelpers';
 import { getParentContext, parseJsonPath } from './jsonWalk';
 import { SecretManager } from './secretManager';
-import { DryRunPathRule, isJsonObject, JsonValue, SecretSpecifierValue } from './types';
+import { DryRunPathRule, isJsonObject, JsonObject, JsonValue, RedactionRuleLabel, SecretSpecifierValue } from './types';
+
+type KeyRule = Exclude<RedactionRuleLabel, 'schema' | 'default'>;
 
 const objectKeysFromPath = (segments: Array<string | number>): string[] =>
   segments.filter((segment): segment is string => typeof segment === 'string');
 
-const patternForSpecifier = (secretManager: SecretManager, specifier: SecretSpecifierValue): string | undefined => {
-  const rule = secretManager.classifyKeyRule(specifier);
-  if (!rule || rule === 'default') {
-    return undefined;
+const toPathRule = (
+  path: string,
+  action: DryRunPathRule['action'],
+  rule: RedactionRuleLabel,
+  extras: Partial<Pick<DryRunPathRule, 'pattern' | 'schemaIndex' | 'schemaName'>> = {}
+): DryRunPathRule => ({ path, action, rule, ...extras });
+
+const patternForKey = (secretManager: SecretManager, key: SecretSpecifierValue, rule: KeyRule): string | undefined =>
+  secretManager.getKeyRulePattern(key, rule);
+
+const attributeKeyRule = (
+  path: string,
+  action: DryRunPathRule['action'],
+  key: SecretSpecifierValue,
+  secretManager: SecretManager
+): DryRunPathRule => {
+  const rule = secretManager.classifyKeyRule(key) ?? 'default';
+  if (rule === 'default') {
+    return toPathRule(path, action, rule);
   }
 
-  return secretManager.getKeyRulePattern(specifier, rule);
+  return toPathRule(path, action, rule, { pattern: patternForKey(secretManager, key, rule) });
 };
 
 const attributeSchemaRule = (
   path: string,
-  parent: Record<string, JsonValue | undefined>,
+  parent: JsonObject,
   leafKey: string,
   secretManager: SecretManager,
   manager: CustomObjectManager
@@ -28,42 +45,36 @@ const attributeSchemaRule = (
     return undefined;
   }
 
-  const schemaIndex = manager.getSchemaIndex(schema);
-  const schemaName = manager.getSchemaName(schemaIndex);
-  const schemaField = schema[leafKey];
   let pattern: string | undefined;
-
-  if (typeof schemaField === 'string') {
+  if (typeof schema[leafKey] === 'string') {
     const siblingSpecifier = getStringSpecifiedCustomObjectSecretKeyValueIfExists(parent, schema, leafKey);
     if (siblingSpecifier !== undefined) {
-      pattern = patternForSpecifier(secretManager, siblingSpecifier);
+      const siblingRule = secretManager.classifyKeyRule(siblingSpecifier);
+      if (siblingRule && siblingRule !== 'default') {
+        pattern = patternForKey(secretManager, siblingSpecifier, siblingRule);
+      }
     }
   }
 
-  return {
-    path,
-    action: 'redact',
-    rule: 'schema',
-    schemaIndex,
-    ...(schemaName ? { schemaName } : {}),
+  return toPathRule(path, 'redact', 'schema', {
+    ...manager.getSchemaMetadata(schema),
     ...(pattern ? { pattern } : {})
-  };
+  });
 };
 
-const attributeKeyRule = (
-  path: string,
-  action: DryRunPathRule['action'],
-  key: SecretSpecifierValue,
+const findEnclosingOpaqueOrDeep = (
+  objectKeys: string[],
   secretManager: SecretManager
-): DryRunPathRule => {
-  const rule = secretManager.classifyKeyRule(key) ?? 'default';
+): { key: string; rule: 'opaque' | 'deep' } | undefined => {
+  for (let index = objectKeys.length - 2; index >= 0; index--) {
+    const key = objectKeys[index];
+    const rule = secretManager.classifyKeyRule(key);
+    if (rule === 'opaque' || rule === 'deep') {
+      return { key, rule };
+    }
+  }
 
-  return {
-    path,
-    action,
-    rule,
-    ...(rule !== 'default' ? { pattern: secretManager.getKeyRulePattern(key, rule) ?? undefined } : {})
-  };
+  return undefined;
 };
 
 export const attributePathRule = (
@@ -77,7 +88,7 @@ export const attributePathRule = (
   const objectKeys = objectKeysFromPath(segments);
 
   if (action === 'delete') {
-    const deleteKey = objectKeys[objectKeys.length - 1];
+    const deleteKey = objectKeys.at(-1);
     if (deleteKey) {
       return attributeKeyRule(path, 'delete', deleteKey, secretManager);
     }
@@ -91,40 +102,19 @@ export const attributePathRule = (
     }
   }
 
-  for (let index = objectKeys.length - 2; index >= 0; index--) {
-    const enclosingKey = objectKeys[index];
-    const rule = secretManager.classifyKeyRule(enclosingKey);
-    if (rule === 'opaque' || rule === 'deep') {
-      return {
-        path,
-        action: 'redact',
-        rule,
-        pattern: secretManager.getKeyRulePattern(enclosingKey, rule)
-      };
-    }
+  const enclosingRule = findEnclosingOpaqueOrDeep(objectKeys, secretManager);
+  if (enclosingRule) {
+    return toPathRule(path, 'redact', enclosingRule.rule, {
+      pattern: patternForKey(secretManager, enclosingRule.key, enclosingRule.rule)
+    });
   }
 
-  for (let index = objectKeys.length - 2; index >= 0; index--) {
-    const enclosingKey = objectKeys[index];
-    if (secretManager.isDeepSecretKey(enclosingKey)) {
-      return {
-        path,
-        action: 'redact',
-        rule: 'deep',
-        pattern: secretManager.getKeyRulePattern(enclosingKey, 'deep')
-      };
-    }
+  const leafKey = objectKeys.at(-1);
+  if (leafKey && secretManager.classifyKeyRule(leafKey)) {
+    return attributeKeyRule(path, 'redact', leafKey, secretManager);
   }
 
-  const leafKey = objectKeys[objectKeys.length - 1];
-  if (leafKey) {
-    const rule = secretManager.classifyKeyRule(leafKey);
-    if (rule) {
-      return attributeKeyRule(path, 'redact', leafKey, secretManager);
-    }
-  }
-
-  return { path, action: 'redact', rule: 'default' };
+  return toPathRule(path, 'redact', 'default');
 };
 
 export const buildPathRules = (

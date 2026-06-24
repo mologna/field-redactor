@@ -73,19 +73,11 @@ export const getParentContext = (
     return { parent: undefined, leaf: undefined };
   }
 
-  const parentSegments = segments.slice(0, -1);
-  const leaf = segments[segments.length - 1];
-  const parent = parentSegments.length === 0 ? value : getJsonValueAtPath(value, parentSegments);
+  const leaf = segments.at(-1);
+  const parent =
+    segments.length === 1 ? value : getJsonValueAtPath(value, segments.slice(0, -1));
 
-  if (isJsonObject(parent)) {
-    return { parent, leaf };
-  }
-
-  if (Array.isArray(parent)) {
-    return { parent, leaf };
-  }
-
-  return { parent: undefined, leaf };
+  return isTraversableJson(parent) ? { parent, leaf } : { parent: undefined, leaf };
 };
 
 export const joinPath = (base: string, segment: string | number): string =>

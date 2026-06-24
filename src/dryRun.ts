@@ -4,12 +4,14 @@ import { isTraversableJson, joinPath, walkTraversableJson } from './jsonWalk';
 import { SecretManager } from './secretManager';
 import { DryRunReport, isJsonObject, JsonValue } from './types';
 
-export const EMPTY_DRY_RUN_REPORT: DryRunReport = {
+export const createEmptyDryRunReport = (): DryRunReport => ({
   redactedPaths: [],
   deletedPaths: [],
   matchedSchemas: [],
   pathRules: []
-};
+});
+
+export const EMPTY_DRY_RUN_REPORT: DryRunReport = createEmptyDryRunReport();
 
 const pushPath = (report: DryRunReport, path: string, list: 'redactedPaths' | 'deletedPaths'): void => {
   if (path) {
@@ -76,12 +78,9 @@ const collectMatchedSchemas = (
       return;
     }
 
-    const schemaIndex = manager.getSchemaIndex(schema);
-    const schemaName = manager.getSchemaName(schemaIndex);
     report.matchedSchemas.push({
       path: nodePath || '(root)',
-      schemaIndex,
-      ...(schemaName ? { schemaName } : {})
+      ...manager.getSchemaMetadata(schema)
     });
   });
 };
@@ -92,7 +91,7 @@ export const buildDryRunReport = (
   manager: CustomObjectManager,
   secretManager: SecretManager
 ): DryRunReport => {
-  const report: DryRunReport = { redactedPaths: [], deletedPaths: [], matchedSchemas: [], pathRules: [] };
+  const report = createEmptyDryRunReport();
 
   if (before !== undefined) {
     diffRedaction(before, after, '', report);

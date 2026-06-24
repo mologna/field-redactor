@@ -57,16 +57,14 @@ export class FieldRedactor {
 
     this.usesAsyncRedactor = primitiveRedactor.usesAsyncRedactor();
 
-    const secretManager = new SecretManager({
+    this.secretManager = new SecretManager({
       secretKeys,
       deepSecretKeys,
       fullSecretKeys,
       deleteSecretKeys
     });
-
-    this.secretManager = secretManager;
     this.customObjectManager = new CustomObjectManager(customObjects, config?.schemaNames);
-    this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, this.customObjectManager);
+    this.objectRedactor = new ObjectRedactor(primitiveRedactor, this.secretManager, this.customObjectManager);
   }
 
   /**

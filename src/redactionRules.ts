@@ -44,28 +44,26 @@ const PRESET_SCALAR_FIELDS = [
   'onConfigWarning'
 ] as const satisfies ReadonlyArray<keyof FieldRedactorConfig>;
 
-export const mergePartialConfig = (
-  target: FieldRedactorConfig,
-  schemas: RegisteredSchema[],
-  partial: Partial<FieldRedactorConfig>
-): void => {
-  for (const field of SECRET_REGEX_FIELDS) {
-    const patterns = partial[field];
-    if (patterns?.length) {
-      appendRegexToConfig(target, field, patterns);
-    }
-  }
-
-  if (partial.customObjects?.length) {
-    for (const object of partial.customObjects) {
-      schemas.push({ object });
-    }
-  }
-
+const applyUnsetScalars = (target: FieldRedactorConfig, partial: Partial<FieldRedactorConfig>): void => {
   for (const field of PRESET_SCALAR_FIELDS) {
     const value = partial[field];
     if (value !== undefined && target[field] === undefined) {
       Object.assign(target, { [field]: value });
     }
   }
+};
+
+export const mergePartialConfig = (
+  target: FieldRedactorConfig,
+  schemas: RegisteredSchema[],
+  partial: Partial<FieldRedactorConfig>
+): void => {
+  for (const field of SECRET_REGEX_FIELDS) {
+    if (partial[field]?.length) {
+      appendRegexToConfig(target, field, partial[field]!);
+    }
+  }
+
+  partial.customObjects?.forEach((object) => schemas.push({ object }));
+  applyUnsetScalars(target, partial);
 };

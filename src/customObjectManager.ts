@@ -1,4 +1,4 @@
-import { CustomObject, JsonObject } from './types';
+import { CustomObject, JsonObject, MatchedSchemaReport } from './types';
 import { assertNoIdenticalCustomObjectSchemas } from './configValidator';
 
 /**
@@ -27,6 +27,12 @@ export class CustomObjectManager {
 
   public getSchemaName(schemaIndex: number): string | undefined {
     return this.schemaNames[schemaIndex];
+  }
+
+  public getSchemaMetadata(schema: CustomObject): Pick<MatchedSchemaReport, 'schemaIndex' | 'schemaName'> {
+    const schemaIndex = this.getSchemaIndex(schema);
+    const schemaName = this.getSchemaName(schemaIndex);
+    return schemaName ? { schemaIndex, schemaName } : { schemaIndex };
   }
 
   /**

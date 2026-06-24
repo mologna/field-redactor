@@ -1,5 +1,7 @@
 import { SecretManagerConfig, SecretSpecifierValue } from './types';
 
+type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
+
 /**
  * Utility class for managing secrets and determining if a  given value is a secret of any type. If no secrets of
  * any type are provided in the configuration then all values are considered secrets (but not deep or full secrets).
@@ -33,7 +35,7 @@ export class SecretManager {
       return true;
     }
 
-    return SecretManager.valueMatchesAnyRegexValue(key, this.secretKeys);
+    return SecretManager.matchesAnyRegex(key, this.secretKeys);
   }
 
   /**
@@ -42,11 +44,7 @@ export class SecretManager {
    * @returns True if the key is a deep secret key, otherwise false.
    */
   public isDeepSecretKey(key: SecretSpecifierValue): boolean {
-    if (!this.deepSecretKeys) {
-      return false;
-    }
-
-    return SecretManager.valueMatchesAnyRegexValue(key, this.deepSecretKeys);
+    return !!this.deepSecretKeys && SecretManager.matchesAnyRegex(key, this.deepSecretKeys);
   }
 
   /**
@@ -55,11 +53,7 @@ export class SecretManager {
    * @returns True if the key is a full secret key, otherwise false.
    */
   public isFullSecretKey(key: SecretSpecifierValue): boolean {
-    if (!this.fullSecretKeys) {
-      return false;
-    }
-
-    return SecretManager.valueMatchesAnyRegexValue(key, this.fullSecretKeys);
+    return !!this.fullSecretKeys && SecretManager.matchesAnyRegex(key, this.fullSecretKeys);
   }
 
   /**
@@ -68,39 +62,11 @@ export class SecretManager {
    * @returns True if the key is a delete secret key, otherwise false.
    */
   public isDeleteSecretKey(key: SecretSpecifierValue): boolean {
-    if (!this.deleteSecretKeys) {
-      return false;
-    }
-
-    return SecretManager.valueMatchesAnyRegexValue(key, this.deleteSecretKeys);
+    return !!this.deleteSecretKeys && SecretManager.matchesAnyRegex(key, this.deleteSecretKeys);
   }
 
-  public findMatchingRegex(key: SecretSpecifierValue, regexes?: RegExp[]): RegExp | undefined {
-    if (!regexes) {
-      return undefined;
-    }
-
-    return regexes.find((regex) => regex.test(String(key)));
-  }
-
-  public formatRegex(regex: RegExp): string {
-    return SecretManager.formatRegex(regex);
-  }
-
-  public getKeyRulePattern(
-    key: SecretSpecifierValue,
-    rule: 'remove' | 'opaque' | 'deep' | 'shallow'
-  ): string | undefined {
-    const regexes =
-      rule === 'remove'
-        ? this.deleteSecretKeys
-        : rule === 'opaque'
-          ? this.fullSecretKeys
-          : rule === 'deep'
-            ? this.deepSecretKeys
-            : this.secretKeys;
-
-    const match = this.findMatchingRegex(key, regexes);
+  public getKeyRulePattern(key: SecretSpecifierValue, rule: KeyRule): string | undefined {
+    const match = SecretManager.findMatchingRegex(key, this.regexListFor(rule));
     return match ? SecretManager.formatRegex(match) : undefined;
   }
 
@@ -124,11 +90,28 @@ export class SecretManager {
     return null;
   }
 
+  private regexListFor(rule: KeyRule): RegExp[] | undefined {
+    switch (rule) {
+      case 'remove':
+        return this.deleteSecretKeys;
+      case 'opaque':
+        return this.fullSecretKeys;
+      case 'deep':
+        return this.deepSecretKeys;
+      case 'shallow':
+        return this.secretKeys;
+    }
+  }
+
+  private static findMatchingRegex(key: SecretSpecifierValue, regexes?: RegExp[]): RegExp | undefined {
+    return regexes?.find((regex) => regex.test(String(key)));
+  }
+
   private static formatRegex(regex: RegExp): string {
     return `/${regex.source}/${regex.flags}`;
   }
 
-  private static valueMatchesAnyRegexValue(value: SecretSpecifierValue, regexes: RegExp[]): boolean {
+  private static matchesAnyRegex(value: SecretSpecifierValue, regexes: RegExp[]): boolean {
     return regexes.some((regex) => regex.test(String(value)));
   }
 }
