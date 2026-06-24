@@ -1,4 +1,5 @@
 import { ObjectRedactorSyncTraversal } from '../../src/objectRedactorSync';
+import { ObjectRedactorTraversal } from '../../src/objectRedactorTraversal';
 import { ObjectRedactor } from '../../src/objectRedactor';
 import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { SecretManager } from '../../src/secretManager';
@@ -27,7 +28,7 @@ export const createObjectRedactor = (options: ObjectRedactorTestOptions = {}): O
     options.valuePatternMatcher ?? EMPTY_VALUE_PATTERN_MATCHER
   );
 
-export const createSyncTraversal = (options: ObjectRedactorTestOptions = {}): ObjectRedactorSyncTraversal =>
+export const createSyncTraversal = (options: ObjectRedactorTestOptions = {}): ObjectRedactorTraversal =>
   new ObjectRedactorSyncTraversal(
     options.primitiveRedactor ?? defaultPrimitiveRedactor(),
     new SecretManager(options.secretManagerConfig ?? {}),
