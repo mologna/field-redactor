@@ -112,10 +112,23 @@ export type MatchedSchemaReport = {
   schemaName?: string;
 };
 
+export type RedactionRuleLabel = 'schema' | 'opaque' | 'deep' | 'remove' | 'shallow' | 'default';
+
+export type DryRunPathRule = {
+  path: string;
+  action: 'redact' | 'delete';
+  rule: RedactionRuleLabel;
+  pattern?: string;
+  schemaIndex?: number;
+  schemaName?: string;
+};
+
 export type DryRunReport = {
   redactedPaths: string[];
   deletedPaths: string[];
   matchedSchemas: MatchedSchemaReport[];
+  /** Per-path rule attribution for redacted and deleted paths. */
+  pathRules: DryRunPathRule[];
 };
 
 export type DryRunResult<T> = {

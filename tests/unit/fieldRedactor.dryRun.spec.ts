@@ -30,6 +30,20 @@ describe('FieldRedactor dryRun', () => {
     expect(report.deletedPaths).toContain('authKey');
     expect(report.redactedPaths).toEqual(expect.arrayContaining(['password', 'contactInfo.email', 'metadata[0].value']));
     expect(report.matchedSchemas).toEqual([{ path: 'metadata[0]', schemaIndex: 0 }]);
+    expect(report.pathRules).toEqual(
+      expect.arrayContaining([
+        { path: 'authKey', action: 'delete', rule: 'remove', pattern: '/authKey/' },
+        { path: 'password', action: 'redact', rule: 'shallow', pattern: '/password/' },
+        { path: 'contactInfo.email', action: 'redact', rule: 'shallow', pattern: '/email/' },
+        {
+          path: 'metadata[0].value',
+          action: 'redact',
+          rule: 'schema',
+          schemaIndex: 0,
+          pattern: '/email/'
+        }
+      ])
+    );
   });
 
   it('dryRun resolves asynchronously with the same report shape', async () => {
@@ -43,6 +57,28 @@ describe('FieldRedactor dryRun', () => {
     const { result, report } = redactor.dryRunSync('plain');
     expect(result).toBe('plain');
     expect(report).toEqual(EMPTY_DRY_RUN_REPORT);
+  });
+
+  it('attributes deep, opaque, and default rules in pathRules', () => {
+    const configured = FieldRedactor.createSafe({
+      deepSecretKeys: [/contactInfo/],
+      fullSecretKeys: [/rawPayload/]
+    });
+
+    const { report: configuredReport } = configured.dryRunSync({
+      contactInfo: { email: 'alice@example.com' },
+      rawPayload: { token: 'secret' }
+    });
+
+    expect(configuredReport.pathRules).toEqual(
+      expect.arrayContaining([
+        { path: 'contactInfo.email', action: 'redact', rule: 'deep', pattern: '/contactInfo/' },
+        { path: 'rawPayload', action: 'redact', rule: 'opaque', pattern: '/rawPayload/' }
+      ])
+    );
+
+    const { report: defaultReport } = new FieldRedactor().dryRunSync({ username: 'alice' });
+    expect(defaultReport.pathRules).toEqual([{ path: 'username', action: 'redact', rule: 'default' }]);
   });
 });
 

@@ -2,6 +2,7 @@ import { FieldRedactor } from './fieldRedactor';
 import {
   appendRegexToConfig,
   finalizeRegisteredSchemas,
+  mergePartialConfig,
   RegisteredSchema,
   SecretRegexField
 } from './redactionRules';
@@ -51,6 +52,15 @@ export class FieldRedactorConfigBuilder {
   /** Register an object schema (`customObjects`). */
   schema(customObject: CustomObject, options?: SchemaOptions): this {
     this.schemas.push({ object: customObject, name: options?.name });
+    return this;
+  }
+
+  /**
+   * Merge a {@link presets} return value (or any partial config) into the builder.
+   * Regex arrays and schemas accumulate; scalar options apply only when not already set.
+   */
+  usePreset(preset: Partial<FieldRedactorConfig>): this {
+    mergePartialConfig(this.config, this.schemas, preset);
     return this;
   }
 

@@ -1,4 +1,4 @@
-import { CustomObjectMatchType, FieldRedactorConfigBuilder } from '../../src';
+import { CustomObjectMatchType, FieldRedactorConfigBuilder, presets } from '../../src';
 
 describe('FieldRedactorConfigBuilder', () => {
   it('maps fluent methods to FieldRedactorConfig fields', () => {
@@ -45,5 +45,29 @@ describe('FieldRedactorConfigBuilder', () => {
 
   it('buildSafeRedactor requires explicit rules', () => {
     expect(() => FieldRedactorConfigBuilder.create().buildSafeRedactor()).toThrow();
+  });
+
+  it('usePreset merges preset config and allows extending with fluent methods', () => {
+    const redactor = FieldRedactorConfigBuilder.create()
+      .usePreset(presets.applicationLogging())
+      .shallow(/ssn/i)
+      .buildSafeRedactor();
+
+    const { result, report } = redactor.dryRunSync({
+      email: 'alice@example.com',
+      authKey: 'secret',
+      ssn: '123-45-6789',
+      metadata: [{ name: 'email', value: 'alice@example.com' }]
+    });
+
+    expect(result.authKey).toBeUndefined();
+    expect(result.ssn).toBe('REDACTED');
+    expect(report.pathRules).toEqual(
+      expect.arrayContaining([
+        { path: 'authKey', action: 'delete', rule: 'remove', pattern: '/authKey/i' },
+        { path: 'email', action: 'redact', rule: 'shallow', pattern: '/email/i' },
+        { path: 'ssn', action: 'redact', rule: 'shallow', pattern: '/ssn/i' }
+      ])
+    );
   });
 });

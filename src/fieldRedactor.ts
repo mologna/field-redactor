@@ -27,6 +27,7 @@ export class FieldRedactor {
   private readonly deepCopy = rfdc({ proto: true, circles: true });
   private readonly objectRedactor: ObjectRedactor;
   private readonly customObjectManager: CustomObjectManager;
+  private readonly secretManager: SecretManager;
   private readonly usesAsyncRedactor: boolean;
   private readonly cloneInput: boolean;
 
@@ -63,6 +64,7 @@ export class FieldRedactor {
       deleteSecretKeys
     });
 
+    this.secretManager = secretManager;
     this.customObjectManager = new CustomObjectManager(customObjects, config?.schemaNames);
     this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, this.customObjectManager);
   }
@@ -113,7 +115,12 @@ export class FieldRedactor {
   private toDryRunResult<T extends RedactableInput>(snapshot: T, result: T): DryRunResult<T> {
     return {
       result,
-      report: buildDryRunReport(snapshot as JsonValue, result as JsonValue, this.customObjectManager)
+      report: buildDryRunReport(
+        snapshot as JsonValue,
+        result as JsonValue,
+        this.customObjectManager,
+        this.secretManager
+      )
     };
   }
 

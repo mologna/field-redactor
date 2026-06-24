@@ -41,7 +41,8 @@
 import { CustomObjectMatchType, FieldRedactorConfigBuilder } from 'field-redactor';
 
 const redactor = FieldRedactorConfigBuilder.create()
-  .shallow(/email/i, /name$/i)
+  .usePreset(presets.applicationLogging())
+  .shallow(/ssn/i)
   .deep(/accountInfo/i)
   .opaque(/rawPayload/i)
   .remove(/authKey/i)
@@ -51,7 +52,7 @@ const redactor = FieldRedactorConfigBuilder.create()
   .buildSafeRedactor();
 ```
 
-Methods: `shallow`, `deep`, `opaque`, `remove` / `delete`, `schema`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
+Methods: `shallow`, `deep`, `opaque`, `remove` / `delete`, `schema`, `usePreset`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
 
 ## Configuration validation
 
@@ -87,8 +88,18 @@ type DryRunReport = {
   redactedPaths: string[];
   deletedPaths: string[];
   matchedSchemas: { path: string; schemaIndex: number; schemaName?: string }[];
+  pathRules: {
+    path: string;
+    action: 'redact' | 'delete';
+    rule: 'schema' | 'opaque' | 'deep' | 'remove' | 'shallow' | 'default';
+    pattern?: string;
+    schemaIndex?: number;
+    schemaName?: string;
+  }[];
 };
 ```
+
+`pathRules` explains **why** each path changed (which rule matched). Use alongside `redactedPaths` / `deletedPaths` for iteration.
 
 ## Errors
 
@@ -119,3 +130,4 @@ Highest precedence. See [Metadata redaction](../guides/metadata-redaction.md) fo
 
 - [Secret key modes](../guides/secret-key-modes.md)
 - [Metadata redaction](../guides/metadata-redaction.md)
+- [Anti-patterns](../guides/anti-patterns.md)

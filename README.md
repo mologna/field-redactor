@@ -38,7 +38,7 @@ const result = redactor.redactSync({
 
 ```typescript
 const { result, report } = redactor.dryRunSync(payload);
-// report.redactedPaths, report.deletedPaths, report.matchedSchemas (with schemaName when named)
+// report.redactedPaths, report.deletedPaths, report.matchedSchemas, report.pathRules
 ```
 
 ## Start here
@@ -67,6 +67,7 @@ Use `FieldRedactor.createSafe({ ... })` or `FieldRedactorConfigBuilder` so you n
 | --- | --- |
 | [Secret key modes](docs/guides/secret-key-modes.md) | Shallow, Deep, Opaque, Remove with examples |
 | [Metadata redaction](docs/guides/metadata-redaction.md) | `{ name, value }` schemas and sibling-key rules |
+| [Anti-patterns](docs/guides/anti-patterns.md) | Common config mistakes and fixes |
 | [Configuration reference](docs/reference/config.md) | Full option table, API, presets, validation |
 | [Release notes](docs/release-notes/README.md) | Per-version notes for every git tag |
 

@@ -33,3 +33,39 @@ export const finalizeRegisteredSchemas = (
 
   return schemaNames.some((name) => name !== undefined) ? { customObjects, schemaNames } : { customObjects };
 };
+
+const PRESET_SCALAR_FIELDS = [
+  'redactor',
+  'syncRedactor',
+  'ignoreBooleans',
+  'ignoreNullOrUndefined',
+  'cloneInput',
+  'strict',
+  'onConfigWarning'
+] as const satisfies ReadonlyArray<keyof FieldRedactorConfig>;
+
+export const mergePartialConfig = (
+  target: FieldRedactorConfig,
+  schemas: RegisteredSchema[],
+  partial: Partial<FieldRedactorConfig>
+): void => {
+  for (const field of SECRET_REGEX_FIELDS) {
+    const patterns = partial[field];
+    if (patterns?.length) {
+      appendRegexToConfig(target, field, patterns);
+    }
+  }
+
+  if (partial.customObjects?.length) {
+    for (const object of partial.customObjects) {
+      schemas.push({ object });
+    }
+  }
+
+  for (const field of PRESET_SCALAR_FIELDS) {
+    const value = partial[field];
+    if (value !== undefined && target[field] === undefined) {
+      Object.assign(target, { [field]: value });
+    }
+  }
+};

@@ -75,6 +75,59 @@ export class SecretManager {
     return SecretManager.valueMatchesAnyRegexValue(key, this.deleteSecretKeys);
   }
 
+  public findMatchingRegex(key: SecretSpecifierValue, regexes?: RegExp[]): RegExp | undefined {
+    if (!regexes) {
+      return undefined;
+    }
+
+    return regexes.find((regex) => regex.test(String(key)));
+  }
+
+  public formatRegex(regex: RegExp): string {
+    return SecretManager.formatRegex(regex);
+  }
+
+  public getKeyRulePattern(
+    key: SecretSpecifierValue,
+    rule: 'remove' | 'opaque' | 'deep' | 'shallow'
+  ): string | undefined {
+    const regexes =
+      rule === 'remove'
+        ? this.deleteSecretKeys
+        : rule === 'opaque'
+          ? this.fullSecretKeys
+          : rule === 'deep'
+            ? this.deepSecretKeys
+            : this.secretKeys;
+
+    const match = this.findMatchingRegex(key, regexes);
+    return match ? SecretManager.formatRegex(match) : undefined;
+  }
+
+  public classifyKeyRule(key: SecretSpecifierValue): 'remove' | 'opaque' | 'deep' | 'shallow' | 'default' | null {
+    if (this.isDeleteSecretKey(key)) {
+      return 'remove';
+    }
+
+    if (this.isFullSecretKey(key)) {
+      return 'opaque';
+    }
+
+    if (this.isDeepSecretKey(key)) {
+      return 'deep';
+    }
+
+    if (this.isSecretKey(key)) {
+      return this.secretKeys ? 'shallow' : 'default';
+    }
+
+    return null;
+  }
+
+  private static formatRegex(regex: RegExp): string {
+    return `/${regex.source}/${regex.flags}`;
+  }
+
   private static valueMatchesAnyRegexValue(value: SecretSpecifierValue, regexes: RegExp[]): boolean {
     return regexes.some((regex) => regex.test(String(value)));
   }
