@@ -40,6 +40,106 @@ console.log(myJsonObject); // { foo: "REDACTED", fizz: null }
 > **Note:** `null`, `undefined`, `string`, `Date`, `Function`, and primitive value inputs are completely ignored.
 > 
 > **Note:** `redact()` / `redactSync()` use copy-on-write by default (`cloneInput: true`), so only branches that change are cloned and unmodified subtrees are shared with the input. Set `cloneInput: false` to mutate the input in place instead.
+>
+> **Tip:** Prefer `FieldRedactor.createSafe({ secretKeys: [...] })` for new projects — it requires explicit redaction rules and avoids the default behavior where omitting all secret specifiers redacts every value. See [Safe construction](#safe-construction) below.
+
+## Start here
+
+Not sure which config options you need? Use this decision guide:
+
+```
+Do you know which JSON keys are always sensitive (email, password, authKey, …)?
+  ├─ yes → use secretKeys, deepSecretKeys, fullSecretKeys, or deleteSecretKeys
+  │         (see the cheat sheet below for which mode fits each case)
+  └─ no / only sometimes → do values live in shaped objects (e.g. { name, value })?
+        ├─ yes → use customObjects with a sibling-key schema (see metadata example below)
+        └─ no  → use secretKeys on stable field names
+```
+
+**Precedence** (highest wins): `customObjects` → `fullSecretKeys` → `deepSecretKeys` → `deleteSecretKeys` → `secretKeys`
+
+### Most common setup
+
+This pattern covers typical application logs: named fields are redacted, auth keys are removed, and `{ name, value }` metadata entries are redacted based on the `name` sibling:
+
+```typescript
+import { CustomObjectMatchType, FieldRedactor } from 'field-redactor';
+
+const fieldRedactor = FieldRedactor.createSafe({
+  secretKeys: [/email/i, /password/i, /phone/i, /.+name$/i],
+  deleteSecretKeys: [/authKey/i],
+  customObjects: [
+    {
+      name: CustomObjectMatchType.Ignore,
+      value: 'name' // redact value when sibling name matches secretKeys
+    }
+  ]
+});
+
+// { name: "email", value: "alice@example.com" } → value redacted
+// { name: "traceId", value: "abc-123" } → value unchanged
+```
+
+### Redaction modes cheat sheet
+
+Same input for every row — only the configured mode changes:
+
+```json
+{
+  "username": "alice",
+  "contactInfo": { "email": "alice@example.com", "city": "NYC" },
+  "authKey": "secret-token"
+}
+```
+
+| Doc label | Config option | Config example | Result |
+| --- | --- | --- | --- |
+| **Shallow** | `secretKeys` | `[/email/]` | `contactInfo.email` → `"REDACTED"`; `city`, `username` unchanged |
+| **Deep** | `deepSecretKeys` | `[/contactInfo/]` | All primitives inside `contactInfo` redacted (`email`, `city`) |
+| **Opaque** | `fullSecretKeys` | `[/contactInfo/]` | Entire `contactInfo` replaced with `"REDACTED"` |
+| **Remove** | `deleteSecretKeys` | `[/authKey/]` | `authKey` key removed from output |
+
+Terminology map for the existing config field names:
+
+| Config field | Shorthand |
+| --- | --- |
+| `secretKeys` | Shallow — redact this field's scalar value only |
+| `deepSecretKeys` | Deep — redact this field and all descendants |
+| `fullSecretKeys` | Opaque — stringify entire value, then redact |
+| `deleteSecretKeys` | Remove — delete key from output |
+| `customObjects` | Schema — rules for a specific object shape |
+
+### Safe construction
+
+```typescript
+import { FieldRedactor, FieldRedactorConfigurationError } from 'field-redactor';
+
+// Requires at least one non-empty rule array or customObjects entry
+const redactor = FieldRedactor.createSafe({ secretKeys: [/email/, /password/] });
+
+try {
+  FieldRedactor.createSafe({}); // throws FieldRedactorConfigurationError
+} catch (error) {
+  if (error instanceof FieldRedactorConfigurationError) {
+    // misconfiguration caught at construction time
+  }
+}
+```
+
+`new FieldRedactor()` without secret specifiers still redacts **all** values (backward compatible). Use `createSafe()` when you want guardrails.
+
+### Errors
+
+Both error types are exported from the package entry point:
+
+| Class | When thrown |
+| --- | --- |
+| `FieldRedactorError` | Redaction fails at runtime (e.g. custom `redactor` throws) |
+| `FieldRedactorConfigurationError` | Invalid configuration (duplicate custom object schemas, `createSafe()` with no rules) |
+
+```typescript
+import { FieldRedactor, FieldRedactorConfigurationError, FieldRedactorError } from 'field-redactor';
+```
 
 
 ## Customization

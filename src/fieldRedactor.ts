@@ -4,7 +4,16 @@ import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
 import { CustomObjectManager } from './customObjectManager';
-import { FieldRedactorError } from './errors';
+import { FieldRedactorConfigurationError, FieldRedactorError } from './errors';
+
+const hasNonEmptyArray = <T>(value: T[] | undefined): value is T[] => value !== undefined && value.length > 0;
+
+const hasExplicitRedactionRules = (config: FieldRedactorConfig): boolean =>
+  hasNonEmptyArray(config.secretKeys) ||
+  hasNonEmptyArray(config.deepSecretKeys) ||
+  hasNonEmptyArray(config.fullSecretKeys) ||
+  hasNonEmptyArray(config.deleteSecretKeys) ||
+  hasNonEmptyArray(config.customObjects);
 
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
@@ -47,6 +56,21 @@ export class FieldRedactor {
     const customObjectChecker = new CustomObjectManager(customObjects);
 
     this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+  }
+
+  /**
+   * Creates a FieldRedactor that requires at least one explicit redaction rule (`secretKeys`, `deepSecretKeys`,
+   * `fullSecretKeys`, `deleteSecretKeys`, or `customObjects`). Unlike `new FieldRedactor()`, omitting all secret
+   * specifiers does not default to redacting every value.
+   */
+  public static createSafe(config: FieldRedactorConfig): FieldRedactor {
+    if (!hasExplicitRedactionRules(config)) {
+      throw new FieldRedactorConfigurationError(
+        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, or customObjects entry. Without explicit rules, new FieldRedactor() redacts all values by default.'
+      );
+    }
+
+    return new FieldRedactor(config);
   }
 
   /**
