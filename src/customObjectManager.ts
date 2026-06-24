@@ -18,9 +18,8 @@ export class CustomObjectManager {
     this.customObjects = customObjects ? customObjects : [];
   }
 
-  /** Schemas registered at construction time, in declaration order. */
-  public getCustomObjects(): readonly CustomObject[] {
-    return this.customObjects;
+  public getSchemaIndex(schema: CustomObject): number {
+    return this.customObjects.indexOf(schema);
   }
 
   /**

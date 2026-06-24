@@ -1,4 +1,26 @@
-import { CustomObjectMatchType, FieldRedactorConfig } from './types';
+import { CustomObjectMatchType, CustomObject, FieldRedactorConfig } from './types';
+
+const AUTH_KEY_REMOVAL: Pick<FieldRedactorConfig, 'deleteSecretKeys'> = {
+  deleteSecretKeys: [/authKey/i]
+};
+
+const NAME_VALUE_EVENT_SCHEMA: CustomObject = {
+  name: CustomObjectMatchType.Ignore,
+  value: 'name'
+};
+
+const NAME_TYPE_VALUE_METADATA_SCHEMA: CustomObject = {
+  name: CustomObjectMatchType.Ignore,
+  type: CustomObjectMatchType.Ignore,
+  value: 'name'
+};
+
+const KEY_VALUE_ENTRY_SCHEMA: CustomObject = {
+  key: CustomObjectMatchType.Ignore,
+  value: 'key'
+};
+
+const APPLICATION_LOG_SECRET_KEYS = [/email/i, /mdn/i, /phone/i, /.+name$/i, /auth/i];
 
 /**
  * Opinionated configuration presets derived from integration test fixtures.
@@ -11,14 +33,8 @@ export const presets = {
    */
   loggingMetadata(): Pick<FieldRedactorConfig, 'customObjects' | 'deleteSecretKeys'> {
     return {
-      deleteSecretKeys: [/authKey/i],
-      customObjects: [
-        {
-          name: CustomObjectMatchType.Ignore,
-          type: CustomObjectMatchType.Ignore,
-          value: 'name'
-        }
-      ]
+      ...AUTH_KEY_REMOVAL,
+      customObjects: [NAME_TYPE_VALUE_METADATA_SCHEMA]
     };
   },
 
@@ -28,14 +44,9 @@ export const presets = {
    */
   applicationLogging(): Pick<FieldRedactorConfig, 'secretKeys' | 'deleteSecretKeys' | 'customObjects'> {
     return {
-      secretKeys: [/email/i, /mdn/i, /phone/i, /.+name$/i, /auth/i],
-      deleteSecretKeys: [/authKey/i],
-      customObjects: [
-        {
-          name: CustomObjectMatchType.Ignore,
-          value: 'name'
-        }
-      ]
+      secretKeys: APPLICATION_LOG_SECRET_KEYS,
+      ...AUTH_KEY_REMOVAL,
+      customObjects: [NAME_VALUE_EVENT_SCHEMA]
     };
   },
 
@@ -44,12 +55,7 @@ export const presets = {
    */
   keyValueEntries(): Pick<FieldRedactorConfig, 'customObjects'> {
     return {
-      customObjects: [
-        {
-          key: CustomObjectMatchType.Ignore,
-          value: 'key'
-        }
-      ]
+      customObjects: [KEY_VALUE_ENTRY_SCHEMA]
     };
   }
 };

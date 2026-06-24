@@ -1,13 +1,20 @@
 import rfdc from 'rfdc';
-import { FieldRedactorConfig, JsonArray, JsonObject, RedactableInput, TraversableJson } from './types';
-import { DryRunResult } from './types';
+import {
+  DryRunResult,
+  FieldRedactorConfig,
+  JsonArray,
+  JsonObject,
+  JsonValue,
+  RedactableInput,
+  TraversableJson
+} from './types';
 import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
 import { CustomObjectManager } from './customObjectManager';
 import { FieldRedactorConfigurationError, FieldRedactorError } from './errors';
 import { hasExplicitRedactionRules, validateFieldRedactorConfig } from './configValidator';
-import { buildDryRunReport, createEmptyDryRunReport } from './dryRun';
+import { buildDryRunReport, EMPTY_DRY_RUN_REPORT } from './dryRun';
 
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
@@ -80,19 +87,11 @@ export class FieldRedactor {
    */
   public async dryRun<T extends RedactableInput>(value: T): Promise<DryRunResult<T>> {
     if (this.isPrimitiveOrUndefined(value)) {
-      return { result: value, report: createEmptyDryRunReport() };
+      return { result: value, report: EMPTY_DRY_RUN_REPORT };
     }
 
     const snapshot = this.deepCopy(value) as T;
-    const result = await this.redact(value);
-    const report = buildDryRunReport(
-      snapshot,
-      result,
-      this.customObjectManager,
-      [...this.customObjectManager.getCustomObjects()]
-    );
-
-    return { result, report };
+    return this.toDryRunResult(snapshot, await this.redact(value));
   }
 
   /**
@@ -100,19 +99,18 @@ export class FieldRedactor {
    */
   public dryRunSync<T extends RedactableInput>(value: T): DryRunResult<T> {
     if (this.isPrimitiveOrUndefined(value)) {
-      return { result: value, report: createEmptyDryRunReport() };
+      return { result: value, report: EMPTY_DRY_RUN_REPORT };
     }
 
     const snapshot = this.deepCopy(value) as T;
-    const result = this.redactSync(value);
-    const report = buildDryRunReport(
-      snapshot,
-      result,
-      this.customObjectManager,
-      [...this.customObjectManager.getCustomObjects()]
-    );
+    return this.toDryRunResult(snapshot, this.redactSync(value));
+  }
 
-    return { result, report };
+  private toDryRunResult<T extends RedactableInput>(snapshot: T, result: T): DryRunResult<T> {
+    return {
+      result,
+      report: buildDryRunReport(snapshot as JsonValue, result as JsonValue, this.customObjectManager)
+    };
   }
 
   /**

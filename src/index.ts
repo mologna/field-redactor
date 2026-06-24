@@ -24,5 +24,6 @@ export {
 } from './types';
 export { FieldRedactorError, FieldRedactorConfigurationError } from './errors';
 export { validateFieldRedactorConfig, hasExplicitRedactionRules } from './configValidator';
+export { EMPTY_DRY_RUN_REPORT } from './dryRun';
 export { presets } from './presets';
 export { FieldRedactor };

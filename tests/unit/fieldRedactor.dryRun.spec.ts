@@ -1,4 +1,4 @@
-import { CustomObjectMatchType, FieldRedactor, presets } from '../../src';
+import { CustomObjectMatchType, EMPTY_DRY_RUN_REPORT, FieldRedactor, presets } from '../../src';
 
 describe('FieldRedactor dryRun', () => {
   const redactor = FieldRedactor.createSafe({
@@ -42,7 +42,7 @@ describe('FieldRedactor dryRun', () => {
   it('returns an empty report for primitive input', () => {
     const { result, report } = redactor.dryRunSync('plain');
     expect(result).toBe('plain');
-    expect(report).toEqual({ redactedPaths: [], deletedPaths: [], matchedSchemas: [] });
+    expect(report).toEqual(EMPTY_DRY_RUN_REPORT);
   });
 });
 
