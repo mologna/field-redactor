@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-06-24
+
+### Added
+
+- **`FieldRedactorConfigBuilder.usePreset()`** — merge preset or partial config into the builder; regex/schemas accumulate, scalars apply only when unset.
+- **`dryRun` path rule attribution** — `report.pathRules` explains which rule (`schema`, `opaque`, `deep`, `remove`, `shallow`, `default`) caused each redacted or deleted path, with optional regex `pattern` and schema metadata.
+- **Anti-patterns guide** — [docs/guides/anti-patterns.md](docs/guides/anti-patterns.md) for common configuration mistakes.
+- **Exported types** — `DryRunPathRule`, `RedactionRuleLabel`, `MatchedSchemaReport`.
+- **Release notes** — see [docs/release-notes/2.4.0.md](docs/release-notes/2.4.0.md).
+
+### Internal milestones (`2.x` tags)
+
+Development tag `2.4.0` tracks Phase 2 DX polish on top of **v1.3.0**. A future **v1.4.0** npm release will publish this content. See [docs/release-notes/README.md](docs/release-notes/README.md).
+
 ## [1.3.0] - 2026-06-24
 
 ### Added
@@ -71,6 +85,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[2.4.0]: https://github.com/mologna/field-redactor/compare/2.3.1...2.4.0
 [1.3.0]: https://github.com/mologna/field-redactor/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/mologna/field-redactor/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/mologna/field-redactor/compare/v1.2.0...v1.2.1

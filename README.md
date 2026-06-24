@@ -82,6 +82,8 @@ import {
   presets,
   validateFieldRedactorConfig
 } from 'field-redactor';
+
+import type { DryRunPathRule, RedactionRuleLabel, MatchedSchemaReport } from 'field-redactor';
 ```
 
 - **Sync:** `redactSync()`, `redactInPlaceSync()`, `dryRunSync()`
