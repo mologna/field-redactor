@@ -1,31 +1,47 @@
 import { FieldRedactorConfigurationError } from './errors';
 import { formatRegExp, regexIdentity } from './regexUtils';
-import {
-  hasExplicitRedactionRules,
-  REGEX_ARRAY_CONFIG_FIELDS,
-  SECRET_REGEX_FIELDS
-} from './redactionRules';
+import { hasExplicitRedactionRules, REGEX_ARRAY_CONFIG_FIELDS, SECRET_REGEX_FIELDS } from './redactionRules';
 import { CustomObject, FieldRedactorConfig } from './types';
 
-export { hasExplicitRedactionRules };
+export { hasExplicitRedactionRules } from './redactionRules';
 
 const KEY_RULE_FIELDS = new Set<string>(SECRET_REGEX_FIELDS);
+
+const analyzeSchemaPairs = (
+  customObjects: CustomObject[]
+): { identicalPairs: Array<[number, number, string[]]>; subsetPairs: Array<[number, number]> } => {
+  const identicalPairs: Array<[number, number, string[]]> = [];
+  const subsetPairs: Array<[number, number]> = [];
+
+  for (let i = 0; i < customObjects.length - 1; i++) {
+    const keysA = Object.keys(customObjects[i]);
+    for (let j = i + 1; j < customObjects.length; j++) {
+      const keysB = Object.keys(customObjects[j]);
+      if (keysA.length === keysB.length && keysA.every((key) => keysB.includes(key))) {
+        identicalPairs.push([i, j, keysA]);
+        continue;
+      }
+
+      const aSubsetOfB = keysA.length < keysB.length && keysA.every((key) => keysB.includes(key));
+      const bSubsetOfA = keysB.length < keysA.length && keysB.every((key) => keysA.includes(key));
+      if (aSubsetOfB || bSubsetOfA) {
+        subsetPairs.push([i, j]);
+      }
+    }
+  }
+
+  return { identicalPairs, subsetPairs };
+};
 
 export const assertNoIdenticalCustomObjectSchemas = (customObjects?: CustomObject[]): void => {
   if (!customObjects || customObjects.length <= 1) {
     return;
   }
 
-  for (let i = 0; i < customObjects.length - 1; i++) {
-    const keys = Object.keys(customObjects[i]);
-    for (let j = i + 1; j < customObjects.length; j++) {
-      const otherKeys = Object.keys(customObjects[j]);
-      if (keys.length === otherKeys.length && keys.every((key) => otherKeys.includes(key))) {
-        throw new FieldRedactorConfigurationError(
-          `Custom Objects at indexes ${i} and ${j} cannot have identical keys: ${keys}`
-        );
-      }
-    }
+  for (const [i, j, keys] of analyzeSchemaPairs(customObjects).identicalPairs) {
+    throw new FieldRedactorConfigurationError(
+      `Custom Objects at indexes ${i} and ${j} cannot have identical keys: ${keys}`
+    );
   }
 };
 
@@ -78,18 +94,12 @@ const collectSchemaWarnings = (customObjects: CustomObject[]): string[] => {
     }
   });
 
-  for (let i = 0; i < customObjects.length - 1; i++) {
+  for (const [i, j] of analyzeSchemaPairs(customObjects).subsetPairs) {
     const keysA = Object.keys(customObjects[i]);
-    for (let j = i + 1; j < customObjects.length; j++) {
-      const keysB = Object.keys(customObjects[j]);
-      const aSubsetOfB = keysA.length < keysB.length && keysA.every((key) => keysB.includes(key));
-      const bSubsetOfA = keysB.length < keysA.length && keysB.every((key) => keysA.includes(key));
-      if (aSubsetOfB || bSubsetOfA) {
-        warnings.push(
-          `Schemas at index ${i} and ${j} may both match the same object; index ${keysB.length > keysA.length ? j : i} wins only when it has more keys.`
-        );
-      }
-    }
+    const keysB = Object.keys(customObjects[j]);
+    warnings.push(
+      `Schemas at index ${i} and ${j} may both match the same object; index ${keysB.length > keysA.length ? j : i} wins only when it has more keys.`
+    );
   }
 
   return warnings;

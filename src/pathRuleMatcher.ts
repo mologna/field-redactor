@@ -1,62 +1,13 @@
+import { parsePathRulePattern, PathPatternSegment } from './pathParsing';
 import { PathRule, PathRuleMode } from './types';
 
-export type PathSegment = string | number | '*';
-
-export type CompiledPathRule = {
-  segments: PathSegment[];
+type CompiledPathRule = {
+  segments: PathPatternSegment[];
   mode: PathRuleMode;
   path: string;
 };
 
-/** Parse a path-rule pattern (`metadata.*.value`, `items[0].name`) into segments. */
-export const parsePathRulePattern = (pattern: string): PathSegment[] => {
-  const segments: PathSegment[] = [];
-  let current = '';
-
-  const pushSegment = (segment: string): void => {
-    if (!segment) {
-      return;
-    }
-
-    if (segment === '*') {
-      segments.push('*');
-      return;
-    }
-
-    if (/^\d+$/.test(segment)) {
-      segments.push(Number(segment));
-      return;
-    }
-
-    segments.push(segment);
-  };
-
-  for (let index = 0; index < pattern.length; index++) {
-    const char = pattern[index];
-
-    if (char === '.') {
-      pushSegment(current);
-      current = '';
-      continue;
-    }
-
-    if (char === '[') {
-      pushSegment(current);
-      current = '';
-      const close = pattern.indexOf(']', index);
-      segments.push(Number(pattern.slice(index + 1, close)));
-      index = close;
-      continue;
-    }
-
-    current += char;
-  }
-
-  pushSegment(current);
-  return segments;
-};
-
-const segmentsMatch = (rule: PathSegment[], path: Array<string | number>): boolean => {
+const segmentsMatch = (rule: PathPatternSegment[], path: Array<string | number>): boolean => {
   if (rule.length !== path.length) {
     return false;
   }
@@ -83,7 +34,7 @@ export class PathRuleMatcher {
           return right.segments.length - left.segments.length;
         }
 
-        const wildcardCount = (segments: PathSegment[]): number =>
+        const wildcardCount = (segments: PathPatternSegment[]): number =>
           segments.filter((segment) => segment === '*').length;
 
         return wildcardCount(left.segments) - wildcardCount(right.segments);
@@ -98,5 +49,7 @@ export class PathRuleMatcher {
     return this.rules.length > 0;
   }
 }
+
+export { parsePathRulePattern } from './pathParsing';
 
 export const EMPTY_PATH_RULE_MATCHER = new PathRuleMatcher();

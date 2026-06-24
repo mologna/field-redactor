@@ -1,189 +1,89 @@
 import { CustomObjectMatchType } from './types';
 
+type MaybeAsync<T> = T | Promise<T>;
+
+const run = <T>(handler: () => MaybeAsync<T>): MaybeAsync<T> => handler();
+
 type CustomObjectArrayHandlers = {
-  deleteKey(): void;
-  redactFull(): void;
-  redactDeep(): void;
-  redactShallow(): void;
-  passThrough(): void;
+  deleteKey(): MaybeAsync<void>;
+  redactFull(): MaybeAsync<void>;
+  redactDeep(): MaybeAsync<void>;
+  redactShallow(): MaybeAsync<void>;
+  passThrough(): MaybeAsync<void>;
 };
 
 type CustomObjectObjectHandlers = {
-  deleteKey(): void;
-  redactFull(): void;
-  redactDeep(): void;
-  redactShallowOrPass(): void;
-  ignore(): void;
+  deleteKey(): MaybeAsync<void>;
+  redactFull(): MaybeAsync<void>;
+  redactDeep(): MaybeAsync<void>;
+  redactShallowOrPass(): MaybeAsync<void>;
+  ignore(): MaybeAsync<void>;
 };
 
 type CustomObjectPrimitiveHandlers = {
-  deleteKey(): void;
-  redactFull(): void;
-  redactScalar(): void;
-  passThrough(): void;
-};
-
-type AsyncCustomObjectArrayHandlers = {
-  deleteKey(): Promise<void>;
-  redactFull(): Promise<void>;
-  redactDeep(): Promise<void>;
-  redactShallow(): Promise<void>;
-  passThrough(): Promise<void>;
-};
-
-type AsyncCustomObjectObjectHandlers = {
-  deleteKey(): Promise<void>;
-  redactFull(): Promise<void>;
-  redactDeep(): Promise<void>;
-  redactShallowOrPass(): Promise<void>;
-  ignore(): Promise<void>;
-};
-
-type AsyncCustomObjectPrimitiveHandlers = {
-  deleteKey(): Promise<void>;
-  redactFull(): Promise<void>;
-  redactScalar(): Promise<void>;
-  passThrough(): Promise<void>;
+  deleteKey(): MaybeAsync<void>;
+  redactFull(): MaybeAsync<void>;
+  redactScalar(): MaybeAsync<void>;
+  passThrough(): MaybeAsync<void>;
 };
 
 export const applyCustomObjectArrayMatchType = (
   matchType: CustomObjectMatchType,
   handlers: CustomObjectArrayHandlers
-): void => {
+): MaybeAsync<void> => {
   switch (matchType) {
     case CustomObjectMatchType.Delete:
-      handlers.deleteKey();
-      return;
+      return run(handlers.deleteKey);
     case CustomObjectMatchType.Full:
-      handlers.redactFull();
-      return;
+      return run(handlers.redactFull);
     case CustomObjectMatchType.Deep:
-      handlers.redactDeep();
-      return;
+      return run(handlers.redactDeep);
     case CustomObjectMatchType.Shallow:
-      handlers.redactShallow();
-      return;
+      return run(handlers.redactShallow);
     case CustomObjectMatchType.Pass:
-      handlers.passThrough();
-      return;
+      return run(handlers.passThrough);
     default:
-      return;
+      return undefined;
   }
 };
 
 export const applyCustomObjectObjectMatchType = (
   matchType: CustomObjectMatchType,
   handlers: CustomObjectObjectHandlers
-): void => {
+): MaybeAsync<void> => {
   switch (matchType) {
     case CustomObjectMatchType.Delete:
-      handlers.deleteKey();
-      return;
+      return run(handlers.deleteKey);
     case CustomObjectMatchType.Full:
-      handlers.redactFull();
-      return;
+      return run(handlers.redactFull);
     case CustomObjectMatchType.Deep:
-      handlers.redactDeep();
-      return;
+      return run(handlers.redactDeep);
     case CustomObjectMatchType.Shallow:
     case CustomObjectMatchType.Pass:
-      handlers.redactShallowOrPass();
-      return;
+      return run(handlers.redactShallowOrPass);
     case CustomObjectMatchType.Ignore:
-      handlers.ignore();
-      return;
+      return run(handlers.ignore);
   }
 };
 
 export const applyCustomObjectPrimitiveMatchType = (
   matchType: CustomObjectMatchType,
   handlers: CustomObjectPrimitiveHandlers
-): void => {
+): MaybeAsync<void> => {
   switch (matchType) {
     case CustomObjectMatchType.Delete:
-      handlers.deleteKey();
-      return;
+      return run(handlers.deleteKey);
     case CustomObjectMatchType.Full:
-      handlers.redactFull();
-      return;
+      return run(handlers.redactFull);
     case CustomObjectMatchType.Deep:
     case CustomObjectMatchType.Shallow:
-      handlers.redactScalar();
-      return;
+      return run(handlers.redactScalar);
     case CustomObjectMatchType.Pass:
     default:
-      handlers.passThrough();
-      return;
+      return run(handlers.passThrough);
   }
 };
 
-export const applyCustomObjectArrayMatchTypeAsync = async (
-  matchType: CustomObjectMatchType,
-  handlers: AsyncCustomObjectArrayHandlers
-): Promise<void> => {
-  switch (matchType) {
-    case CustomObjectMatchType.Delete:
-      await handlers.deleteKey();
-      return;
-    case CustomObjectMatchType.Full:
-      await handlers.redactFull();
-      return;
-    case CustomObjectMatchType.Deep:
-      await handlers.redactDeep();
-      return;
-    case CustomObjectMatchType.Shallow:
-      await handlers.redactShallow();
-      return;
-    case CustomObjectMatchType.Pass:
-      await handlers.passThrough();
-      return;
-    default:
-      return;
-  }
-};
-
-export const applyCustomObjectObjectMatchTypeAsync = async (
-  matchType: CustomObjectMatchType,
-  handlers: AsyncCustomObjectObjectHandlers
-): Promise<void> => {
-  switch (matchType) {
-    case CustomObjectMatchType.Delete:
-      await handlers.deleteKey();
-      return;
-    case CustomObjectMatchType.Full:
-      await handlers.redactFull();
-      return;
-    case CustomObjectMatchType.Deep:
-      await handlers.redactDeep();
-      return;
-    case CustomObjectMatchType.Shallow:
-    case CustomObjectMatchType.Pass:
-      await handlers.redactShallowOrPass();
-      return;
-    case CustomObjectMatchType.Ignore:
-      await handlers.ignore();
-      return;
-  }
-};
-
-export const applyCustomObjectPrimitiveMatchTypeAsync = async (
-  matchType: CustomObjectMatchType,
-  handlers: AsyncCustomObjectPrimitiveHandlers
-): Promise<void> => {
-  switch (matchType) {
-    case CustomObjectMatchType.Delete:
-      await handlers.deleteKey();
-      return;
-    case CustomObjectMatchType.Full:
-      await handlers.redactFull();
-      return;
-    case CustomObjectMatchType.Deep:
-    case CustomObjectMatchType.Shallow:
-      await handlers.redactScalar();
-      return;
-    case CustomObjectMatchType.Pass:
-    default:
-      await handlers.passThrough();
-      return;
-  }
+export const awaitCustomObjectMatchType = async (result: MaybeAsync<void>): Promise<void> => {
+  await result;
 };

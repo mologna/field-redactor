@@ -1,6 +1,5 @@
 import { FieldRedactor } from './fieldRedactor';
 import {
-  appendRegexToConfig,
   appendRegExpArray,
   finalizeRegisteredSchemas,
   mergePartialConfig,
@@ -129,7 +128,7 @@ export class FieldRedactorConfigBuilder {
   }
 
   private appendRegex(field: SecretRegexField, patterns: RegExp[]): this {
-    appendRegexToConfig(this.config, field, patterns);
+    appendRegExpArray(this.config, field, patterns);
     return this;
   }
 

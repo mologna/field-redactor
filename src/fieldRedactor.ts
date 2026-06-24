@@ -1,4 +1,5 @@
-import rfdc from 'rfdc';
+import { FieldRedactorConfigurationError, FieldRedactorError } from './errors';
+import { buildFieldRedactorDeps, FieldRedactorDeps } from './fieldRedactorDeps';
 import {
   DryRunResult,
   FieldRedactorConfig,
@@ -8,13 +9,9 @@ import {
   RedactableInput,
   TraversableJson
 } from './types';
-import { CustomObjectManager } from './customObjectManager';
-import { SecretManager } from './secretManager';
-import { FieldRedactorConfigurationError, FieldRedactorError } from './errors';
-import { hasExplicitRedactionRules, validateFieldRedactorConfig } from './configValidator';
 import { buildDryRunReport, EMPTY_DRY_RUN_REPORT } from './dryRun';
-import { buildFieldRedactorDeps } from './fieldRedactorDeps';
-import { ObjectRedactor } from './objectRedactor';
+import rfdc from 'rfdc';
+import { hasExplicitRedactionRules, validateFieldRedactorConfig } from './configValidator';
 
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
@@ -25,13 +22,7 @@ import { ObjectRedactor } from './objectRedactor';
  */
 export class FieldRedactor {
   private readonly deepCopy = rfdc({ proto: true, circles: true });
-  private readonly objectRedactor: ObjectRedactor;
-  private readonly customObjectManager: CustomObjectManager;
-  private readonly secretManager: SecretManager;
-  private readonly usesAsyncRedactor: boolean;
-  private readonly cloneInput: boolean;
-  private readonly valuePatternMatcher: ReturnType<typeof buildFieldRedactorDeps>['valuePatternMatcher'];
-  private readonly pathRuleMatcher: ReturnType<typeof buildFieldRedactorDeps>['pathRuleMatcher'];
+  private readonly deps: FieldRedactorDeps;
 
   /** Non-fatal configuration warnings from the last construction (empty when `strict` threw). */
   public readonly configWarnings: readonly string[];
@@ -42,15 +33,7 @@ export class FieldRedactor {
       config?.onConfigWarning?.(warning);
     }
 
-    const deps = buildFieldRedactorDeps(config);
-
-    this.usesAsyncRedactor = deps.usesAsyncRedactor;
-    this.cloneInput = deps.cloneInput;
-    this.secretManager = deps.secretManager;
-    this.valuePatternMatcher = deps.valuePatternMatcher;
-    this.pathRuleMatcher = deps.pathRuleMatcher;
-    this.customObjectManager = deps.customObjectManager;
-    this.objectRedactor = deps.objectRedactor;
+    this.deps = buildFieldRedactorDeps(config);
   }
 
   /**
@@ -69,21 +52,12 @@ export class FieldRedactor {
     return new FieldRedactor(config);
   }
 
-  /**
-   * Redacts a copy of the input and returns an audit report of affected paths without mutating the original.
-   */
+  /** Redacts a copy of the input and returns an audit report of affected paths without mutating the original. */
   public async dryRun<T extends RedactableInput>(value: T): Promise<DryRunResult<T>> {
-    if (this.isPrimitiveOrUndefined(value)) {
-      return this.emptyDryRunResult(value);
-    }
-
-    const snapshot = this.deepCopy(value) as T;
-    return this.toDryRunResult(snapshot, await this.redact(value));
+    return this.runDryRun(value, (input) => this.redact(input));
   }
 
-  /**
-   * Synchronous {@link FieldRedactor.dryRun} without per-field Promise overhead.
-   */
+  /** Synchronous {@link FieldRedactor.dryRun} without per-field Promise overhead. */
   public dryRunSync<T extends RedactableInput>(value: T): DryRunResult<T> {
     if (this.isPrimitiveOrUndefined(value)) {
       return this.emptyDryRunResult(value);
@@ -91,6 +65,23 @@ export class FieldRedactor {
 
     const snapshot = this.deepCopy(value) as T;
     return this.toDryRunResult(snapshot, this.redactSync(value));
+  }
+
+  private runDryRun<T extends RedactableInput>(
+    value: T,
+    redact: (input: T) => T | Promise<T>
+  ): DryRunResult<T> | Promise<DryRunResult<T>> {
+    if (this.isPrimitiveOrUndefined(value)) {
+      return this.emptyDryRunResult(value);
+    }
+
+    const snapshot = this.deepCopy(value) as T;
+    const result = redact(value);
+    if (result instanceof Promise) {
+      return result.then((redacted) => this.toDryRunResult(snapshot, redacted));
+    }
+
+    return this.toDryRunResult(snapshot, result);
   }
 
   private emptyDryRunResult<T>(value: T): DryRunResult<T> {
@@ -103,10 +94,10 @@ export class FieldRedactor {
       report: buildDryRunReport(
         snapshot as JsonValue,
         result as JsonValue,
-        this.customObjectManager,
-        this.secretManager,
-        this.valuePatternMatcher,
-        this.pathRuleMatcher
+        this.deps.customObjectManager,
+        this.deps.secretManager,
+        this.deps.valuePatternMatcher,
+        this.deps.pathRuleMatcher
       )
     };
   }
@@ -115,20 +106,18 @@ export class FieldRedactor {
    * Conditionally redacts fields in the JSON object based on the configuration provided in the constructor and returns the
    * redacted result.
    * If the value is a primitive, undefined, or date, returns the value as-is.
-   * @param value The JSON value to redact. If primitive it will be resolved as-is.
-   * @returns The redacted JSON object.
    */
   public async redact<T extends RedactableInput>(value: T): Promise<T> {
     if (this.isPrimitiveOrUndefined(value)) {
       return value;
     }
 
-    if (!this.cloneInput) {
+    if (!this.deps.cloneInput) {
       await this.redactInPlace(value);
       return value;
     }
 
-    if (!this.usesAsyncRedactor) {
+    if (!this.deps.usesAsyncRedactor) {
       return Promise.resolve(this.redactSync(value));
     }
 
@@ -146,28 +135,22 @@ export class FieldRedactor {
       return value;
     }
 
-    if (!this.cloneInput) {
+    if (!this.deps.cloneInput) {
       this.redactInPlaceSync(value);
       return value;
     }
 
-    return this.objectRedactor.redactCopyOnWrite(value as TraversableJson) as T;
+    return this.deps.objectRedactor.redactCopyOnWrite(value as TraversableJson) as T;
   }
 
-  /**
-   * Conditionally redacts fields in the JSON object in place based on the configuration provided in the constructor.
-   * If the value is a primitive, undefined, or date, returns the value as-is.
-   * @param value The JSON value to redact in place. If primitive it will be resolved as-is.
-   */
+  /** Conditionally redacts fields in the JSON object in place based on the configuration provided in the constructor. */
   public async redactInPlace<T extends RedactableInput>(value: T): Promise<void> {
-    if (!this.usesAsyncRedactor) {
+    if (!this.deps.usesAsyncRedactor) {
       this.redactInPlaceSync(value);
       return;
     }
 
-    await this.runTraversableRedactionAsync(value, async () => {
-      await this.objectRedactor.redactInPlace(value as TraversableJson);
-    });
+    await this.runTraversableRedaction(value, () => this.deps.objectRedactor.redactInPlace(value as TraversableJson));
   }
 
   /**
@@ -175,37 +158,30 @@ export class FieldRedactor {
    * Requires a `syncRedactor` or the default redactor; throws when only an async `redactor` is configured.
    */
   public redactInPlaceSync<T extends RedactableInput>(value: T): void {
-    if (this.usesAsyncRedactor) {
+    if (this.deps.usesAsyncRedactor) {
       throw new FieldRedactorError('redactInPlaceSync requires syncRedactor configuration or the default redactor');
     }
 
-    this.runTraversableRedactionSync(value, () => this.objectRedactor.redactInPlaceSync(value as TraversableJson));
+    this.runTraversableRedaction(value, () => this.deps.objectRedactor.redactInPlaceSync(value as TraversableJson));
   }
 
-  private runTraversableRedactionSync<T extends RedactableInput>(value: T, redact: () => void): void {
-    if (this.isPrimitiveOrUndefined(value)) {
-      return;
-    }
-
-    try {
-      redact();
-    } catch (e: unknown) {
-      throw this.toFieldRedactorError(e);
-    }
-  }
-
-  private async runTraversableRedactionAsync<T extends RedactableInput>(
+  private runTraversableRedaction<T extends RedactableInput>(
     value: T,
-    redact: () => Promise<void>
-  ): Promise<void> {
+    redact: () => unknown
+  ): void | Promise<void> {
     if (this.isPrimitiveOrUndefined(value)) {
       return;
     }
 
     try {
-      await redact();
-    } catch (e: unknown) {
-      throw this.toFieldRedactorError(e);
+      const result = redact();
+      if (result instanceof Promise) {
+        return result.catch((error: unknown) => {
+          throw this.toFieldRedactorError(error);
+        });
+      }
+    } catch (error: unknown) {
+      throw this.toFieldRedactorError(error);
     }
   }
 

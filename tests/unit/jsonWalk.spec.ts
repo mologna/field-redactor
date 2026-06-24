@@ -19,4 +19,11 @@ describe('jsonWalk path helpers', () => {
       leaf: 'value'
     });
   });
+
+  it('returns undefined for invalid path segments', () => {
+    expect(getJsonValueAtPath({ items: [] }, ['items', 'name'])).toBeUndefined();
+    expect(getJsonValueAtPath(null, ['name'])).toBeUndefined();
+    expect(getParentContext({ name: 'x' }, [])).toEqual({ parent: undefined, leaf: undefined });
+    expect(getParentContext('text', ['length'])).toEqual({ parent: undefined, leaf: 'length' });
+  });
 });

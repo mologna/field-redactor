@@ -26,21 +26,11 @@ import {
 
 import {
   applyCustomObjectArrayMatchType,
-  applyCustomObjectArrayMatchTypeAsync,
   applyCustomObjectObjectMatchType,
-  applyCustomObjectObjectMatchTypeAsync,
   applyCustomObjectPrimitiveMatchType,
-  applyCustomObjectPrimitiveMatchTypeAsync
+  awaitCustomObjectMatchType
 } from './objectRedactorCustomObject';
-
-type FieldDisposition =
-  | { action: 'default' }
-  | { action: 'skip' }
-  | { action: 'remove' }
-  | { action: 'opaque' }
-  | { action: 'deep' }
-  | { action: 'shallow' }
-  | { action: 'pass-key-recurse' };
+import { FieldDisposition, resolveFieldDisposition } from './fieldDisposition';
 
 /**
  * Unified JSON traversal for in-place and copy-on-write redaction.
@@ -88,34 +78,7 @@ export class ObjectRedactorTraversal {
     pathSegments: Array<string | number>,
     forceDeepRedaction: boolean
   ): FieldDisposition {
-    const fieldPath = [...pathSegments, key];
-    const pathRule = this.pathRuleMatcher.getMatchingRule(fieldPath);
-
-    if (pathRule?.mode === 'pass') {
-      return { action: 'skip' };
-    }
-
-    if (pathRule?.mode === 'remove') {
-      return { action: 'remove' };
-    }
-
-    if (pathRule?.mode === 'opaque') {
-      return { action: 'opaque' };
-    }
-
-    if (pathRule?.mode === 'deep') {
-      return { action: 'deep' };
-    }
-
-    if (pathRule?.mode === 'shallow') {
-      return { action: 'shallow' };
-    }
-
-    if (forceDeepRedaction && this.secretManager.isPassKey(key)) {
-      return { action: 'pass-key-recurse' };
-    }
-
-    return { action: 'default' };
+    return resolveFieldDisposition(this.secretManager, this.pathRuleMatcher, key, pathSegments, forceDeepRedaction);
   }
 
   private applyFieldDisposition(
@@ -756,17 +719,19 @@ export class ObjectRedactorTraversal {
       return;
     }
 
-    await applyCustomObjectArrayMatchTypeAsync(matchType, {
-      deleteKey: async () => container.remove(key),
-      redactFull: async () => container.set(key, await this.redactPrimitiveAsync(getStringValue(fieldValue))),
-      redactDeep: async () =>
-        container.set(key, await this.redactAllArrayValuesAsync(fieldValue, true, container.copyOnWrite, [])),
-      redactShallow: async () =>
-        container.set(key, await this.redactAllArrayValuesAsync(fieldValue, false, container.copyOnWrite, [])),
-      passThrough: async () => {
-        await this.redactArrayInObjectAsync(fieldValue, key, false, container, []);
-      }
-    });
+    await awaitCustomObjectMatchType(
+      applyCustomObjectArrayMatchType(matchType, {
+        deleteKey: async () => container.remove(key),
+        redactFull: async () => container.set(key, await this.redactPrimitiveAsync(getStringValue(fieldValue))),
+        redactDeep: async () =>
+          container.set(key, await this.redactAllArrayValuesAsync(fieldValue, true, container.copyOnWrite, [])),
+        redactShallow: async () =>
+          container.set(key, await this.redactAllArrayValuesAsync(fieldValue, false, container.copyOnWrite, [])),
+        passThrough: async () => {
+          await this.redactArrayInObjectAsync(fieldValue, key, false, container, []);
+        }
+      })
+    );
   }
 
   private async handleCustomObjectValueIfObjectAsync(
@@ -826,21 +791,23 @@ export class ObjectRedactorTraversal {
       return;
     }
 
-    await applyCustomObjectObjectMatchTypeAsync(matchType, {
-      deleteKey: async () => container.remove(key),
-      redactFull: async () => container.set(key, await this.redactPrimitiveAsync(getStringValue(fieldValue))),
-      redactDeep: async () => {
-        const child = createContainerMutation(fieldValue, container.copyOnWrite);
-        await this.redactSecretFieldsAsync(child, true, []);
-        container.set(key, child.result());
-      },
-      redactShallowOrPass: async () => {
-        const child = createContainerMutation(fieldValue, container.copyOnWrite);
-        await this.redactSecretFieldsAsync(child, false, []);
-        container.set(key, child.result());
-      },
-      ignore: async () => undefined
-    });
+    await awaitCustomObjectMatchType(
+      applyCustomObjectObjectMatchType(matchType, {
+        deleteKey: async () => container.remove(key),
+        redactFull: async () => container.set(key, await this.redactPrimitiveAsync(getStringValue(fieldValue))),
+        redactDeep: async () => {
+          const child = createContainerMutation(fieldValue, container.copyOnWrite);
+          await this.redactSecretFieldsAsync(child, true, []);
+          container.set(key, child.result());
+        },
+        redactShallowOrPass: async () => {
+          const child = createContainerMutation(fieldValue, container.copyOnWrite);
+          await this.redactSecretFieldsAsync(child, false, []);
+          container.set(key, child.result());
+        },
+        ignore: async () => undefined
+      })
+    );
   }
 
   private async handleCustomObjectValueIfPrimitiveAsync(
@@ -866,14 +833,16 @@ export class ObjectRedactorTraversal {
     key: string,
     matchValue: CustomObjectMatchType
   ): Promise<void> {
-    await applyCustomObjectPrimitiveMatchTypeAsync(matchValue, {
-      deleteKey: async () => container.remove(key),
-      redactFull: async () =>
-        container.set(key, await this.redactPrimitiveAsync(getStringValue(container.source[key]))),
-      redactScalar: async () =>
-        container.set(key, await this.redactPrimitiveAsync(container.source[key] as RedactablePrimitive)),
-      passThrough: async () => undefined
-    });
+    await awaitCustomObjectMatchType(
+      applyCustomObjectPrimitiveMatchType(matchValue, {
+        deleteKey: async () => container.remove(key),
+        redactFull: async () =>
+          container.set(key, await this.redactPrimitiveAsync(getStringValue(container.source[key]))),
+        redactScalar: async () =>
+          container.set(key, await this.redactPrimitiveAsync(container.source[key] as RedactablePrimitive)),
+        passThrough: async () => undefined
+      })
+    );
   }
 
   private async handleCustomObjectPrimitiveValueIfStringKeySpecifiedAsync(

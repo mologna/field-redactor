@@ -151,4 +151,24 @@ describe('NewSecretManager', () => {
 
     expect(new SecretManager({}).isPassKey('id')).toBe(false);
   });
+
+  it('classifies key rules by precedence and falls back to default shallow matching', () => {
+    const manager = new SecretManager({
+      secretKeys: [/shallow/],
+      deepSecretKeys: [/deep/],
+      fullSecretKeys: [/opaque/],
+      deleteSecretKeys: [/removed/]
+    });
+
+    expect(manager.classifyKeyRule('removed')).toBe('remove');
+    expect(manager.classifyKeyRule('opaque')).toBe('opaque');
+    expect(manager.classifyKeyRule('deep')).toBe('deep');
+    expect(manager.classifyKeyRule('shallow')).toBe('shallow');
+    expect(manager.classifyKeyRule('other')).toBe(null);
+    expect(manager.getKeyRulePattern('shallow', 'shallow')).toBeDefined();
+    expect(manager.getKeyRulePattern('other', 'shallow')).toBeUndefined();
+
+    const defaultManager = new SecretManager({});
+    expect(defaultManager.classifyKeyRule('anything')).toBe('default');
+  });
 });

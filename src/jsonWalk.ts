@@ -1,45 +1,6 @@
 import { isJsonObject, JsonArray, JsonObject, JsonValue } from './types';
 
-export const parseJsonPath = (path: string): Array<string | number> => {
-  if (!path) {
-    return [];
-  }
-
-  const segments: Array<string | number> = [];
-  let current = '';
-
-  for (let index = 0; index < path.length; index++) {
-    const char = path[index];
-
-    if (char === '.') {
-      if (current) {
-        segments.push(current);
-        current = '';
-      }
-      continue;
-    }
-
-    if (char === '[') {
-      if (current) {
-        segments.push(current);
-        current = '';
-      }
-
-      const close = path.indexOf(']', index);
-      segments.push(Number(path.slice(index + 1, close)));
-      index = close;
-      continue;
-    }
-
-    current += char;
-  }
-
-  if (current) {
-    segments.push(current);
-  }
-
-  return segments;
-};
+export { parseJsonPath } from './pathParsing';
 
 export const getJsonValueAtPath = (value: JsonValue | undefined, segments: Array<string | number>): JsonValue | undefined => {
   let current: JsonValue | undefined = value;
@@ -74,8 +35,7 @@ export const getParentContext = (
   }
 
   const leaf = segments.at(-1);
-  const parent =
-    segments.length === 1 ? value : getJsonValueAtPath(value, segments.slice(0, -1));
+  const parent = segments.length === 1 ? value : getJsonValueAtPath(value, segments.slice(0, -1));
 
   return isTraversableJson(parent) ? { parent, leaf } : { parent: undefined, leaf };
 };

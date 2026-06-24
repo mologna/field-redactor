@@ -9,9 +9,6 @@ export const PASS_KEY_FIELDS = ['passKeys'] as const;
 export const REGEX_ARRAY_CONFIG_FIELDS = [...SECRET_REGEX_FIELDS, ...VALUE_PATTERN_FIELDS, ...PASS_KEY_FIELDS] as const;
 
 export type SecretRegexField = (typeof SECRET_REGEX_FIELDS)[number];
-
-export type ValuePatternField = (typeof VALUE_PATTERN_FIELDS)[number];
-
 export type RegexArrayConfigField = (typeof REGEX_ARRAY_CONFIG_FIELDS)[number];
 
 export const RULE_LIST_FIELDS = [...REGEX_ARRAY_CONFIG_FIELDS, 'customObjects'] as const;
@@ -53,14 +50,6 @@ export const appendRegExpArray = <F extends RegexArrayConfigField>(
   patterns: RegExp[]
 ): void => {
   config[field] = [...(config[field] ?? []), ...patterns];
-};
-
-export const appendRegexToConfig = (
-  config: FieldRedactorConfig,
-  field: SecretRegexField,
-  patterns: RegExp[]
-): void => {
-  appendRegExpArray(config, field, patterns);
 };
 
 export type RegisteredSchema = { object: CustomObject; name?: string };

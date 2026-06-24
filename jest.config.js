@@ -8,7 +8,8 @@ module.exports = {
   coverageDirectory: './tmp/jest-coverage',
   coveragePathIgnorePatterns: [
     './node_modules/',
-    './tests/mocks/'
+    './tests/mocks/',
+    './tests/helpers/'
   ],
   collectCoverage: true,
   coverageThreshold: {

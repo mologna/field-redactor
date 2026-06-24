@@ -3,8 +3,10 @@ import { SecretManagerConfig, SecretSpecifierValue } from './types';
 
 type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
 
+const KEY_RULE_PRECEDENCE: KeyRule[] = ['remove', 'opaque', 'deep', 'shallow'];
+
 /**
- * Utility class for managing secrets and determining if a  given value is a secret of any type. If no secrets of
+ * Utility class for managing secrets and determining if a given value is a secret of any type. If no secrets of
  * any type are provided in the configuration then all values are considered secrets (but not deep or full secrets).
  */
 export class SecretManager {
@@ -30,47 +32,28 @@ export class SecretManager {
   /**
    * Determines if the given key is a secret. If no secrets of any type are provided then this function
    * always returns true.
-   * @param key The key to check.
-   * @returns True if the key is a secret key or no secret keys exist, otherwise false.
    */
   public isSecretKey(key: SecretSpecifierValue): boolean {
     if (!this.secretKeys) {
       return true;
     }
 
-    return SecretManager.matchesAnyRegex(key, this.secretKeys);
+    return this.matchesRule(key, 'shallow');
   }
 
-  /**
-   * Determines if a key is a deep secret based on the deepSecretKeys configuration provided in the constructor.
-   * @param key The key to check.
-   * @returns True if the key is a deep secret key, otherwise false.
-   */
   public isDeepSecretKey(key: SecretSpecifierValue): boolean {
-    return !!this.deepSecretKeys && SecretManager.matchesAnyRegex(key, this.deepSecretKeys);
+    return this.matchesRule(key, 'deep');
   }
 
-  /**
-   * Determines if a key is a full secret based on the fullSecretKeys configuration provided in the constructor.
-   * @param key The key to check.
-   * @returns True if the key is a full secret key, otherwise false.
-   */
   public isFullSecretKey(key: SecretSpecifierValue): boolean {
-    return !!this.fullSecretKeys && SecretManager.matchesAnyRegex(key, this.fullSecretKeys);
+    return this.matchesRule(key, 'opaque');
   }
 
-  /**
-   * Determines if a key is a delete secret based on the deleteSecretKeys configuration provided in the constructor.
-   * @param key The key to check.
-   * @returns True if the key is a delete secret key, otherwise false.
-   */
   public isDeleteSecretKey(key: SecretSpecifierValue): boolean {
-    return !!this.deleteSecretKeys && SecretManager.matchesAnyRegex(key, this.deleteSecretKeys);
+    return this.matchesRule(key, 'remove');
   }
 
-  /**
-   * Determines if a key is allowlisted and should not be redacted under deep or opaque parents.
-   */
+  /** Determines if a key is allowlisted and should not be redacted under deep parents. */
   public isPassKey(key: SecretSpecifierValue): boolean {
     return !!this.passKeys && SecretManager.matchesAnyRegex(key, this.passKeys);
   }
@@ -80,17 +63,11 @@ export class SecretManager {
     return match ? formatRegExp(match) : undefined;
   }
 
-  public classifyKeyRule(key: SecretSpecifierValue): 'remove' | 'opaque' | 'deep' | 'shallow' | 'default' | null {
-    if (this.isDeleteSecretKey(key)) {
-      return 'remove';
-    }
-
-    if (this.isFullSecretKey(key)) {
-      return 'opaque';
-    }
-
-    if (this.isDeepSecretKey(key)) {
-      return 'deep';
+  public classifyKeyRule(key: SecretSpecifierValue): KeyRule | 'default' | null {
+    for (const rule of KEY_RULE_PRECEDENCE) {
+      if (this.matchesRule(key, rule)) {
+        return rule;
+      }
     }
 
     if (this.isSecretKey(key)) {
@@ -98,6 +75,11 @@ export class SecretManager {
     }
 
     return null;
+  }
+
+  private matchesRule(key: SecretSpecifierValue, rule: KeyRule): boolean {
+    const regexes = this.regexListFor(rule);
+    return !!regexes && SecretManager.matchesAnyRegex(key, regexes);
   }
 
   private regexListFor(rule: KeyRule): RegExp[] | undefined {

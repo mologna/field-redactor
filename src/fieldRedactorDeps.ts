@@ -18,6 +18,9 @@ export type FieldRedactorDeps = {
   cloneInput: boolean;
 };
 
+const resolveBoolean = (value: boolean | undefined, defaultValue: boolean): boolean =>
+  typeof value === 'boolean' ? value : defaultValue;
+
 export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedactorDeps => {
   const {
     redactor,
@@ -31,14 +34,9 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     passKeys
   } = config ?? {};
 
-  const ignoreNullOrUndefined =
-    typeof config?.ignoreNullOrUndefined === 'boolean' ? config.ignoreNullOrUndefined : true;
-  const ignoreBooleans = typeof config?.ignoreBooleans === 'boolean' ? config.ignoreBooleans : false;
-  const cloneInput = config?.cloneInput !== false;
-
   const primitiveRedactor = new PrimitiveRedactor({
-    ignoreBooleans,
-    ignoreNullOrUndefined,
+    ignoreBooleans: resolveBoolean(config?.ignoreBooleans, false),
+    ignoreNullOrUndefined: resolveBoolean(config?.ignoreNullOrUndefined, true),
     redactor,
     syncRedactor
   });
@@ -69,6 +67,6 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     customObjectManager,
     objectRedactor,
     usesAsyncRedactor: primitiveRedactor.usesAsyncRedactor(),
-    cloneInput
+    cloneInput: config?.cloneInput !== false
   };
 };
