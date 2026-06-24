@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { CustomObject, CustomObjectMatchType, FieldRedactorConfig, FieldRedactor } from '../../src';
+import { CustomObject, CustomObjectMatchType, FieldRedactor, FieldRedactorConfig, JsonValue, Redactor } from '../../src';
 import { eventProcessingLogsMock, kafkaAdapterLogMock } from '../mocks/realExampleMocks';
 import {
   sha256HashedEmail,
@@ -16,8 +16,13 @@ import {
   sha256MhashedMockAuthKey
 } from '../mocks/cryptoMockValues';
 
-const mockRedactor: (value: any) => Promise<string> = (value: any) =>
-  Promise.resolve(crypto.createHash('sha256').update(value.toString()).digest('hex'));
+const mockRedactor: Redactor = (value) =>
+  Promise.resolve(crypto.createHash('sha256').update(String(value)).digest('hex'));
+
+type EventDataEntry = {
+  name: string;
+  value: JsonValue;
+};
 
 describe('Real Examples', () => {
   let fieldRedactor: FieldRedactor;
@@ -50,7 +55,7 @@ describe('Real Examples', () => {
     expect(result.appAuthKey).toBeUndefined();
 
     // test custom objects were redacted correctly
-    validateEventArrayData(result.eventData, eventProcessingLogsMock.eventData);
+    validateEventArrayData(result.eventData as EventDataEntry[], eventProcessingLogsMock.eventData as EventDataEntry[]);
   });
 
   it('Can correctly redact application logs from a real example - kafka adapter', async () => {
@@ -60,11 +65,11 @@ describe('Real Examples', () => {
     expect(result.event.appAuthKey).toBeUndefined();
 
     // test custom objects were redacted correctly
-    validateEventArrayData(result.event.data, kafkaAdapterLogMock.event.data);
+    validateEventArrayData(result.event.data as EventDataEntry[], kafkaAdapterLogMock.event.data as EventDataEntry[]);
   });
 
-  const validateEventArrayData = (data: any[], originalData: any[]) => {
-    data.forEach((value: any, index: number) => {
+  const validateEventArrayData = (data: EventDataEntry[], originalData: EventDataEntry[]) => {
+    data.forEach((value, index) => {
       if (value.name.localeCompare('firstName') === 0) {
         expect(value.value).not.toEqual(mockFirstName);
         expect(value.value).toEqual(sha256HashedFirstName);

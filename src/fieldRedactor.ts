@@ -1,5 +1,5 @@
 import rfdc from 'rfdc';
-import { FieldRedactorConfig } from './types';
+import { FieldRedactorConfig, JsonArray, JsonObject, RedactableInput, TraversableJson } from './types';
 import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
@@ -48,30 +48,31 @@ export class FieldRedactor {
    * @param value The JSON value to redact. If primitive it will be resolved as-is.
    * @returns The redacted JSON object.
    */
-  public async redact(value: any): Promise<any> {
-    const copy = this.deepCopy(value);
-    return this.redactInPlace(copy);
+  public async redact<T extends RedactableInput>(value: T): Promise<T> {
+    const copy = this.deepCopy(value) as T;
+    await this.redactInPlace(copy);
+    return copy;
   }
 
   /**
    * Conditionally redacts fields in the JSON object in place based on the configuration provided in the constructor.
    * If the value is a primitive, undefined, or date, returns the value as-is.
    * @param value The JSON value to redact in place. If primitive it will be resolved as-is.
-   * @returns The redacted JSON object.
    */
-  public async redactInPlace(value: any): Promise<void> {
+  public async redactInPlace<T extends RedactableInput>(value: T): Promise<void> {
     if (this.isPrimitiveOrUndefined(value)) {
-      return value;
+      return;
     }
 
     try {
-      return this.objectRedactor.redactInPlace(value);
-    } catch (e: any) {
-      throw new FieldRedactorError(e.message);
+      await this.objectRedactor.redactInPlace(value as TraversableJson);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      throw new FieldRedactorError(message);
     }
   }
 
-  private isPrimitiveOrUndefined(value: any) {
+  private isPrimitiveOrUndefined(value: RedactableInput): value is Exclude<RedactableInput, JsonObject | JsonArray> {
     return !value || typeof value !== 'object' || value instanceof Date;
   }
 }

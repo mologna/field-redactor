@@ -1,4 +1,4 @@
-import { PrimitiveRedactorConfig, Redactor } from './types';
+import { PrimitiveRedactorConfig, RedactablePrimitive, RedactedPrimitive, Redactor } from './types';
 
 /**
  * Redacts primitive values based on the configuration provided in the constructor. Uses the redactor
@@ -9,7 +9,7 @@ export class PrimitiveRedactor {
   private static DEFAULT_REDACTED_TEXT = 'REDACTED';
   private ignoreBooleans: boolean;
   private ignoreNullOrUndefined: boolean;
-  private redactor: Redactor = (val: any) => Promise.resolve(PrimitiveRedactor.DEFAULT_REDACTED_TEXT);
+  private redactor: Redactor = () => Promise.resolve(PrimitiveRedactor.DEFAULT_REDACTED_TEXT);
 
   /**
    * Creates a PrimitiveRedactor with the specified configuration.
@@ -29,11 +29,17 @@ export class PrimitiveRedactor {
    * @param value The value to redact.
    * @returns The redacted value.
    */
-  public async redactValue(value: any): Promise<any> {
+  public async redactValue(value: RedactablePrimitive): Promise<RedactedPrimitive> {
     if (typeof value === 'boolean') {
       return this.redactBoolean(value);
-    } else if (!value) {
+    }
+
+    if (value === null || value === undefined) {
       return this.redactNullOrUndefinedValue(value);
+    }
+
+    if (value === '' || value === 0) {
+      return this.ignoreNullOrUndefined ? value : this.redactor(value);
     }
 
     return this.redactAny(value);
@@ -51,7 +57,7 @@ export class PrimitiveRedactor {
     return this.ignoreBooleans ? Promise.resolve(value) : this.redactor(value);
   }
 
-  private async redactAny(value: any): Promise<string> {
+  private async redactAny(value: string | number): Promise<string> {
     return this.redactor(value);
   }
 }

@@ -120,18 +120,34 @@ describe('FieldRedactor', () => {
       expect(argument).toBe(input);
     });
 
-    it('Should throw an exception on invalid input', async () => {
+    it('Should leave primitive, undefined, date, or function input unchanged', async () => {
       const func = () => {};
       const date = new Date();
+      const nullValue = null;
+      const undefinedValue = undefined;
+      const num = 1;
+      const boolTrue = true;
+      const boolFalse = false;
+      const str = 'foo';
       const fieldRedactor = new FieldRedactor();
-      expect(await fieldRedactor.redactInPlace(undefined)).toBe(undefined);
-      expect(await fieldRedactor.redactInPlace(null)).toBe(null);
-      expect(await fieldRedactor.redactInPlace(1)).toBe(1);
-      expect(await fieldRedactor.redactInPlace(true)).toBe(true);
-      expect(await fieldRedactor.redactInPlace(false)).toBe(false);
-      expect(await fieldRedactor.redactInPlace(date)).toBe(date);
-      expect(await fieldRedactor.redactInPlace(func)).toBe(func);
-      expect(await fieldRedactor.redactInPlace('foo')).toBe('foo');
+
+      await fieldRedactor.redactInPlace(undefinedValue);
+      await fieldRedactor.redactInPlace(nullValue);
+      await fieldRedactor.redactInPlace(num);
+      await fieldRedactor.redactInPlace(boolTrue);
+      await fieldRedactor.redactInPlace(boolFalse);
+      await fieldRedactor.redactInPlace(date);
+      await fieldRedactor.redactInPlace(func);
+      await fieldRedactor.redactInPlace(str);
+
+      expect(undefinedValue).toBe(undefined);
+      expect(nullValue).toBe(null);
+      expect(num).toBe(1);
+      expect(boolTrue).toBe(true);
+      expect(boolFalse).toBe(false);
+      expect(date).toEqual(date);
+      expect(func).toBe(func);
+      expect(str).toBe('foo');
     });
 
     it('Should wrap any thrown exceptions in a FieldRedactorError', async () => {

@@ -2,7 +2,7 @@ import rfdc from 'rfdc';
 import * as crypto from 'crypto';
 import { SecretManager } from '../../src/secretManager';
 import { validInputWithAllTypes, validNestedInputWithAllTypes } from '../mocks/inputMocks';
-import { CustomObject, CustomObjectMatchType, Redactor } from '../../src/types';
+import { CustomObject, CustomObjectMatchType, JsonObject, Redactor } from '../../src/types';
 import { ObjectRedactor } from '../../src/objectRedactor';
 import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { CustomObjectManager } from '../../src/customObjectManager';
@@ -228,10 +228,18 @@ describe('ObjectRedactor', () => {
       const input = { testObject };
       const result = await basicObjectRedactor.redactInPlace(input);
       expect(result.testObject.foo.length).toBe(testObject.foo.length);
-      expect(result.testObject.foo[0].bar).toBe(DEFAULT_REDACTED_TEXT);
-      expect(result.testObject.foo[0].password).toBe(DEFAULT_REDACTED_TEXT);
-      expect(result.testObject.foo[1].bar).toBe(DEFAULT_REDACTED_TEXT);
-      expect(result.testObject.foo[1].password).toBe(DEFAULT_REDACTED_TEXT);
+      expect(result.testObject.foo[0] as JsonObject).toEqual(
+        expect.objectContaining({
+          bar: DEFAULT_REDACTED_TEXT,
+          password: DEFAULT_REDACTED_TEXT
+        })
+      );
+      expect(result.testObject.foo[1] as JsonObject).toEqual(
+        expect.objectContaining({
+          bar: DEFAULT_REDACTED_TEXT,
+          password: DEFAULT_REDACTED_TEXT
+        })
+      );
       expect(result.testObject.foo[2]).toBe(DEFAULT_REDACTED_TEXT);
       expect(result.testObject.bar).toBe(DEFAULT_REDACTED_TEXT);
     });

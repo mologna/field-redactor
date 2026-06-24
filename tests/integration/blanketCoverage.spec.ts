@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { FieldRedactor, CustomObject, CustomObjectMatchType, Redactor } from '../../src';
+import { FieldRedactor, CustomObject, CustomObjectMatchType, JsonArray, JsonObject, Redactor } from '../../src';
 import {
   mockClientName,
   mockEmail,
@@ -210,7 +210,7 @@ const blanketDataToRedact = {
 
 const NULL_OR_UNDEFINED_TEXT = 'REDACTED_NULL_OR_UNDEFINED';
 
-const redactor: Redactor = (val: any) => {
+const redactor: Redactor = (val) => {
   if (val === null || val === undefined) {
     return Promise.resolve(NULL_OR_UNDEFINED_TEXT);
   }
@@ -230,7 +230,7 @@ describe('Blanket Coverage Integration Tests', () => {
       ignoreBooleans: false
     });
 
-    const result = await fieldRedactor.redact(blanketDataToRedact);
+    const result = await fieldRedactor.redact(blanketDataToRedact) as typeof blanketDataToRedact;
 
     // non-secrets should not be redacted
     expect(result['@timestamp']).toBe(blanketDataToRedact['@timestamp']);
@@ -242,10 +242,10 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.trueBooleanKey).toBe(sha256HashedTrue);
     expect(result.falseBooleanKey).toBe(sha256HashedFalse);
     expect(result.deepRedactMe[0]).toBe(sha256HashedEmail);
-    expect(result.deepRedactMe[1].a).toBe(sha256HashedEmail);
-    expect(result.deepRedactMe[2].key).toBe('dontRedactMe');
-    expect(result.deepRedactMe[2].value).toBe(mockEmail);
-    expect(result.deepRedactMe[3][0]).toBe(sha256HashedEmail);
+    expect((result.deepRedactMe[1] as JsonObject).a).toBe(sha256HashedEmail);
+    expect((result.deepRedactMe[2] as JsonObject).key).toBe('dontRedactMe');
+    expect((result.deepRedactMe[2] as JsonObject).value).toBe(mockEmail);
+    expect((result.deepRedactMe[3] as JsonArray)[0]).toBe(sha256HashedEmail);
 
     // secrets should be redacted
     expect(result.clientName).toBe(sha256HashedMockClientName);
@@ -256,7 +256,7 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.user.a).toBe(sha256HashedFirstName);
     expect(result.user.b).toBe(sha256HashedLastName);
     expect(result.user.c[0]).toBe(sha256HashedFirstName);
-    expect(result.user.c[1].b).toBe(sha256HashedLastName);
+    expect((result.user.c[1] as JsonObject).b).toBe(sha256HashedLastName);
     expect(result.user.d.first).toBe(sha256HashedFirstName);
     expect(result.user.d.last).toBe(sha256HashedLastName);
     expect(result.user.d.full[0]).toBe(sha256HashedFirstName);

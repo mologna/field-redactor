@@ -1,5 +1,5 @@
 import { FieldRedactorConfigurationError } from './errors';
-import { CustomObject } from './types';
+import { CustomObject, JsonObject } from './types';
 
 /**
  * Utility for determining if a given object matches a CustomObject schema.
@@ -24,7 +24,7 @@ export class CustomObjectManager {
    * @param value The value to compare against the custom objects.
    * @returns The most specific matching custom object, otherwise undefined.
    */
-  public getMatchingCustomObject(value: any): CustomObject | undefined {
+  public getMatchingCustomObject(value: unknown): CustomObject | undefined {
     let bestMatch: CustomObject | undefined;
     let bestMatchKeyCount = -1;
 
@@ -41,7 +41,7 @@ export class CustomObjectManager {
     return bestMatch;
   }
 
-  private isCustomObject(value: any, customObject: CustomObject): boolean {
+  private isCustomObject(value: unknown, customObject: CustomObject): value is JsonObject {
     if (typeof value !== 'object' || !value || Array.isArray(value)) {
       return false;
     }

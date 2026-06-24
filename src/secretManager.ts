@@ -1,4 +1,4 @@
-import { SecretManagerConfig } from './types';
+import { SecretManagerConfig, SecretSpecifierValue } from './types';
 
 /**
  * Utility class for managing secrets and determining if a  given value is a secret of any type. If no secrets of
@@ -28,7 +28,7 @@ export class SecretManager {
    * @param key The key to check.
    * @returns True if the key is a secret key or no secret keys exist, otherwise false.
    */
-  public isSecretKey(key: string): boolean {
+  public isSecretKey(key: SecretSpecifierValue): boolean {
     if (!this.secretKeys) {
       return true;
     }
@@ -41,7 +41,7 @@ export class SecretManager {
    * @param key The key to check.
    * @returns True if the key is a deep secret key, otherwise false.
    */
-  public isDeepSecretKey(key: string): boolean {
+  public isDeepSecretKey(key: SecretSpecifierValue): boolean {
     if (!this.deepSecretKeys) {
       return false;
     }
@@ -54,7 +54,7 @@ export class SecretManager {
    * @param key The key to check.
    * @returns True if the key is a full secret key, otherwise false.
    */
-  public isFullSecretKey(key: string): boolean {
+  public isFullSecretKey(key: SecretSpecifierValue): boolean {
     if (!this.fullSecretKeys) {
       return false;
     }
@@ -67,7 +67,7 @@ export class SecretManager {
    * @param key The key to check.
    * @returns True if the key is a delete secret key, otherwise false.
    */
-  public isDeleteSecretKey(key: string): boolean {
+  public isDeleteSecretKey(key: SecretSpecifierValue): boolean {
     if (!this.deleteSecretKeys) {
       return false;
     }
@@ -75,7 +75,7 @@ export class SecretManager {
     return SecretManager.valueMatchesAnyRegexValue(key, this.deleteSecretKeys);
   }
 
-  private static valueMatchesAnyRegexValue(value: string, regexes: RegExp[]): boolean {
-    return regexes.some((regex) => regex.test(value));
+  private static valueMatchesAnyRegexValue(value: SecretSpecifierValue, regexes: RegExp[]): boolean {
+    return regexes.some((regex) => regex.test(String(value)));
   }
 }

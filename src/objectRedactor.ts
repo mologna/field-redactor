@@ -1,4 +1,16 @@
-import { CustomObject, CustomObjectMatchType } from './types';
+import {
+  CustomObject,
+  CustomObjectMatchType,
+  isJsonObject,
+  JsonArray,
+  JsonLeafValue,
+  JsonObject,
+  JsonRecord,
+  JsonValue,
+  RedactablePrimitive,
+  SecretSpecifierValue,
+  TraversableJson
+} from './types';
 import { SecretManager } from './secretManager';
 import { CustomObjectManager } from './customObjectManager';
 import { PrimitiveRedactor } from './primitiveRedactor';
@@ -22,10 +34,10 @@ export class ObjectRedactor {
    * @param value The JSON value to redact in place.
    * @returns The JSON value provided in the argument.
    */
-  public async redactInPlace(value: any): Promise<any> {
+  public async redactInPlace<T extends TraversableJson>(value: T): Promise<T> {
     const customObject = this.customObjManager.getMatchingCustomObject(value);
     if (customObject) {
-      await this.handleCustomObjectInPlace(value, customObject);
+      await this.handleCustomObjectInPlace(value as JsonObject, customObject);
     } else {
       await this.redactSecretObjectFieldsInPlace(value);
     }
@@ -33,42 +45,46 @@ export class ObjectRedactor {
     return value;
   }
 
-  private async redactSecretObjectFieldsInPlace(object: any, forceDeepRedaction: boolean = false): Promise<void> {
-    for (const key of Object.keys(object)) {
-      const value: any = object[key];
-      const customObject = this.customObjManager.getMatchingCustomObject(value);
-      if (customObject) {
+  private async redactSecretObjectFieldsInPlace(
+    object: JsonObject | JsonArray,
+    forceDeepRedaction: boolean = false
+  ): Promise<void> {
+    const record = object as JsonRecord;
+
+    for (const key of Object.keys(record)) {
+      const value = record[key];
+      const customObject = isJsonObject(value) ? this.customObjManager.getMatchingCustomObject(value) : undefined;
+      if (customObject && isJsonObject(value)) {
         await this.handleCustomObjectInPlace(value, customObject);
       } else if (this.secretManager.isDeleteSecretKey(key)) {
-        delete object[key];
+        delete record[key];
       } else if (this.secretManager.isFullSecretKey(key)) {
-        object[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value));
-      } else if (Array.isArray(object[key])) {
-        object[key] = await this.redactArrayInObject(value, key, forceDeepRedaction);
-      } else if (this.isObject(object[key])) {
-        await this.redactObjectInObject(object[key], key, forceDeepRedaction);
+        record[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value));
+      } else if (Array.isArray(value)) {
+        record[key] = await this.redactArrayInObject(value, key, forceDeepRedaction);
+      } else if (isJsonObject(value)) {
+        await this.redactObjectInObject(value, key, forceDeepRedaction);
       } else {
-        object[key] = await this.redactPrimitiveValueIfSecret(key, value, forceDeepRedaction);
+        record[key] = await this.redactPrimitiveValueIfSecret(key, value, forceDeepRedaction);
       }
     }
   }
 
-  private async redactArrayInObject(array: any[], key: string, forceDeepRedaction: boolean): Promise<any> {
+  private async redactArrayInObject(array: JsonArray, key: string, forceDeepRedaction: boolean): Promise<JsonArray> {
     const deepSecretKey = this.secretManager.isDeepSecretKey(key);
     if (this.secretManager.isSecretKey(key) || deepSecretKey || forceDeepRedaction) {
       return this.redactAllArrayValues(array, forceDeepRedaction || deepSecretKey);
-    } else {
-      return await this.redactObjectsInArray(array);
     }
+
+    return this.redactObjectsInArray(array);
   }
 
-  private async redactObjectsInArray(array: any[]): Promise<any[]> {
-    const promises: Promise<any>[] = array.map(async (value: any) => {
-      if (this.isObject(value)) {
+  private async redactObjectsInArray(array: JsonArray): Promise<JsonArray> {
+    const promises = array.map(async (value) => {
+      if (isJsonObject(value)) {
         const customObject = this.customObjManager.getMatchingCustomObject(value);
         if (customObject) {
           await this.handleCustomObjectInPlace(value, customObject);
-          return value;
         } else {
           await this.redactSecretObjectFieldsInPlace(value, false);
         }
@@ -80,42 +96,46 @@ export class ObjectRedactor {
     return Promise.all(promises);
   }
 
-  private async redactAllArrayValues(array: any[], forceDeepRedaction: boolean): Promise<any[]> {
-    const promises: Promise<any>[] = array.map(async (value: any) => {
+  private async redactAllArrayValues(array: JsonArray, forceDeepRedaction: boolean): Promise<JsonArray> {
+    const promises = array.map(async (value) => {
       if (Array.isArray(value)) {
         return this.redactAllArrayValues(value, forceDeepRedaction);
-      } else if (!this.isObject(value)) {
-        return this.primitiveRedactor.redactValue(value);
-      } else {
-        const customObject = this.customObjManager.getMatchingCustomObject(value);
-        if (customObject) {
-          await this.handleCustomObjectInPlace(value, customObject);
-          return Promise.resolve(value);
-        } else {
-          await this.redactSecretObjectFieldsInPlace(value, forceDeepRedaction);
-          return Promise.resolve(value);
-        }
       }
+
+      if (!isJsonObject(value)) {
+        return this.primitiveRedactor.redactValue(this.toRedactablePrimitive(value));
+      }
+
+      const customObject = this.customObjManager.getMatchingCustomObject(value);
+      if (customObject) {
+        await this.handleCustomObjectInPlace(value, customObject);
+      } else {
+        await this.redactSecretObjectFieldsInPlace(value, forceDeepRedaction);
+      }
+
+      return value;
     });
 
     return Promise.all(promises);
   }
 
-  private async redactObjectInObject(value: any, key: string, forceDeepRedaction: boolean) {
+  private async redactObjectInObject(value: JsonObject, key: string, forceDeepRedaction: boolean): Promise<void> {
     const customObject = this.customObjManager.getMatchingCustomObject(value);
     if (customObject) {
       await this.handleCustomObjectInPlace(value, customObject);
-    } else {
-      const secretObject = forceDeepRedaction || this.secretManager.isDeepSecretKey(key);
-      await this.redactSecretObjectFieldsInPlace(value, secretObject);
+      return;
     }
+
+    const secretObject = forceDeepRedaction || this.secretManager.isDeepSecretKey(key);
+    await this.redactSecretObjectFieldsInPlace(value, secretObject);
   }
 
-  private async handleCustomObjectInPlace(value: any, customObject: CustomObject): Promise<void> {
+  private async handleCustomObjectInPlace(value: JsonObject, customObject: CustomObject): Promise<void> {
     for (const key of Object.keys(customObject)) {
-      if (Array.isArray(value[key])) {
+      const fieldValue = value[key];
+      if (Array.isArray(fieldValue)) {
         await this.handleCustomObjectValueIfArray(value, key, customObject);
-      } else if (this.isObject(value[key])) {
+      } else if (isJsonObject(fieldValue)) {
         await this.handlecustomObjectValueIfObject(value, key, customObject);
       } else {
         await this.handleCustomObjectValueIfPrimitive(value, customObject, key);
@@ -123,7 +143,7 @@ export class ObjectRedactor {
     }
   }
 
-  private async handleCustomObjectValueIfArray(value: any, key: string, customObject: CustomObject) {
+  private async handleCustomObjectValueIfArray(value: JsonObject, key: string, customObject: CustomObject) {
     const stringKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
     if (stringKey !== undefined) {
       await this.handleCustomObjectArrayValueIfStringKeySpecified(value, key, stringKey);
@@ -137,10 +157,10 @@ export class ObjectRedactor {
   }
 
   private getStringSpecifiedCustomObjectSecretKeyValueIfExists(
-    value: any,
+    value: JsonObject,
     customObject: CustomObject,
     key: string
-  ): any | undefined {
+  ): SecretSpecifierValue | undefined {
     // Returns the sibling key's value when the sibling key is present, including falsy values.
     const siblingKeyName = customObject[key];
     if (typeof siblingKeyName !== 'string') {
@@ -151,48 +171,71 @@ export class ObjectRedactor {
       return undefined;
     }
 
-    return value[siblingKeyName];
+    const siblingValue = value[siblingKeyName];
+    if (
+      typeof siblingValue === 'string' ||
+      typeof siblingValue === 'number' ||
+      typeof siblingValue === 'boolean'
+    ) {
+      return siblingValue;
+    }
+
+    return undefined;
   }
 
-  private async handleCustomObjectArrayValueIfStringKeySpecified(value: any, key: string, stringKey: any) {
+  private async handleCustomObjectArrayValueIfStringKeySpecified(
+    value: JsonObject,
+    key: string,
+    stringKey: SecretSpecifierValue
+  ) {
+    const fieldValue = value[key];
+    if (!Array.isArray(fieldValue)) {
+      return;
+    }
+
     if (this.secretManager.isDeleteSecretKey(stringKey)) {
       delete value[key];
     } else if (this.secretManager.isFullSecretKey(stringKey)) {
-      value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
+      value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(fieldValue));
     } else {
       const isDeepSecretKey = this.secretManager.isDeepSecretKey(stringKey);
       if (isDeepSecretKey || this.secretManager.isSecretKey(stringKey)) {
-        value[key] = await this.redactAllArrayValues(value[key], isDeepSecretKey);
+        value[key] = await this.redactAllArrayValues(fieldValue, isDeepSecretKey);
       }
     }
   }
 
   private async handleCustomObjectArrayValueIfMatchTypeSpecified(
-    value: any,
+    value: JsonObject,
     key: string,
     matchType: CustomObjectMatchType
   ) {
+    const fieldValue = value[key];
+    if (!Array.isArray(fieldValue)) {
+      return;
+    }
+
     switch (matchType) {
       case CustomObjectMatchType.Delete:
         delete value[key];
-        return Promise.resolve();
+        return;
       case CustomObjectMatchType.Full:
-        value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
-        return Promise.resolve();
+        value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(fieldValue));
+        return;
       case CustomObjectMatchType.Deep:
-        value[key] = await this.redactAllArrayValues(value[key], true);
-        return Promise.resolve();
+        value[key] = await this.redactAllArrayValues(fieldValue, true);
+        return;
       case CustomObjectMatchType.Shallow:
-        value[key] = await this.redactAllArrayValues(value[key], false);
-        return Promise.resolve();
+        value[key] = await this.redactAllArrayValues(fieldValue, false);
+        return;
       case CustomObjectMatchType.Pass:
-        value[key] = await this.redactArrayInObject(value[key], key, false);
+        value[key] = await this.redactArrayInObject(fieldValue, key, false);
       default:
-        return Promise.resolve();
+        return;
     }
   }
 
-  private async handlecustomObjectValueIfObject(value: any, key: string, customObject: CustomObject): Promise<void> {
+  private async handlecustomObjectValueIfObject(value: JsonObject, key: string, customObject: CustomObject): Promise<void> {
     const stringKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
     if (stringKey !== undefined) {
       await this.handleCustomObjectObjectValueIfStringKeySpecified(value, key, stringKey);
@@ -205,60 +248,76 @@ export class ObjectRedactor {
     }
   }
 
-  private async handleCustomObjectObjectValueIfStringKeySpecified(value: any, key: string, stringKey: any) {
-    const customObject = this.customObjManager.getMatchingCustomObject(value[key]);
+  private async handleCustomObjectObjectValueIfStringKeySpecified(
+    value: JsonObject,
+    key: string,
+    stringKey: SecretSpecifierValue
+  ) {
+    const fieldValue = value[key];
+    if (!isJsonObject(fieldValue)) {
+      return;
+    }
+
+    const customObject = this.customObjManager.getMatchingCustomObject(fieldValue);
     if (customObject) {
-      await this.handleCustomObjectInPlace(value[key], customObject);
+      await this.handleCustomObjectInPlace(fieldValue, customObject);
     } else if (this.secretManager.isDeleteSecretKey(stringKey)) {
       delete value[key];
     } else if (this.secretManager.isFullSecretKey(stringKey)) {
-      value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
+      value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(fieldValue));
     } else if (this.secretManager.isDeepSecretKey(stringKey)) {
-      await this.redactSecretObjectFieldsInPlace(value[key], true);
+      await this.redactSecretObjectFieldsInPlace(fieldValue, true);
     } else if (this.secretManager.isSecretKey(stringKey)) {
-      await this.redactSecretObjectFieldsInPlace(value[key], false);
+      await this.redactSecretObjectFieldsInPlace(fieldValue, false);
     }
   }
 
   private async handleCustomObjectOjectValueIfMatchTypeSpecified(
-    value: any,
+    value: JsonObject,
     key: string,
     matchType: CustomObjectMatchType
   ) {
+    const fieldValue = value[key];
+    if (!isJsonObject(fieldValue)) {
+      return;
+    }
+
     switch (matchType) {
       case CustomObjectMatchType.Delete:
         delete value[key];
-        return Promise.resolve();
+        return;
       case CustomObjectMatchType.Full:
-        value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(value[key]));
-        return Promise.resolve();
+        value[key] = await this.primitiveRedactor.redactValue(this.getStringValue(fieldValue));
+        return;
       case CustomObjectMatchType.Deep:
-        return this.redactSecretObjectFieldsInPlace(value[key], true);
+        await this.redactSecretObjectFieldsInPlace(fieldValue, true);
+        return;
       case CustomObjectMatchType.Shallow:
       case CustomObjectMatchType.Pass:
-        return this.redactSecretObjectFieldsInPlace(value[key], false);
+        await this.redactSecretObjectFieldsInPlace(fieldValue, false);
+        return;
       case CustomObjectMatchType.Ignore:
-        return Promise.resolve();
+        return;
     }
   }
 
-  private async handleCustomObjectValueIfPrimitive(value: any, customObject: CustomObject, key: string) {
+  private async handleCustomObjectValueIfPrimitive(value: JsonObject, customObject: CustomObject, key: string) {
     if (typeof customObject[key] === 'number') {
       return this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(value, key, customObject[key]);
-    } else {
-      const secretKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
-      if (secretKey === undefined) {
-        return;
-      }
-
-      await this.handleCustomObjectPrimitiveValueIfStringKeySpecified(value, secretKey, key);
     }
+
+    const secretKey = this.getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
+    if (secretKey === undefined) {
+      return;
+    }
+
+    await this.handleCustomObjectPrimitiveValueIfStringKeySpecified(value, secretKey, key);
   }
 
   private async handleCustomObjectPrimitiveValueIfMatchTypeSpecified(
-    value: any,
+    value: JsonObject,
     key: string,
-    matchValue: CustomObjectMatchType | boolean
+    matchValue: CustomObjectMatchType
   ): Promise<void> {
     switch (matchValue) {
       case CustomObjectMatchType.Delete:
@@ -269,43 +328,72 @@ export class ObjectRedactor {
         return;
       case CustomObjectMatchType.Deep:
       case CustomObjectMatchType.Shallow:
-        value[key] = await this.primitiveRedactor.redactValue(value[key]);
+        value[key] = await this.primitiveRedactor.redactValue(value[key] as RedactablePrimitive);
         return;
       case CustomObjectMatchType.Pass:
       default:
-        return Promise.resolve();
+        return;
     }
   }
 
-  private async handleCustomObjectPrimitiveValueIfStringKeySpecified(value: any, secretKey: any, key: string) {
+  private async handleCustomObjectPrimitiveValueIfStringKeySpecified(
+    value: JsonObject,
+    secretKey: SecretSpecifierValue,
+    key: string
+  ) {
     if (this.secretManager.isDeleteSecretKey(secretKey)) {
       delete value[key];
     } else {
-      value[key] = await this.redactPrimitiveValueIfSecret(secretKey, value[key], false);
+      value[key] = await this.redactPrimitiveValueIfSecret(secretKey, value[key] as RedactablePrimitive, false);
     }
   }
 
-  private getStringValue(val: any) {
-    if (this.isObject(val) || Array.isArray(val)) {
+  private toRedactablePrimitive(value: JsonLeafValue | undefined): RedactablePrimitive {
+    if (value instanceof Date || typeof value === 'function') {
+      return this.getStringValue(value);
+    }
+
+    return value;
+  }
+
+  private getStringValue(val: JsonValue | undefined): RedactablePrimitive {
+    if (isJsonObject(val) || Array.isArray(val)) {
       return JSON.stringify(val);
-    } else if (val === null || val === undefined) {
-      return val;
-    } else {
+    }
+
+    if (val instanceof Date || typeof val === 'function') {
       return val.toString();
     }
+
+    return val;
   }
 
-  private isObject(value: any) {
-    return !!value && typeof value === 'object' && !(value instanceof Date) && !Array.isArray(value);
-  }
+  private async redactPrimitiveValueIfSecret(
+    key: SecretSpecifierValue,
+    value: JsonLeafValue | undefined,
+    forceDeepRedaction: boolean
+  ): Promise<JsonValue | undefined> {
+    if (value instanceof Date || typeof value === 'function') {
+      if (
+        this.secretManager.isFullSecretKey(key) ||
+        forceDeepRedaction ||
+        this.secretManager.isSecretKey(key) ||
+        this.secretManager.isDeepSecretKey(key)
+      ) {
+        return this.primitiveRedactor.redactValue(this.getStringValue(value));
+      }
 
-  private async redactPrimitiveValueIfSecret(key: string, value: any, forceDeepRedaction: boolean): Promise<any> {
-    if (this.secretManager.isFullSecretKey(key)) {
-      return this.primitiveRedactor.redactValue(this.getStringValue(value));
-    } else if (forceDeepRedaction || this.secretManager.isSecretKey(key) || this.secretManager.isDeepSecretKey(key)) {
-      return this.primitiveRedactor.redactValue(value);
-    } else {
       return value;
     }
+
+    if (this.secretManager.isFullSecretKey(key)) {
+      return this.primitiveRedactor.redactValue(this.getStringValue(value));
+    }
+
+    if (forceDeepRedaction || this.secretManager.isSecretKey(key) || this.secretManager.isDeepSecretKey(key)) {
+      return this.primitiveRedactor.redactValue(value);
+    }
+
+    return value;
   }
 }
