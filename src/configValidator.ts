@@ -1,5 +1,5 @@
 import { FieldRedactorConfigurationError } from './errors';
-import { hasExplicitRedactionRules, SECRET_REGEX_FIELDS } from './redactionRules';
+import { hasExplicitRedactionRules, SECRET_REGEX_FIELDS, VALUE_PATTERN_FIELDS } from './redactionRules';
 import { CustomObject, FieldRedactorConfig } from './types';
 
 export { hasExplicitRedactionRules };
@@ -26,11 +26,13 @@ export const assertNoIdenticalCustomObjectSchemas = (customObjects?: CustomObjec
   }
 };
 
+const REGEX_CONFIG_FIELDS = [...SECRET_REGEX_FIELDS, ...VALUE_PATTERN_FIELDS] as const;
+
 const collectRegexWarnings = (config: FieldRedactorConfig): string[] => {
   const warnings: string[] = [];
   const seen = new Map<string, string>();
 
-  for (const field of SECRET_REGEX_FIELDS) {
+  for (const field of REGEX_CONFIG_FIELDS) {
     const regexes = config[field];
     if (!regexes) {
       continue;

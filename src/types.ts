@@ -81,8 +81,17 @@ export type SecretManagerConfig = {
   deleteSecretKeys?: RegExp[];
 };
 
+export type ValuePatternConfig = {
+  /**
+   * Opt-in value-pattern redaction: redact scalar fields whose **string form** matches a pattern,
+   * regardless of key name. Lowest precedence — runs only when key-based rules leave the value unchanged.
+   */
+  valuePatterns?: RegExp[];
+};
+
 export type FieldRedactorConfig = Partial<PrimitiveRedactorConfig> &
-  SecretManagerConfig & {
+  SecretManagerConfig &
+  ValuePatternConfig & {
     redactor?: Redactor;
     syncRedactor?: SyncRedactor;
     /** Schema rules for shaped objects (`customObjects`). */
@@ -112,7 +121,7 @@ export type MatchedSchemaReport = {
   schemaName?: string;
 };
 
-export type RedactionRuleLabel = 'schema' | 'opaque' | 'deep' | 'remove' | 'shallow' | 'default';
+export type RedactionRuleLabel = 'schema' | 'opaque' | 'deep' | 'remove' | 'shallow' | 'value' | 'default';
 
 export type DryRunPathRule = {
   path: string;

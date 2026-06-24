@@ -14,6 +14,7 @@ import {
 import { SecretManager } from './secretManager';
 import { CustomObjectManager } from './customObjectManager';
 import { PrimitiveRedactor } from './primitiveRedactor';
+import { ValuePatternMatcher } from './valuePatternMatcher';
 import {
   getStringSpecifiedCustomObjectSecretKeyValueIfExists,
   getStringValue,
@@ -34,9 +35,15 @@ export class ObjectRedactor {
   constructor(
     private readonly primitiveRedactor: PrimitiveRedactor,
     private readonly secretManager: SecretManager,
-    private readonly customObjManager: CustomObjectManager
+    private readonly customObjManager: CustomObjectManager,
+    private readonly valuePatternMatcher: ValuePatternMatcher
   ) {
-    this.syncTraversal = new ObjectRedactorSyncTraversal(primitiveRedactor, secretManager, customObjManager);
+    this.syncTraversal = new ObjectRedactorSyncTraversal(
+      primitiveRedactor,
+      secretManager,
+      customObjManager,
+      valuePatternMatcher
+    );
   }
 
   /**
@@ -352,6 +359,7 @@ export class ObjectRedactor {
   ): Promise<JsonValue | undefined> {
     return redactPrimitiveValueIfSecret(
       this.secretManager,
+      this.valuePatternMatcher,
       (primitive) => this.redactPrimitive(primitive),
       key,
       value,

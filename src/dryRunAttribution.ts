@@ -1,10 +1,12 @@
 import { CustomObjectManager } from './customObjectManager';
 import { getStringSpecifiedCustomObjectSecretKeyValueIfExists } from './objectRedactorHelpers';
-import { getParentContext, parseJsonPath } from './jsonWalk';
+import { getParentContext, getJsonValueAtPath, parseJsonPath } from './jsonWalk';
 import { SecretManager } from './secretManager';
-import { DryRunPathRule, isJsonObject, JsonObject, JsonValue, RedactionRuleLabel, SecretSpecifierValue } from './types';
+import { ValuePatternMatcher } from './valuePatternMatcher';
+import { DryRunPathRule, isJsonObject, JsonLeafValue, JsonObject, JsonValue, RedactionRuleLabel, SecretSpecifierValue } from './types';
+import { toRedactablePrimitive } from './objectRedactorHelpers';
 
-type KeyRule = Exclude<RedactionRuleLabel, 'schema' | 'default'>;
+type KeyRule = Exclude<RedactionRuleLabel, 'schema' | 'default' | 'value'>;
 
 const objectKeysFromPath = (segments: Array<string | number>): string[] =>
   segments.filter((segment): segment is string => typeof segment === 'string');
@@ -77,12 +79,32 @@ const findEnclosingOpaqueOrDeep = (
   return undefined;
 };
 
+const attributeValuePatternRule = (
+  path: string,
+  before: JsonValue | undefined,
+  segments: Array<string | number>,
+  matcher: ValuePatternMatcher
+): DryRunPathRule | undefined => {
+  const value = getJsonValueAtPath(before, segments);
+  if (value === undefined || (typeof value !== 'string' && typeof value !== 'number')) {
+    return undefined;
+  }
+
+  const match = matcher.findMatching(toRedactablePrimitive(value as JsonLeafValue));
+  if (!match) {
+    return undefined;
+  }
+
+  return toPathRule(path, 'redact', 'value', { pattern: matcher.formatPattern(match) });
+};
+
 export const attributePathRule = (
   before: JsonValue | undefined,
   path: string,
   action: DryRunPathRule['action'],
   secretManager: SecretManager,
-  manager: CustomObjectManager
+  manager: CustomObjectManager,
+  valuePatternMatcher: ValuePatternMatcher
 ): DryRunPathRule => {
   const segments = parseJsonPath(path);
   const objectKeys = objectKeysFromPath(segments);
@@ -114,6 +136,13 @@ export const attributePathRule = (
     return attributeKeyRule(path, 'redact', leafKey, secretManager);
   }
 
+  if (action === 'redact') {
+    const valueRule = attributeValuePatternRule(path, before, segments, valuePatternMatcher);
+    if (valueRule) {
+      return valueRule;
+    }
+  }
+
   return toPathRule(path, 'redact', 'default');
 };
 
@@ -122,8 +151,9 @@ export const buildPathRules = (
   redactedPaths: readonly string[],
   deletedPaths: readonly string[],
   secretManager: SecretManager,
-  manager: CustomObjectManager
+  manager: CustomObjectManager,
+  valuePatternMatcher: ValuePatternMatcher
 ): DryRunPathRule[] => [
-  ...deletedPaths.map((path) => attributePathRule(before, path, 'delete', secretManager, manager)),
-  ...redactedPaths.map((path) => attributePathRule(before, path, 'redact', secretManager, manager))
+  ...deletedPaths.map((path) => attributePathRule(before, path, 'delete', secretManager, manager, valuePatternMatcher)),
+  ...redactedPaths.map((path) => attributePathRule(before, path, 'redact', secretManager, manager, valuePatternMatcher))
 ];

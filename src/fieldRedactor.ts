@@ -15,6 +15,7 @@ import { CustomObjectManager } from './customObjectManager';
 import { FieldRedactorConfigurationError, FieldRedactorError } from './errors';
 import { hasExplicitRedactionRules, validateFieldRedactorConfig } from './configValidator';
 import { buildDryRunReport, EMPTY_DRY_RUN_REPORT } from './dryRun';
+import { ValuePatternMatcher } from './valuePatternMatcher';
 
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
@@ -30,6 +31,7 @@ export class FieldRedactor {
   private readonly secretManager: SecretManager;
   private readonly usesAsyncRedactor: boolean;
   private readonly cloneInput: boolean;
+  private readonly valuePatternMatcher: ValuePatternMatcher;
 
   /** Non-fatal configuration warnings from the last construction (empty when `strict` threw). */
   public readonly configWarnings: readonly string[];
@@ -40,8 +42,18 @@ export class FieldRedactor {
       config?.onConfigWarning?.(warning);
     }
 
-    const { redactor, syncRedactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects } =
+    const { redactor, syncRedactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns } =
       config || {};
+
+    const resolvedSecretKeys =
+      secretKeys ??
+      (valuePatterns?.length &&
+      !deepSecretKeys?.length &&
+      !fullSecretKeys?.length &&
+      !deleteSecretKeys?.length &&
+      !customObjects?.length
+        ? []
+        : undefined);
 
     const ignoreNullOrUndefined =
       typeof config?.ignoreNullOrUndefined === 'boolean' ? config.ignoreNullOrUndefined : true;
@@ -58,24 +70,31 @@ export class FieldRedactor {
     this.usesAsyncRedactor = primitiveRedactor.usesAsyncRedactor();
 
     this.secretManager = new SecretManager({
-      secretKeys,
+      secretKeys: resolvedSecretKeys,
       deepSecretKeys,
       fullSecretKeys,
       deleteSecretKeys
     });
+    this.valuePatternMatcher = new ValuePatternMatcher(valuePatterns);
     this.customObjectManager = new CustomObjectManager(customObjects, config?.schemaNames);
-    this.objectRedactor = new ObjectRedactor(primitiveRedactor, this.secretManager, this.customObjectManager);
+    this.objectRedactor = new ObjectRedactor(
+      primitiveRedactor,
+      this.secretManager,
+      this.customObjectManager,
+      this.valuePatternMatcher
+    );
   }
 
   /**
    * Creates a FieldRedactor that requires at least one explicit redaction rule: Shallow (`secretKeys`),
-   * Deep (`deepSecretKeys`), Opaque (`fullSecretKeys`), Remove (`deleteSecretKeys`), or Schema (`customObjects`).
+   * Deep (`deepSecretKeys`), Opaque (`fullSecretKeys`), Remove (`deleteSecretKeys`), Schema (`customObjects`),
+   * or Value-pattern (`valuePatterns`).
    * Unlike `new FieldRedactor()`, omitting all rules does not default to redacting every value.
    */
   public static createSafe(config: FieldRedactorConfig): FieldRedactor {
     if (!hasExplicitRedactionRules(config)) {
       throw new FieldRedactorConfigurationError(
-        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, or customObjects entry. Without explicit rules, new FieldRedactor() redacts all values by default.'
+        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, or valuePatterns entry. Without explicit rules, new FieldRedactor() redacts all values by default.'
       );
     }
 
@@ -117,7 +136,8 @@ export class FieldRedactor {
         snapshot as JsonValue,
         result as JsonValue,
         this.customObjectManager,
-        this.secretManager
+        this.secretManager,
+        this.valuePatternMatcher
       )
     };
   }

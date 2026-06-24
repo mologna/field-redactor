@@ -67,9 +67,17 @@ secretKeys: [/email/i]
 
 ## Expecting value-based detection
 
-**Problem:** `secretKeys: [/email/]` matches **key names**, not values. A field named `description` containing `alice@example.com` is not redacted.
+**Problem:** `secretKeys: [/email/]` matches **key names**, not values. A field named `description` containing `alice@example.com` is not redacted by key rules alone.
 
-**Instead:** Add a schema when sensitivity depends on a sibling, or add explicit keys. Value-pattern redaction is not built in.
+**Instead:** Opt in to **value-pattern** redaction with `valuePatterns`, add a schema when sensitivity depends on a sibling, or add explicit keys.
+
+```typescript
+FieldRedactor.createSafe({
+  valuePatterns: [/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/]
+});
+```
+
+See [Value-pattern redaction](value-pattern-redaction.md).
 
 ## Ignoring `dryRun` before production
 
@@ -95,4 +103,5 @@ FieldRedactorConfigBuilder.create()
 
 - [Secret key modes](secret-key-modes.md)
 - [Metadata redaction](metadata-redaction.md)
+- [Value-pattern redaction](value-pattern-redaction.md)
 - [Configuration reference](../reference/config.md)

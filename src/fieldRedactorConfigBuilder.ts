@@ -56,6 +56,15 @@ export class FieldRedactorConfigBuilder {
   }
 
   /**
+   * Value-pattern — redact scalar fields whose string form matches a pattern, regardless of key name (`valuePatterns`).
+   * Lowest precedence; opt-in defense in depth beyond key-name rules.
+   */
+  valuePattern(...patterns: RegExp[]): this {
+    this.config.valuePatterns = [...(this.config.valuePatterns ?? []), ...patterns];
+    return this;
+  }
+
+  /**
    * Merge a {@link presets} return value (or any partial config) into the builder.
    * Regex arrays and schemas accumulate; scalar options apply only when not already set.
    */

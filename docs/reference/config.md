@@ -11,6 +11,7 @@
 | **Opaque** | `fullSecretKeys` | `RegExp[]` | `[]` | Stringify and redact entire values |
 | **Remove** | `deleteSecretKeys` | `RegExp[]` | `[]` | Delete matching keys |
 | **Schema** | `customObjects` | `CustomObject[]` | `[]` | Per-shape rules; see [metadata guide](../guides/metadata-redaction.md) |
+| **Value-pattern** | `valuePatterns` | `RegExp[]` | `[]` | Opt-in: redact scalars whose string form matches a pattern |
 | — | `schemaNames` | `string[]` | — | Optional labels parallel to `customObjects` for `dryRun` reports |
 | — | `ignoreBooleans` | `boolean` | `false` | Skip boolean redaction when `true` |
 | — | `ignoreNullOrUndefined` | `boolean` | `true` | Skip null/undefined redaction when `true` |
@@ -42,6 +43,7 @@ import { CustomObjectMatchType, FieldRedactorConfigBuilder } from 'field-redacto
 
 const redactor = FieldRedactorConfigBuilder.create()
   .usePreset(presets.applicationLogging())
+  .valuePattern(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
   .shallow(/ssn/i)
   .deep(/accountInfo/i)
   .opaque(/rawPayload/i)
@@ -52,7 +54,7 @@ const redactor = FieldRedactorConfigBuilder.create()
   .buildSafeRedactor();
 ```
 
-Methods: `shallow`, `deep`, `opaque`, `remove` / `delete`, `schema`, `usePreset`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
+Methods: `shallow`, `deep`, `opaque`, `remove` / `delete`, `schema`, `valuePattern`, `usePreset`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
 
 ## Configuration validation
 
@@ -91,7 +93,7 @@ type DryRunReport = {
   pathRules: {
     path: string;
     action: 'redact' | 'delete';
-    rule: 'schema' | 'opaque' | 'deep' | 'remove' | 'shallow' | 'default';
+    rule: 'schema' | 'opaque' | 'deep' | 'remove' | 'shallow' | 'value' | 'default';
     pattern?: string;
     schemaIndex?: number;
     schemaName?: string;

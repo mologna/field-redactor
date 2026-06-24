@@ -2,6 +2,7 @@ import { CustomObjectManager } from './customObjectManager';
 import { buildPathRules } from './dryRunAttribution';
 import { isTraversableJson, joinPath, walkTraversableJson } from './jsonWalk';
 import { SecretManager } from './secretManager';
+import { ValuePatternMatcher } from './valuePatternMatcher';
 import { DryRunReport, isJsonObject, JsonValue } from './types';
 
 export const createEmptyDryRunReport = (): DryRunReport => ({
@@ -89,14 +90,22 @@ export const buildDryRunReport = (
   before: JsonValue | undefined,
   after: JsonValue | undefined,
   manager: CustomObjectManager,
-  secretManager: SecretManager
+  secretManager: SecretManager,
+  valuePatternMatcher: ValuePatternMatcher
 ): DryRunReport => {
   const report = createEmptyDryRunReport();
 
   if (before !== undefined) {
     diffRedaction(before, after, '', report);
     collectMatchedSchemas(before, manager, '', report);
-    report.pathRules = buildPathRules(before, report.redactedPaths, report.deletedPaths, secretManager, manager);
+    report.pathRules = buildPathRules(
+      before,
+      report.redactedPaths,
+      report.deletedPaths,
+      secretManager,
+      manager,
+      valuePatternMatcher
+    );
   }
 
   return report;

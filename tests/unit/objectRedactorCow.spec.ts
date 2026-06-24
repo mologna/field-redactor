@@ -5,6 +5,7 @@ import { SecretManager } from '../../src/secretManager';
 import { CustomObjectManager } from '../../src/customObjectManager';
 import { validNestedInputWithAllTypes } from '../mocks/inputMocks';
 import { ObjectRedactor } from '../../src/objectRedactor';
+import { ValuePatternMatcher } from '../../src/valuePatternMatcher';
 
 describe('ObjectRedactorSyncTraversal copy-on-write', () => {
   const deepCopy = rfdc({ proto: true, circles: true });
@@ -14,7 +15,7 @@ describe('ObjectRedactorSyncTraversal copy-on-write', () => {
     const primitiveRedactor = new PrimitiveRedactor({ ignoreBooleans: false, ignoreNullOrUndefined: true });
     const secretManager = new SecretManager({ secretKeys: [/password/] });
     const customObjectManager = new CustomObjectManager();
-    traversal = new ObjectRedactorSyncTraversal(primitiveRedactor, secretManager, customObjectManager);
+    traversal = new ObjectRedactorSyncTraversal(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
   });
 
   it('redacts nested values without mutating the input', () => {
@@ -41,7 +42,7 @@ describe('ObjectRedactorSyncTraversal copy-on-write', () => {
     const primitiveRedactor = new PrimitiveRedactor({ ignoreBooleans: false, ignoreNullOrUndefined: true });
     const secretManager = new SecretManager({});
     const customObjectManager = new CustomObjectManager();
-    const fullRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+    const fullRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
 
     const cowInput = deepCopy(validNestedInputWithAllTypes);
     const syncInput = deepCopy(validNestedInputWithAllTypes);

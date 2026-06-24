@@ -2,9 +2,13 @@ import { CustomObject, FieldRedactorConfig } from './types';
 
 export const SECRET_REGEX_FIELDS = ['secretKeys', 'deepSecretKeys', 'fullSecretKeys', 'deleteSecretKeys'] as const;
 
+export const VALUE_PATTERN_FIELDS = ['valuePatterns'] as const;
+
 export type SecretRegexField = (typeof SECRET_REGEX_FIELDS)[number];
 
-export const RULE_LIST_FIELDS = [...SECRET_REGEX_FIELDS, 'customObjects'] as const;
+export type ValuePatternField = (typeof VALUE_PATTERN_FIELDS)[number];
+
+export const RULE_LIST_FIELDS = [...SECRET_REGEX_FIELDS, ...VALUE_PATTERN_FIELDS, 'customObjects'] as const;
 
 const hasNonEmptyArray = <T>(value: T[] | undefined): value is T[] => value !== undefined && value.length > 0;
 
@@ -61,6 +65,12 @@ export const mergePartialConfig = (
   for (const field of SECRET_REGEX_FIELDS) {
     if (partial[field]?.length) {
       appendRegexToConfig(target, field, partial[field]!);
+    }
+  }
+
+  for (const field of VALUE_PATTERN_FIELDS) {
+    if (partial[field]?.length) {
+      target[field] = [...(target[field] ?? []), ...partial[field]!];
     }
   }
 

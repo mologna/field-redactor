@@ -8,6 +8,7 @@ import {
   SecretSpecifierValue
 } from './types';
 import { SecretManager } from './secretManager';
+import { ValuePatternMatcher } from './valuePatternMatcher';
 
 export type RedactPrimitiveFn<T> = (value: RedactablePrimitive) => T;
 
@@ -55,6 +56,7 @@ export function getStringSpecifiedCustomObjectSecretKeyValueIfExists(
 
 export function redactPrimitiveValueIfSecret<T>(
   secretManager: SecretManager,
+  valuePatternMatcher: ValuePatternMatcher,
   redact: RedactPrimitiveFn<T>,
   key: SecretSpecifierValue,
   value: JsonLeafValue | undefined,
@@ -78,6 +80,10 @@ export function redactPrimitiveValueIfSecret<T>(
   }
 
   if (forceDeepRedaction || secretManager.isSecretKey(key) || secretManager.isDeepSecretKey(key)) {
+    return redact(value as RedactablePrimitive);
+  }
+
+  if (valuePatternMatcher.findMatching(toRedactablePrimitive(value))) {
     return redact(value as RedactablePrimitive);
   }
 

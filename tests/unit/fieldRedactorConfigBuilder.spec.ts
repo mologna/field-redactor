@@ -20,6 +20,15 @@ describe('FieldRedactorConfigBuilder', () => {
     expect(config.secretKeys).toEqual([/email/i, /phone/i, /password/i]);
   });
 
+  it('maps valuePattern to valuePatterns and accumulates entries', () => {
+    const config = FieldRedactorConfigBuilder.create()
+      .valuePattern(/email/i)
+      .valuePattern(/phone/i)
+      .build();
+
+    expect(config.valuePatterns).toEqual([/email/i, /phone/i]);
+  });
+
   it('supports delete as an alias for remove', () => {
     const config = FieldRedactorConfigBuilder.create().delete(/authKey/i).build();
     expect(config.deleteSecretKeys).toEqual([/authKey/i]);

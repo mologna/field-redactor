@@ -15,6 +15,7 @@ import { SecretManager } from './secretManager';
 import { CustomObjectManager } from './customObjectManager';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { ContainerMutation, createContainerMutation } from './objectRedactorMutation';
+import { ValuePatternMatcher } from './valuePatternMatcher';
 import {
   getStringSpecifiedCustomObjectSecretKeyValueIfExists,
   getStringValue,
@@ -30,7 +31,8 @@ export class ObjectRedactorSyncTraversal {
   constructor(
     private readonly primitiveRedactor: PrimitiveRedactor,
     private readonly secretManager: SecretManager,
-    private readonly customObjManager: CustomObjectManager
+    private readonly customObjManager: CustomObjectManager,
+    private readonly valuePatternMatcher: ValuePatternMatcher
   ) {}
 
   redactInPlace<T extends TraversableJson>(value: T): T {
@@ -366,6 +368,7 @@ export class ObjectRedactorSyncTraversal {
   ): JsonValue | undefined {
     return redactPrimitiveValueIfSecret(
       this.secretManager,
+      this.valuePatternMatcher,
       (primitive) => this.redactPrimitive(primitive),
       key,
       value,

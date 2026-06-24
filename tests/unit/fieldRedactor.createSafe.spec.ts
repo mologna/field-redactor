@@ -20,6 +20,10 @@ describe('FieldRedactor.createSafe', () => {
     ).not.toThrow();
   });
 
+  it('accepts valuePatterns as explicit rules', () => {
+    expect(() => FieldRedactor.createSafe({ valuePatterns: [/email/] })).not.toThrow();
+  });
+
   it('throws FieldRedactorConfigurationError when no rules are provided', () => {
     expect(() => FieldRedactor.createSafe({})).toThrow(FieldRedactorConfigurationError);
     expect(() => FieldRedactor.createSafe({})).toThrow(/requires at least one non-empty/);

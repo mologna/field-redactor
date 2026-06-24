@@ -68,6 +68,7 @@ Use `FieldRedactor.createSafe({ ... })` or `FieldRedactorConfigBuilder` so you n
 | [Secret key modes](docs/guides/secret-key-modes.md) | Shallow, Deep, Opaque, Remove with examples |
 | [Metadata redaction](docs/guides/metadata-redaction.md) | `{ name, value }` schemas and sibling-key rules |
 | [Anti-patterns](docs/guides/anti-patterns.md) | Common config mistakes and fixes |
+| [Value-pattern redaction](docs/guides/value-pattern-redaction.md) | Detect PII in free-text field values |
 | [Configuration reference](docs/reference/config.md) | Full option table, API, presets, validation |
 | [Release notes](docs/release-notes/README.md) | Per-version notes for every git tag |
 
