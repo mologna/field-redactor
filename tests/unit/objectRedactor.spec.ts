@@ -2,11 +2,11 @@ import rfdc from 'rfdc';
 import * as crypto from 'crypto';
 import { SecretManager } from '../../src/secretManager';
 import { validInputWithAllTypes, validNestedInputWithAllTypes } from '../mocks/inputMocks';
-import { CustomObject, CustomObjectMatchType, JsonObject, Redactor, TraversableJson } from '../../src/types';
+import { CustomObject, CustomObjectMatchType, JsonObject, Redactor, SecretManagerConfig, TraversableJson } from '../../src/types';
 import { ObjectRedactor } from '../../src/objectRedactor';
 import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { CustomObjectManager } from '../../src/customObjectManager';
-import { ValuePatternMatcher } from '../../src/valuePatternMatcher';
+import { createObjectRedactor, EMPTY_VALUE_PATTERN_MATCHER } from '../helpers/redactorTestUtils';
 
 describe('ObjectRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
@@ -41,11 +41,14 @@ describe('ObjectRedactor', () => {
     }
   };
 
+  const makeRedactor = (secretManagerConfig: SecretManagerConfig = {}) =>
+    createObjectRedactor({ secretManagerConfig, primitiveRedactor, customObjectManager });
+
   beforeEach(() => {
     primitiveRedactor = new PrimitiveRedactor({ ignoreBooleans: false, ignoreNullOrUndefined: true });
     secretManager = new SecretManager({});
     customObjectManager = new CustomObjectManager();
-    basicObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+    basicObjectRedactor = makeRedactor();
   });
 
   describe('Basic/Primitive Secret Redaction', () => {
@@ -83,7 +86,7 @@ describe('ObjectRedactor', () => {
     it('Redacts only keys specified as secrets when secrets passed', async () => {
       const secretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
       secretManager = new SecretManager({ secretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const copy = redactCopy(redactor, validInputWithAllTypes);
       expect(copy).not.toBe(validInputWithAllTypes);
       validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT, false, secretKeys);
@@ -92,7 +95,7 @@ describe('ObjectRedactor', () => {
     it('Can delete keys when specified as deleteSecretKeys', async () => {
       const deleteSecretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
       secretManager = new SecretManager({ deleteSecretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const copy = deepCopy(validInputWithAllTypes);
       await redactor.redactInPlace(copy);
       expect(copy).not.toBe(validInputWithAllTypes);
@@ -105,7 +108,7 @@ describe('ObjectRedactor', () => {
       const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
       const deepSecretKeys: RegExp[] = [/parentAccount/];
       secretManager = new SecretManager({ secretKeys, deepSecretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const simpleNestedInputWithDeepSecret = {
         password: 'password123',
         username: 'child',
@@ -135,7 +138,7 @@ describe('ObjectRedactor', () => {
         fullSecretKeys: [/foo/, /bar/, /undefinedValue/, /nullValue/],
         secretKeys: []
       });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const input = {
         foo: {
@@ -174,7 +177,7 @@ describe('ObjectRedactor', () => {
         foo
       };
 
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const result = await redactor.redactInPlace(simpleObject);
       expect(result.foo).toBe(hashedFoo);
@@ -247,7 +250,7 @@ describe('ObjectRedactor', () => {
     it('Assesses arrays even when they are not secret values to determine if they contain objects which should be assessed', async () => {
       const secretKeys = [/email/];
       const secretManager = new SecretManager({ secretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = {
         foo: ['bar', { email: 'foo.bar@gmail.com' }]
@@ -262,7 +265,7 @@ describe('ObjectRedactor', () => {
       const secretKeys: RegExp[] = [];
       const deepSecretKeys: RegExp[] = [/emails/];
       secretManager = new SecretManager({ secretKeys, deepSecretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const input = {
         emails: ['foo.bar@example.com', ['nested', 'array']]
       };
@@ -282,7 +285,7 @@ describe('ObjectRedactor', () => {
       };
       const deleteSecretKeys: RegExp[] = [/bar/];
       secretManager = new SecretManager({ deleteSecretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       await redactor.redactInPlace(obj);
       expect(obj.foo.bar).toBeUndefined();
     });
@@ -299,7 +302,7 @@ describe('ObjectRedactor', () => {
       };
       const deleteSecretKeys: RegExp[] = [/bar/];
       secretManager = new SecretManager({ deleteSecretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       await redactor.redactInPlace(obj);
       expect(obj.bar).toBeUndefined();
       expect(obj.fizz[0].bar).toBeUndefined();
@@ -315,7 +318,7 @@ describe('ObjectRedactor', () => {
       };
       const deleteSecretKeys: RegExp[] = [/bar/];
       secretManager = new SecretManager({ deleteSecretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       await redactor.redactInPlace(obj);
       expect(obj.foo.bar).toBeUndefined();
     });
@@ -333,7 +336,7 @@ describe('ObjectRedactor', () => {
       };
 
       customObjectManager = new CustomObjectManager([customObject]);
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const obj = {
         full: 'bam',
         deep: 'bam',
@@ -360,7 +363,7 @@ describe('ObjectRedactor', () => {
       const secretKeys: RegExp[] = [/email/];
       secretManager = new SecretManager({ secretKeys });
       customObjectManager = new CustomObjectManager([metadataCustomObject]);
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = {
         name: 'email',
@@ -389,7 +392,7 @@ describe('ObjectRedactor', () => {
 
       customObjectManager = new CustomObjectManager([customObject]);
       secretManager = new SecretManager({ secretKeys: [/fizz/] });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const obj = {
         full: ['foo', { foo: 'bar', fizz: 'buzz' }],
         deep: ['foo', { foo: 'bar', fizz: 'buzz' }],
@@ -420,7 +423,7 @@ describe('ObjectRedactor', () => {
 
       customObjectManager = new CustomObjectManager([customObject]);
       secretManager = new SecretManager({ secretKeys: [/fizz/, /fazz/] });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const obj = {
         full: {
           bim: 'bam',
@@ -481,7 +484,7 @@ describe('ObjectRedactor', () => {
       };
 
       customObjectManager = new CustomObjectManager(specialObjects);
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const result = await redactor.redactInPlace(input);
       expect(result.mySpecial.foo).toBe(DEFAULT_REDACTED_TEXT);
@@ -496,7 +499,7 @@ describe('ObjectRedactor', () => {
       customObjectManager = new CustomObjectManager([specialObject]);
       const deepSecretKeys: RegExp[] = [/email/];
       const secretManager: SecretManager = new SecretManager({ deepSecretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const obj = {
         email: {
           foo: 'Redact me',
@@ -516,7 +519,7 @@ describe('ObjectRedactor', () => {
       customObjectManager = new CustomObjectManager([specialObject]);
       const deepSecretKeys: RegExp[] = [/email/];
       const secretManager: SecretManager = new SecretManager({ deepSecretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const obj = {
         email: [
           {
@@ -552,7 +555,7 @@ describe('ObjectRedactor', () => {
       };
 
       customObjectManager = new CustomObjectManager(specialObjects);
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const result = await redactor.redactInPlace(input);
       result.me.forEach((value: any, index: number) => {
@@ -569,7 +572,7 @@ describe('ObjectRedactor', () => {
 
       customObjectManager = new CustomObjectManager([specialObject]);
       secretManager = new SecretManager({ secretKeys: [] });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const obj = { foo: null, bar: undefined };
       await redactor.redactInPlace(obj);
       expect(obj).toEqual({ foo: null, bar: undefined });
@@ -583,7 +586,7 @@ describe('ObjectRedactor', () => {
       secretManager = new SecretManager({ secretKeys: [] });
       customObjectManager = new CustomObjectManager([specialObject]);
       primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false, ignoreBooleans: false });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = { foo: null, bar: undefined };
       await redactor.redactInPlace(obj);
@@ -606,7 +609,7 @@ describe('ObjectRedactor', () => {
       secretManager = new SecretManager({ secretKeys, deepSecretKeys, fullSecretKeys });
       customObjectManager = new CustomObjectManager([specialObject]);
 
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
       const obj = {
         a: 'email',
         b: 'name',
@@ -641,7 +644,7 @@ describe('ObjectRedactor', () => {
       const fullSecretKeys: RegExp[] = [/address/];
       secretManager = new SecretManager({ secretKeys, deepSecretKeys, fullSecretKeys });
       customObjectManager = new CustomObjectManager([specialObject]);
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = {
         a: 'email',
@@ -692,7 +695,7 @@ describe('ObjectRedactor', () => {
       const fullSecretKeys: RegExp[] = [/address/];
       secretManager = new SecretManager({ secretKeys, deepSecretKeys, fullSecretKeys });
       customObjectManager = new CustomObjectManager([specialObject]);
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = {
         a: 'email',
@@ -722,7 +725,7 @@ describe('ObjectRedactor', () => {
       const secretKeys: RegExp[] = [/email/];
       customObjectManager = new CustomObjectManager([specialObject]);
       secretManager = new SecretManager({ secretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = {
         name: 'notredacted',
@@ -747,7 +750,7 @@ describe('ObjectRedactor', () => {
       const secretKeys: RegExp[] = [/email/];
       customObjectManager = new CustomObjectManager([specialObject]);
       secretManager = new SecretManager({ secretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
       await redactor.redactInPlace(obj);
@@ -767,7 +770,7 @@ describe('ObjectRedactor', () => {
       const secretKeys: RegExp[] = [/^$/];
       customObjectManager = new CustomObjectManager([specialObject]);
       secretManager = new SecretManager({ secretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = { name: '', kind: 'String', value: 'foo.bar@gmail.com' };
       await redactor.redactInPlace(obj);
@@ -787,7 +790,7 @@ describe('ObjectRedactor', () => {
       const secretKeys: RegExp[] = [/^false$/];
       customObjectManager = new CustomObjectManager([specialObject]);
       secretManager = new SecretManager({ secretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = { name: false, kind: 'Boolean', value: true };
       await redactor.redactInPlace(obj);
@@ -807,7 +810,7 @@ describe('ObjectRedactor', () => {
       const secretKeys: RegExp[] = [/^0$/];
       customObjectManager = new CustomObjectManager([specialObject]);
       secretManager = new SecretManager({ secretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = { name: 0, kind: 'Number', value: 12345 };
       await redactor.redactInPlace(obj);
@@ -830,7 +833,7 @@ describe('ObjectRedactor', () => {
       const fullSecretKeys = [/account/, /customObject/];
       customObjectManager = new CustomObjectManager([specialObject]);
       secretManager = new SecretManager({ secretKeys, deepSecretKeys, fullSecretKeys });
-      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, EMPTY_VALUE_PATTERN_MATCHER);
 
       const obj = {
         account: {

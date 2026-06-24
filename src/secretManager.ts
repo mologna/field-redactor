@@ -1,3 +1,4 @@
+import { formatRegExp } from './regexUtils';
 import { SecretManagerConfig, SecretSpecifierValue } from './types';
 
 type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
@@ -67,7 +68,7 @@ export class SecretManager {
 
   public getKeyRulePattern(key: SecretSpecifierValue, rule: KeyRule): string | undefined {
     const match = SecretManager.findMatchingRegex(key, this.regexListFor(rule));
-    return match ? SecretManager.formatRegex(match) : undefined;
+    return match ? formatRegExp(match) : undefined;
   }
 
   public classifyKeyRule(key: SecretSpecifierValue): 'remove' | 'opaque' | 'deep' | 'shallow' | 'default' | null {
@@ -105,10 +106,6 @@ export class SecretManager {
 
   private static findMatchingRegex(key: SecretSpecifierValue, regexes?: RegExp[]): RegExp | undefined {
     return regexes?.find((regex) => regex.test(String(key)));
-  }
-
-  private static formatRegex(regex: RegExp): string {
-    return `/${regex.source}/${regex.flags}`;
   }
 
   private static matchesAnyRegex(value: SecretSpecifierValue, regexes: RegExp[]): boolean {

@@ -1,3 +1,4 @@
+import { formatRegExp } from './regexUtils';
 import { RedactablePrimitive } from './types';
 
 /**
@@ -25,6 +26,9 @@ export class ValuePatternMatcher {
   }
 
   public formatPattern(regex: RegExp): string {
-    return `/${regex.source}/${regex.flags}`;
+    return formatRegExp(regex);
   }
 }
+
+/** Shared empty matcher for tests and configs without value patterns. */
+export const EMPTY_VALUE_PATTERN_MATCHER = new ValuePatternMatcher();

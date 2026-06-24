@@ -1,6 +1,7 @@
 import { FieldRedactor } from './fieldRedactor';
 import {
   appendRegexToConfig,
+  appendRegExpArray,
   finalizeRegisteredSchemas,
   mergePartialConfig,
   RegisteredSchema,
@@ -60,7 +61,7 @@ export class FieldRedactorConfigBuilder {
    * Lowest precedence; opt-in defense in depth beyond key-name rules.
    */
   valuePattern(...patterns: RegExp[]): this {
-    this.config.valuePatterns = [...(this.config.valuePatterns ?? []), ...patterns];
+    appendRegExpArray(this.config, 'valuePatterns', patterns);
     return this;
   }
 

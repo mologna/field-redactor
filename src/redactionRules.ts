@@ -4,23 +4,59 @@ export const SECRET_REGEX_FIELDS = ['secretKeys', 'deepSecretKeys', 'fullSecretK
 
 export const VALUE_PATTERN_FIELDS = ['valuePatterns'] as const;
 
+export const REGEX_ARRAY_CONFIG_FIELDS = [...SECRET_REGEX_FIELDS, ...VALUE_PATTERN_FIELDS] as const;
+
 export type SecretRegexField = (typeof SECRET_REGEX_FIELDS)[number];
 
 export type ValuePatternField = (typeof VALUE_PATTERN_FIELDS)[number];
 
-export const RULE_LIST_FIELDS = [...SECRET_REGEX_FIELDS, ...VALUE_PATTERN_FIELDS, 'customObjects'] as const;
+export type RegexArrayConfigField = (typeof REGEX_ARRAY_CONFIG_FIELDS)[number];
+
+export const RULE_LIST_FIELDS = [...REGEX_ARRAY_CONFIG_FIELDS, 'customObjects'] as const;
 
 const hasNonEmptyArray = <T>(value: T[] | undefined): value is T[] => value !== undefined && value.length > 0;
 
 export const hasExplicitRedactionRules = (config?: FieldRedactorConfig): boolean =>
   RULE_LIST_FIELDS.some((field) => hasNonEmptyArray(config?.[field] as unknown[] | undefined));
 
+/**
+ * When only value patterns are configured, shallow key matching must be disabled (`secretKeys: []`)
+ * so the legacy default does not redact every field.
+ */
+export const resolveSecretKeys = (config?: FieldRedactorConfig): RegExp[] | undefined => {
+  const { secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns } = config ?? {};
+
+  if (secretKeys !== undefined) {
+    return secretKeys;
+  }
+
+  if (
+    valuePatterns?.length &&
+    !deepSecretKeys?.length &&
+    !fullSecretKeys?.length &&
+    !deleteSecretKeys?.length &&
+    !customObjects?.length
+  ) {
+    return [];
+  }
+
+  return undefined;
+};
+
+export const appendRegExpArray = <F extends RegexArrayConfigField>(
+  config: FieldRedactorConfig,
+  field: F,
+  patterns: RegExp[]
+): void => {
+  config[field] = [...(config[field] ?? []), ...patterns];
+};
+
 export const appendRegexToConfig = (
   config: FieldRedactorConfig,
   field: SecretRegexField,
   patterns: RegExp[]
 ): void => {
-  config[field] = [...(config[field] ?? []), ...patterns];
+  appendRegExpArray(config, field, patterns);
 };
 
 export type RegisteredSchema = { object: CustomObject; name?: string };
@@ -62,15 +98,9 @@ export const mergePartialConfig = (
   schemas: RegisteredSchema[],
   partial: Partial<FieldRedactorConfig>
 ): void => {
-  for (const field of SECRET_REGEX_FIELDS) {
+  for (const field of REGEX_ARRAY_CONFIG_FIELDS) {
     if (partial[field]?.length) {
-      appendRegexToConfig(target, field, partial[field]!);
-    }
-  }
-
-  for (const field of VALUE_PATTERN_FIELDS) {
-    if (partial[field]?.length) {
-      target[field] = [...(target[field] ?? []), ...partial[field]!];
+      appendRegExpArray(target, field, partial[field]!);
     }
   }
 

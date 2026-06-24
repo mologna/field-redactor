@@ -1,12 +1,15 @@
 import { FieldRedactorConfigurationError } from './errors';
-import { hasExplicitRedactionRules, SECRET_REGEX_FIELDS, VALUE_PATTERN_FIELDS } from './redactionRules';
+import { formatRegExp, regexIdentity } from './regexUtils';
+import {
+  hasExplicitRedactionRules,
+  REGEX_ARRAY_CONFIG_FIELDS,
+  SECRET_REGEX_FIELDS
+} from './redactionRules';
 import { CustomObject, FieldRedactorConfig } from './types';
 
 export { hasExplicitRedactionRules };
 
-const regexIdentity = (regex: RegExp): string => `${regex.source}\0${regex.flags}`;
-
-const formatRegex = (regex: RegExp): string => `/${regex.source}/${regex.flags}`;
+const KEY_RULE_FIELDS = new Set<string>(SECRET_REGEX_FIELDS);
 
 export const assertNoIdenticalCustomObjectSchemas = (customObjects?: CustomObject[]): void => {
   if (!customObjects || customObjects.length <= 1) {
@@ -26,13 +29,11 @@ export const assertNoIdenticalCustomObjectSchemas = (customObjects?: CustomObjec
   }
 };
 
-const REGEX_CONFIG_FIELDS = [...SECRET_REGEX_FIELDS, ...VALUE_PATTERN_FIELDS] as const;
-
 const collectRegexWarnings = (config: FieldRedactorConfig): string[] => {
   const warnings: string[] = [];
-  const seen = new Map<string, string>();
+  const keyRuleDuplicates = new Map<string, string>();
 
-  for (const field of REGEX_CONFIG_FIELDS) {
+  for (const field of REGEX_ARRAY_CONFIG_FIELDS) {
     const regexes = config[field];
     if (!regexes) {
       continue;
@@ -41,18 +42,22 @@ const collectRegexWarnings = (config: FieldRedactorConfig): string[] => {
     for (const regex of regexes) {
       if (regex.global) {
         warnings.push(
-          `Global regex ${formatRegex(regex)} in \`${field}\` can produce surprising \`.test()\` results; remove the \`g\` flag.`
+          `Global regex ${formatRegExp(regex)} in \`${field}\` can produce surprising \`.test()\` results; remove the \`g\` flag.`
         );
       }
 
+      if (!KEY_RULE_FIELDS.has(field)) {
+        continue;
+      }
+
       const identity = regexIdentity(regex);
-      const prior = seen.get(identity);
+      const prior = keyRuleDuplicates.get(identity);
       if (prior && prior !== field) {
         warnings.push(
-          `${formatRegex(regex)} appears in both \`${prior}\` and \`${field}\` — only the higher-precedence rule applies.`
+          `${formatRegExp(regex)} appears in both \`${prior}\` and \`${field}\` — only the higher-precedence rule applies.`
         );
       } else if (!prior) {
-        seen.set(identity, field);
+        keyRuleDuplicates.set(identity, field);
       }
     }
   }

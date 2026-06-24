@@ -8,14 +8,13 @@ import {
   RedactableInput,
   TraversableJson
 } from './types';
-import { ObjectRedactor } from './objectRedactor';
-import { PrimitiveRedactor } from './primitiveRedactor';
-import { SecretManager } from './secretManager';
 import { CustomObjectManager } from './customObjectManager';
+import { SecretManager } from './secretManager';
 import { FieldRedactorConfigurationError, FieldRedactorError } from './errors';
 import { hasExplicitRedactionRules, validateFieldRedactorConfig } from './configValidator';
 import { buildDryRunReport, EMPTY_DRY_RUN_REPORT } from './dryRun';
-import { ValuePatternMatcher } from './valuePatternMatcher';
+import { buildFieldRedactorDeps } from './fieldRedactorDeps';
+import { ObjectRedactor } from './objectRedactor';
 
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
@@ -31,7 +30,7 @@ export class FieldRedactor {
   private readonly secretManager: SecretManager;
   private readonly usesAsyncRedactor: boolean;
   private readonly cloneInput: boolean;
-  private readonly valuePatternMatcher: ValuePatternMatcher;
+  private readonly valuePatternMatcher: ReturnType<typeof buildFieldRedactorDeps>['valuePatternMatcher'];
 
   /** Non-fatal configuration warnings from the last construction (empty when `strict` threw). */
   public readonly configWarnings: readonly string[];
@@ -42,47 +41,14 @@ export class FieldRedactor {
       config?.onConfigWarning?.(warning);
     }
 
-    const { redactor, syncRedactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns } =
-      config || {};
+    const deps = buildFieldRedactorDeps(config);
 
-    const resolvedSecretKeys =
-      secretKeys ??
-      (valuePatterns?.length &&
-      !deepSecretKeys?.length &&
-      !fullSecretKeys?.length &&
-      !deleteSecretKeys?.length &&
-      !customObjects?.length
-        ? []
-        : undefined);
-
-    const ignoreNullOrUndefined =
-      typeof config?.ignoreNullOrUndefined === 'boolean' ? config.ignoreNullOrUndefined : true;
-    const ignoreBooleans = typeof config?.ignoreBooleans === 'boolean' ? config.ignoreBooleans : false;
-    this.cloneInput = config?.cloneInput !== false;
-
-    const primitiveRedactor = new PrimitiveRedactor({
-      ignoreBooleans,
-      ignoreNullOrUndefined,
-      redactor,
-      syncRedactor
-    });
-
-    this.usesAsyncRedactor = primitiveRedactor.usesAsyncRedactor();
-
-    this.secretManager = new SecretManager({
-      secretKeys: resolvedSecretKeys,
-      deepSecretKeys,
-      fullSecretKeys,
-      deleteSecretKeys
-    });
-    this.valuePatternMatcher = new ValuePatternMatcher(valuePatterns);
-    this.customObjectManager = new CustomObjectManager(customObjects, config?.schemaNames);
-    this.objectRedactor = new ObjectRedactor(
-      primitiveRedactor,
-      this.secretManager,
-      this.customObjectManager,
-      this.valuePatternMatcher
-    );
+    this.usesAsyncRedactor = deps.usesAsyncRedactor;
+    this.cloneInput = deps.cloneInput;
+    this.secretManager = deps.secretManager;
+    this.valuePatternMatcher = deps.valuePatternMatcher;
+    this.customObjectManager = deps.customObjectManager;
+    this.objectRedactor = deps.objectRedactor;
   }
 
   /**

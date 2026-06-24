@@ -1,21 +1,13 @@
 import rfdc from 'rfdc';
-import { ObjectRedactorSyncTraversal } from '../../src/objectRedactorSync';
-import { PrimitiveRedactor } from '../../src/primitiveRedactor';
-import { SecretManager } from '../../src/secretManager';
-import { CustomObjectManager } from '../../src/customObjectManager';
 import { validNestedInputWithAllTypes } from '../mocks/inputMocks';
-import { ObjectRedactor } from '../../src/objectRedactor';
-import { ValuePatternMatcher } from '../../src/valuePatternMatcher';
+import { createObjectRedactor, createSyncTraversal } from '../helpers/redactorTestUtils';
 
 describe('ObjectRedactorSyncTraversal copy-on-write', () => {
   const deepCopy = rfdc({ proto: true, circles: true });
-  let traversal: ObjectRedactorSyncTraversal;
+  let traversal: ReturnType<typeof createSyncTraversal>;
 
   beforeEach(() => {
-    const primitiveRedactor = new PrimitiveRedactor({ ignoreBooleans: false, ignoreNullOrUndefined: true });
-    const secretManager = new SecretManager({ secretKeys: [/password/] });
-    const customObjectManager = new CustomObjectManager();
-    traversal = new ObjectRedactorSyncTraversal(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+    traversal = createSyncTraversal({ secretManagerConfig: { secretKeys: [/password/] } });
   });
 
   it('redacts nested values without mutating the input', () => {
@@ -39,10 +31,7 @@ describe('ObjectRedactorSyncTraversal copy-on-write', () => {
   });
 
   it('matches redactInPlaceSync output for complex nested input', () => {
-    const primitiveRedactor = new PrimitiveRedactor({ ignoreBooleans: false, ignoreNullOrUndefined: true });
-    const secretManager = new SecretManager({});
-    const customObjectManager = new CustomObjectManager();
-    const fullRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager, new ValuePatternMatcher());
+    const fullRedactor = createObjectRedactor();
 
     const cowInput = deepCopy(validNestedInputWithAllTypes);
     const syncInput = deepCopy(validNestedInputWithAllTypes);
