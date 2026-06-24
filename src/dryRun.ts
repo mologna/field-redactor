@@ -70,25 +70,32 @@ const collectMatchedSchemas = (
   value: JsonValue | undefined,
   manager: CustomObjectManager,
   path: string,
-  report: DryRunReport
+  report: DryRunReport,
+  schemaNames?: readonly (string | undefined)[]
 ): void => {
   if (!isTraversable(value)) {
     return;
   }
 
   if (Array.isArray(value)) {
-    value.forEach((item, index) => collectMatchedSchemas(item, manager, joinPath(path, index), report));
+    value.forEach((item, index) => collectMatchedSchemas(item, manager, joinPath(path, index), report, schemaNames));
     return;
   }
 
   if (isJsonObject(value)) {
     const schema = manager.getMatchingCustomObject(value);
     if (schema) {
-      report.matchedSchemas.push({ path: path || '(root)', schemaIndex: manager.getSchemaIndex(schema) });
+      const schemaIndex = manager.getSchemaIndex(schema);
+      const schemaName = schemaNames?.[schemaIndex];
+      report.matchedSchemas.push({
+        path: path || '(root)',
+        schemaIndex,
+        ...(schemaName ? { schemaName } : {})
+      });
     }
 
     for (const key of Object.keys(value)) {
-      collectMatchedSchemas(value[key], manager, joinPath(path, key), report);
+      collectMatchedSchemas(value[key], manager, joinPath(path, key), report, schemaNames);
     }
   }
 };
@@ -96,13 +103,14 @@ const collectMatchedSchemas = (
 export const buildDryRunReport = (
   before: JsonValue | undefined,
   after: JsonValue | undefined,
-  manager: CustomObjectManager
+  manager: CustomObjectManager,
+  schemaNames?: readonly (string | undefined)[]
 ): DryRunReport => {
   const report: DryRunReport = { redactedPaths: [], deletedPaths: [], matchedSchemas: [] };
 
   if (before !== undefined) {
     diffRedaction(before, after, '', report);
-    collectMatchedSchemas(before, manager, '', report);
+    collectMatchedSchemas(before, manager, '', report, schemaNames);
   }
 
   return report;

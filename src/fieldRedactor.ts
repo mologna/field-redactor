@@ -32,12 +32,15 @@ export class FieldRedactor {
 
   /** Non-fatal configuration warnings from the last construction (empty when `strict` threw). */
   public readonly configWarnings: readonly string[];
+  private readonly schemaNames: readonly (string | undefined)[];
 
   constructor(config?: FieldRedactorConfig) {
     this.configWarnings = validateFieldRedactorConfig(config);
     for (const warning of this.configWarnings) {
       config?.onConfigWarning?.(warning);
     }
+
+    this.schemaNames = config?.schemaNames ?? [];
 
     const { redactor, syncRedactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects } =
       config || {};
@@ -109,7 +112,7 @@ export class FieldRedactor {
   private toDryRunResult<T extends RedactableInput>(snapshot: T, result: T): DryRunResult<T> {
     return {
       result,
-      report: buildDryRunReport(snapshot as JsonValue, result as JsonValue, this.customObjectManager)
+      report: buildDryRunReport(snapshot as JsonValue, result as JsonValue, this.customObjectManager, this.schemaNames)
     };
   }
 

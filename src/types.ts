@@ -99,11 +99,17 @@ export type FieldRedactorConfig = Partial<PrimitiveRedactorConfig> &
     strict?: boolean;
     /** Called for each non-fatal configuration warning when `strict` is false. */
     onConfigWarning?: (message: string) => void;
+    /**
+     * Optional labels parallel to `customObjects` (same index). Used in {@link FieldRedactor.dryRun} reports.
+     * Set via {@link FieldRedactorConfigBuilder.schema}.
+     */
+    schemaNames?: (string | undefined)[];
   };
 
 export type MatchedSchemaReport = {
   path: string;
   schemaIndex: number;
+  schemaName?: string;
 };
 
 export type DryRunReport = {
