@@ -572,4 +572,12 @@ describe('Blanket Coverage Integration Tests', () => {
     expect(result.actions[1].type).toBe(input.actions[0].type);
     expect(result.actions[1].value).toBe(sha256HashedEmail);
   });
+
+  it('Redacts boolean values by default when matching secret keys', async () => {
+    const fieldRedactor = new FieldRedactor({ secretKeys: [/booleankey/i] });
+    const result = await fieldRedactor.redact({ trueBooleanKey: true, falseBooleanKey: false });
+
+    expect(result.trueBooleanKey).toBe('REDACTED');
+    expect(result.falseBooleanKey).toBe('REDACTED');
+  });
 });

@@ -19,7 +19,7 @@ export class FieldRedactor {
 
     const ignoreNullOrUndefined =
       typeof config?.ignoreNullOrUndefined === 'boolean' ? config.ignoreNullOrUndefined : true;
-    const ignoreBooleans = typeof config?.ignoreBooleans === 'boolean' ? config.ignoreBooleans : true;
+    const ignoreBooleans = typeof config?.ignoreBooleans === 'boolean' ? config.ignoreBooleans : false;
 
     const primitiveRedactor = new PrimitiveRedactor({
       ignoreBooleans,

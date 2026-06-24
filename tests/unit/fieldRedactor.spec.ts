@@ -27,6 +27,16 @@ describe('FieldRedactor', () => {
       expect(PrimitiveRedactor).toHaveBeenCalledWith(config);
     });
 
+    it('Should default ignoreBooleans to false and ignoreNullOrUndefined to true', () => {
+      new FieldRedactor();
+      expect(PrimitiveRedactor).toHaveBeenCalledTimes(1);
+      expect(PrimitiveRedactor).toHaveBeenCalledWith({
+        ignoreBooleans: false,
+        ignoreNullOrUndefined: true,
+        redactor: undefined
+      });
+    });
+
     it('Should create the SecretManager with the correct configuration', () => {
       const config = {
         secretKeys: [/password/],
