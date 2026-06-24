@@ -5,7 +5,35 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.5.1] - 2026-06-24
+## [1.5.0] - 2026-06-24
+
+Published npm release bundling **v1.2.1**–**v1.3.0** git work and former internal milestones **2.4.0**–**2.5.1**. See [docs/guides/migration-1.2-to-1.5.md](docs/guides/migration-1.2-to-1.5.md) when upgrading from npm **1.2.x**.
+
+### Added
+
+- **`FieldRedactorConfigBuilder.usePreset()`** — merge preset or partial config into the builder; regex/schemas accumulate, scalars apply only when unset.
+- **`dryRun` path rule attribution** — `report.pathRules` explains which rule (`schema`, `opaque`, `deep`, `remove`, `shallow`, `value`, `default`) caused each redacted or deleted path, with optional regex `pattern` and schema metadata.
+- **Value-pattern redaction** — opt-in `valuePatterns` redacts scalars when their string form matches a regex, regardless of key name; lowest precedence after key and schema rules.
+- **`FieldRedactorConfigBuilder.valuePattern()`** — fluent builder support for value patterns.
+- **Anti-patterns guide** — [docs/guides/anti-patterns.md](docs/guides/anti-patterns.md).
+- **Value-pattern guide** — [docs/guides/value-pattern-redaction.md](docs/guides/value-pattern-redaction.md).
+- **Migration guide** — [docs/guides/migration-1.2-to-1.5.md](docs/guides/migration-1.2-to-1.5.md).
+- **Exported types** — `DryRunPathRule`, `RedactionRuleLabel`, `MatchedSchemaReport`.
+- **Release notes** — see [docs/release-notes/v1.5.0.md](docs/release-notes/v1.5.0.md).
+
+### Changed
+
+- **Unified JSON traversal** — `ObjectRedactorTraversal` handles sync in-place, copy-on-write, and async in-place redaction via a shared `ContainerMutation` adapter.
+- **Shared custom-object handlers** — match-type dispatch consolidated in `objectRedactorCustomObject.ts`.
+- Config validator duplicate-regex warnings apply across key-rule fields only (not between `secretKeys` and `valuePatterns`).
+- Internal refactor: `fieldRedactorDeps`, `regexUtils`, dry-run attribution resolvers, shared test helpers.
+- Git tags `2.0.0`–`2.5.1` removed; development milestones are consolidated under this release.
+
+### Fixed
+
+- Async in-place redaction uses the same traversal adapter as sync, aligning nested object and array behavior across modes.
+
+## [2.5.1] - 2026-06-24 (internal milestone — included in 1.5.0)
 
 ### Changed
 
@@ -17,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Async in-place redaction uses the same traversal adapter as sync, aligning nested object and array behavior across modes.
 
-## [2.5.0] - 2026-06-24
+## [2.5.0] - 2026-06-24 (internal milestone — included in 1.5.0)
 
 ### Added
 
@@ -34,9 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal milestones (`2.x` tags)
 
-Development tag `2.5.0` adds value-pattern redaction on top of **2.4.0**. A future **v1.5.0** npm release will publish this content. See [docs/release-notes/README.md](docs/release-notes/README.md).
+Superseded by **v1.5.0** npm release. See [docs/release-notes/v1.5.0.md](docs/release-notes/v1.5.0.md).
 
-## [2.4.0] - 2026-06-24
+## [2.4.0] - 2026-06-24 (internal milestone — included in 1.5.0)
 
 ### Added
 
@@ -48,7 +76,7 @@ Development tag `2.5.0` adds value-pattern redaction on top of **2.4.0**. A futu
 
 ### Internal milestones (`2.x` tags)
 
-Development tag `2.4.0` tracks Phase 2 DX polish on top of **v1.3.0**. A future **v1.4.0** npm release will publish this content. See [docs/release-notes/README.md](docs/release-notes/README.md).
+Superseded by **v1.5.0** npm release. See [docs/release-notes/v1.5.0.md](docs/release-notes/v1.5.0.md).
 
 ## [1.3.0] - 2026-06-24
 
@@ -116,6 +144,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[1.5.0]: https://github.com/mologna/field-redactor/releases/tag/v1.5.0
 [2.5.1]: https://github.com/mologna/field-redactor/compare/2.5.0...2.5.1
 [2.5.0]: https://github.com/mologna/field-redactor/compare/2.4.0...2.5.0
 [2.4.0]: https://github.com/mologna/field-redactor/compare/2.3.1...2.4.0

@@ -2,7 +2,7 @@
 
 FieldRedactor applies **Shallow**, **Deep**, **Opaque**, and **Remove** rules via regex key matching. Throughout the docs, these are the conceptual names; the config fields are `secretKeys`, `deepSecretKeys`, `fullSecretKeys`, and `deleteSecretKeys`.
 
-**Precedence** (highest wins): Schema (`customObjects`) → Opaque → Deep → Remove → Shallow
+**Precedence** (highest wins): Schema (`customObjects`) → Opaque → Deep → Remove → Shallow → Value-pattern (`valuePatterns`)
 
 ## Cheat sheet
 

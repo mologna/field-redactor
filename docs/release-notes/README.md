@@ -1,92 +1,30 @@
-# FieldRedactor
+# Release notes index
 
-A TypeScript library for redacting PII from nested JSON using regex key rules, object **schemas** (sibling-key patterns), and configurable redaction modes.
+Per-version release notes for published **field-redactor** git tags. npm releases use the same `v1.x.x` tag names.
 
-## Install
+| Version | npm | Notes |
+| --- | --- | --- |
+| **v1.5.0** | Yes | [v1.5.0.md](v1.5.0.md) — DX polish, value patterns, unified traversal |
+| v1.3.0 | No (superseded by 1.5.0) | [v1.3.0.md](v1.3.0.md) — sync API, COW, builder, dryRun, presets |
+| v1.2.2 | No | [v1.2.2.md](v1.2.2.md) |
+| v1.2.1 | No | [v1.2.1.md](v1.2.1.md) |
+| v1.2.0 | Yes | [v1.2.0.md](v1.2.0.md) |
+| v1.1.0 | Yes | [v1.1.0.md](v1.1.0.md) |
+| v1.0.0 | Yes | [v1.0.0.md](v1.0.0.md) |
 
-```bash
-npm install field-redactor
-# or
-yarn add field-redactor
-```
+## Migration
 
-## Quick start
+- [1.2.x → 1.5.0](../guides/migration-1.2-to-1.5.md) — recommended upgrade path from the previous npm line.
 
-```typescript
-import { CustomObjectMatchType, FieldRedactor, FieldRedactorConfigBuilder } from 'field-redactor';
+## Internal milestones (removed)
 
-// Recommended: explicit rules via createSafe or the builder
-const redactor = FieldRedactorConfigBuilder.create()
-  .shallow(/email/i, /password/i)
-  .remove(/authKey/i)
-  .schema(
-    { name: CustomObjectMatchType.Ignore, type: CustomObjectMatchType.Ignore, value: 'name' },
-    { name: 'metadata-entry' }
-  )
-  .buildSafeRedactor();
+Git tags `2.0.0`–`2.5.1` tracked incremental development toward **v1.3.0** and **v1.5.0**. They were never published to npm and are removed from the repository. Their notes remain for archaeology:
 
-const result = redactor.redactSync({
-  email: 'alice@example.com',
-  authKey: 'secret',
-  metadata: [{ name: 'email', type: 'String', value: 'alice@example.com' }]
-});
-```
-
-`redact()` / `redactSync()` leave the input untouched by default (copy-on-write). Primitives, `Date`, and `null`/`undefined` at the root are returned unchanged.
-
-### Preview changes with `dryRun`
-
-```typescript
-const { result, report } = redactor.dryRunSync(payload);
-// report.redactedPaths, report.deletedPaths, report.matchedSchemas (with schemaName when named)
-```
-
-## Start here
-
-```
-Do you know which JSON keys are always sensitive?
-  ├─ yes → Shallow / Deep / Opaque / Remove (see secret key modes guide)
-  └─ only sometimes → shaped objects like { name, value }? → Schema rules (see metadata guide)
-```
-
-**Precedence:** Schema → Opaque → Deep → Remove → Shallow
-
-| Concept | Config field |
+| Tag | Notes |
 | --- | --- |
-| Shallow | `secretKeys` |
-| Deep | `deepSecretKeys` |
-| Opaque | `fullSecretKeys` |
-| Remove | `deleteSecretKeys` |
-| Schema | `customObjects` |
+| 2.4.0 | [2.4.0.md](2.4.0.md) — included in v1.5.0 |
+| 2.5.0 | [2.5.0.md](2.5.0.md) — included in v1.5.0 |
+| 2.5.1 | [2.5.1.md](2.5.1.md) — included in v1.5.0 |
+| 2.0.0–2.3.1 | [2.0.0.md](2.0.0.md) … [2.3.1.md](2.3.1.md) — included in v1.3.0 / v1.5.0 |
 
-Use `FieldRedactor.createSafe({ ... })` or `FieldRedactorConfigBuilder` so you never accidentally redact every field. `new FieldRedactor()` without rules still redacts all values (legacy default).
-
-## Documentation
-
-| Guide | Description |
-| --- | --- |
-| [Secret key modes](docs/guides/secret-key-modes.md) | Shallow, Deep, Opaque, Remove with examples |
-| [Metadata redaction](docs/guides/metadata-redaction.md) | `{ name, value }` schemas and sibling-key rules |
-| [Configuration reference](docs/reference/config.md) | Full option table, API, presets, validation |
-| [Release notes](docs/release-notes/README.md) | Per-version notes for every git tag |
-
-## API surface
-
-```typescript
-import {
-  FieldRedactor,
-  FieldRedactorConfigBuilder,
-  FieldRedactorConfigurationError,
-  FieldRedactorError,
-  presets,
-  validateFieldRedactorConfig
-} from 'field-redactor';
-```
-
-- **Sync:** `redactSync()`, `redactInPlaceSync()`, `dryRunSync()`
-- **Async:** `redact()`, `redactInPlace()`, `dryRun()` (sync path when no async-only `redactor`)
-- **Presets:** `presets.loggingMetadata()`, `presets.applicationLogging()`, `presets.keyValueEntries()`
-
-## Why this library exists
-
-Many log payloads encode sensitivity in sibling fields rather than key names — for example `{ name: "email", value: "user@example.com" }`. FieldRedactor matches object **schemas** and applies rules based on a sibling's value. See [Metadata redaction](docs/guides/metadata-redaction.md) for the full pattern.
+Full history: [CHANGELOG.md](../../CHANGELOG.md).
