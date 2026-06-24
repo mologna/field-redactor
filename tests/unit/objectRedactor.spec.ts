@@ -343,6 +343,32 @@ describe('ObjectRedactor', () => {
       expect(obj.delete).toBeUndefined();
     });
 
+    it('Applies custom object rules when the input has additional keys beyond the schema', async () => {
+      const metadataCustomObject: CustomObject = {
+        name: CustomObjectMatchType.Ignore,
+        type: CustomObjectMatchType.Ignore,
+        value: 'name'
+      };
+      const secretKeys: RegExp[] = [/email/];
+      secretManager = new SecretManager({ secretKeys });
+      customObjectManager = new CustomObjectManager([metadataCustomObject]);
+      const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
+
+      const obj = {
+        name: 'email',
+        type: 'String',
+        value: 'foo@bar.com',
+        id: 12
+      };
+      await redactor.redactInPlace(obj);
+      expect(obj).toEqual({
+        name: 'email',
+        type: 'String',
+        value: DEFAULT_REDACTED_TEXT,
+        id: 12
+      });
+    });
+
     it('Can handle CustomObjectMatchTypes correctly when value is an array', async () => {
       const customObject: CustomObject = {
         full: CustomObjectMatchType.Full,

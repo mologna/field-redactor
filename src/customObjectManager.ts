@@ -3,6 +3,8 @@ import { CustomObject } from './types';
 
 /**
  * Utility for determining if a given object matches a CustomObject schema.
+ * A value matches when it contains every key defined in the schema; additional keys on the value are allowed.
+ * When multiple schemas match, the schema with the most keys is selected.
  */
 export class CustomObjectManager {
   private customObjects: CustomObject[] = [];
@@ -18,16 +20,25 @@ export class CustomObjectManager {
 
   /**
    * Determines if the input value matches any of the custom objects provided in the constructor.
+   * When multiple schemas match, returns the schema with the most keys.
    * @param value The value to compare against the custom objects.
-   * @returns A matching custom object if one exists, otherwise undefined.
+   * @returns The most specific matching custom object, otherwise undefined.
    */
   public getMatchingCustomObject(value: any): CustomObject | undefined {
+    let bestMatch: CustomObject | undefined;
+    let bestMatchKeyCount = -1;
+
     for (const customObject of this.customObjects) {
       if (this.isCustomObject(value, customObject)) {
-        return customObject;
+        const keyCount = Object.keys(customObject).length;
+        if (keyCount > bestMatchKeyCount) {
+          bestMatch = customObject;
+          bestMatchKeyCount = keyCount;
+        }
       }
     }
-    return undefined;
+
+    return bestMatch;
   }
 
   private isCustomObject(value: any, customObject: CustomObject): boolean {
@@ -35,11 +46,7 @@ export class CustomObjectManager {
       return false;
     }
 
-    return !this.objectHasExtraKeys(customObject, value) && !this.objectHasExtraKeys(value, customObject);
-  }
-
-  private objectHasExtraKeys(object: any, objectToCompareTo: any): boolean {
-    return Object.keys(object).some((key) => !objectToCompareTo.hasOwnProperty(key));
+    return Object.keys(customObject).every((key) => Object.prototype.hasOwnProperty.call(value, key));
   }
 
   private validateCustomObjects(customObjects?: CustomObject[]): void {

@@ -141,6 +141,7 @@ export class ObjectRedactor {
     customObject: CustomObject,
     key: string
   ): any | undefined {
+    // Returns the sibling key's value when the sibling key is present, including falsy values.
     const siblingKeyName = customObject[key];
     if (typeof siblingKeyName !== 'string') {
       return undefined;

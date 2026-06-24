@@ -110,7 +110,7 @@ describe('CustomObjectManager', () => {
         bar: 'buzz',
         bim: 'bam'
       });
-      expect(result3).toBeUndefined();
+      expect(result3).toEqual(specialObjects[0]);
     });
 
     it('Does not return a CustomObject but functions correctly when configured with an empty list of CustomObjects', async () => {
@@ -147,7 +147,7 @@ describe('CustomObjectManager', () => {
       expect(result5).toBeUndefined();
     });
 
-    it('Does not return a CustomObject if the input has additional keys not in the CustomObject', () => {
+    it('Returns a matching CustomObject when the input has additional keys not in the CustomObject', () => {
       const specialObject: CustomObject = {
         foo: CustomObjectMatchType.Shallow,
         bar: CustomObjectMatchType.Shallow
@@ -158,7 +158,27 @@ describe('CustomObjectManager', () => {
         bar: 'buzz',
         bim: 'bam'
       });
-      expect(result).toBeUndefined();
+      expect(result).toEqual(specialObject);
+    });
+
+    it('Returns the most specific matching CustomObject when multiple schemas match', () => {
+      const generalSchema: CustomObject = {
+        name: CustomObjectMatchType.Ignore,
+        value: 'name'
+      };
+      const specificSchema: CustomObject = {
+        name: CustomObjectMatchType.Ignore,
+        type: CustomObjectMatchType.Ignore,
+        value: 'name'
+      };
+      const checker = new CustomObjectManager([generalSchema, specificSchema]);
+      const result = checker.getMatchingCustomObject({
+        name: 'email',
+        type: 'String',
+        value: 'foo@bar.com',
+        id: 12
+      });
+      expect(result).toEqual(specificSchema);
     });
 
     it('Does not return a CustomObject if the CustomObject has additional keys not in the value', () => {

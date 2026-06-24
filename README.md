@@ -15,7 +15,7 @@ In many instances, redaction of sensitive data from log output is fairly straigh
 }
 ```
 
-If this object is placed in a data set with many others, and only some of these objects contain PII, redaction becomes quite troublesome. One could redact all `value` fields from these objects - but this merely renders the log output useless for debugging or tracing, as all values are now redacted. The value of the `name` field determines whether or not the `value` field should be redacted. I often found myself writing custom logic to make this determination, which led to brittle code that was difficult to maintain. In the end I decided to write a new, highly configurable plug-and-play solution that could redact sensitive data in various manners while requiring only minor configuration tweaks. Enter FieldRedactor!
+If this object is placed in a data set with many others, and only some of these objects contain PII, redaction becomes quite troublesome. One could redact all `value` fields from these objects - but this merely renders the log output useless for debugging or tracing, as all values are now redacted. The value of the `name` field determines whether or not the `value` field should be redacted. In practice these objects often carry additional fields as well (such as `id` or `type`) that should not prevent schema matching. I often found myself writing custom logic to make this determination, which led to brittle code that was difficult to maintain. In the end I decided to write a new, highly configurable plug-and-play solution that could redact sensitive data in various manners while requiring only minor configuration tweaks. Enter FieldRedactor!
 
 ## Basic Usage
 Basic usage of the FieldRedactor is straightforward but not recommended. Object redaction can be performed either in-place or return the redacted object. If redactor is given a string, primitive, Date, function, or null/undefined value then it returns the value without modification.
@@ -54,7 +54,7 @@ The true power of this tool comes from its customization. FieldRedactor can be c
 | `fullSecretKeys`      | `RegExp[]`                     | `[]`                           | Specifies keys at any level of the JSON object to be stringified and fully redacted. Primarily used for objects and arrays. |
 | `deleteSecretKeys`      | `RegExp[]`                     | `[]`                           | Specifies keys at any level of the JSON object to be completely deleted. |
 | `customObjects`       | `CustomObject[]`               | `[]`                           | Specifies custom objects requiring fine-tuned redaction logic, such as referencing sibling keys. See the "Custom Objects" section for details. |
-| `ignoreBooleans`      | `boolean`                      | `false`                        | If `true`, booleans will not be redacted even if secret.               |
+| `ignoreBooleans`      | `boolean`                      | `false`                        | If `true`, booleans will not be redacted even if secret. When `false` (default), booleans matching a secret key are redacted. |
 | `ignoreNullOrUndefined` | `boolean`                   | `true`                         | If `true`, `null` and `undefined` values will not be redacted.        |
 
 ### `redactor` Configuration
@@ -279,7 +279,26 @@ console.log(result);
 - **Default:** `[]`
 - **Effect:** Any object that matches the schema will be redacted based on its schema.
   - _Note: has highest precedence_
-  - -_Note: If a custom object is nested inside another, the child takes precedence_
+  - _Note: If a custom object is nested inside another, the child takes precedence_
+
+#### Schema Matching
+An input object matches a `CustomObject` schema when it contains **every key defined in the schema**. Additional keys on the input object are allowed and are not evaluated by the custom object rules.
+
+When multiple schemas match the same input object, the schema with the **most keys** is selected.
+
+This relaxed matching is useful for real-world payloads such as metadata entries that include optional or contextual fields (for example, an `id` or `timestamp`) alongside the fields your schema cares about.
+
+```typescript
+// This schema matches objects that contain name, type, and value — even when extra fields are present.
+const metadataCustomObject: CustomObject = {
+  name: CustomObjectMatchType.Ignore,
+  type: CustomObjectMatchType.Ignore,
+  value: 'name'
+};
+
+// Matches: { name: "email", type: "String", value: "foo@bar.com", id: 12 }
+// Does not match: { name: "email", value: "foo@bar.com" } // missing required "type" key
+```
 
 #### `CustomObject` Schema
 ```typescript
@@ -294,7 +313,7 @@ console.log(result);
 - `value`:
   - **Type:** `CustomObjectMatchType | string`
   - **Effect:** Specifies how the value should be redacted
-    - `string` - checks if a sibling key with this name exists and contains a secret value. If so, redacts according to the secret specifier.
+    - `string` - names a **sibling key** on the same object. If that sibling key is present, its value is tested against the configured secret specifiers (`secretKeys`, `deepSecretKeys`, `fullSecretKeys`, `deleteSecretKeys`) to determine how this field should be redacted. Sibling key presence is checked with `hasOwnProperty`; falsy sibling values such as `""`, `0`, and `false` are supported.
     - `CustomObjectMatchType` - Redacts according to the match type.
 
 
@@ -309,6 +328,36 @@ Specifies how a value should be redacted in a CustomObject if not using a `strin
 | `Shallow` | Redact if primitive or array of primitives and revert to normal rules otherwise, including objects in arrays. |
 | `Pass` | Do not redact, but revert to normal rules for child objects or objects in arrays. |
 | `Ignore` | Skip evaluation entirely. |
+
+#### Sibling Key Specifier Example
+The sibling key's **value** (not its truthiness) determines whether secret rules apply. This is the pattern used for metadata-style objects where the `name` field identifies the sensitivity of `value`.
+
+```typescript
+import { FieldRedactor, CustomObject, CustomObjectMatchType } from 'field-redactor';
+
+const metadataCustomObject: CustomObject = {
+  name: CustomObjectMatchType.Ignore,
+  type: CustomObjectMatchType.Ignore,
+  value: 'name'
+};
+
+const fieldRedactor = new FieldRedactor({
+  secretKeys: [/email/],
+  customObjects: [metadataCustomObject]
+});
+
+// name is "email" → value is redacted
+await fieldRedactor.redact({ name: 'email', type: 'String', value: 'foo@bar.com', id: 12 });
+// → { name: "email", type: "String", value: "REDACTED", id: 12 }
+
+// Falsy sibling values are evaluated when the sibling key is present
+const falsyNameRedactor = new FieldRedactor({
+  secretKeys: [/^$/],
+  customObjects: [metadataCustomObject]
+});
+await falsyNameRedactor.redact({ name: '', type: 'String', value: 'foo@bar.com' });
+// → { name: "", type: "String", value: "REDACTED" }
+```
 
 #### Example
 ```typescript
@@ -456,7 +505,7 @@ console.log(result);
 ### `ignoreBooleans` Configuration
 - **Type:** `boolean`
 - **Default:** `false`
-- **Effect:** Specifies if boolean values should be redacted.
+- **Effect:** Specifies if boolean values should be redacted when their key matches a secret specifier. When `false` (the default), booleans are redacted like any other primitive. Set to `true` to leave boolean values unchanged even when their key is considered secret.
 
 ### Example
 #### Code
@@ -468,6 +517,13 @@ const myJsonObject = {
   fizz: false,
   buzz: true
 };
+
+// Default: booleans are redacted when their key matches a secret specifier
+const defaultRedactor = new FieldRedactor({ secretKeys: [/foo/, /fizz/, /buzz/] });
+const defaultResult = await defaultRedactor.redact(myJsonObject);
+// → { foo: "REDACTED", fizz: "REDACTED", buzz: "REDACTED" }
+
+// Opt out of boolean redaction explicitly
 const fieldRedactor = new FieldRedactor({
   ignoreBooleans: true,
   secretKeys: [/foo/, /fizz/, /buzz/]
@@ -477,7 +533,7 @@ const result = await fieldRedactor.redact(myJsonObject);
 console.log(result);
 ```
 
-#### Output
+#### Output (with `ignoreBooleans: true`)
 ```json
 {
   "foo": "REDACTED",
@@ -521,21 +577,21 @@ The following example illustrates the power and utility of this library when con
 
 ##### Code
 ```typescript
-import { FieldRedactor } from 'field-redactor';
+import { FieldRedactor, CustomObject, CustomObjectMatchType } from 'field-redactor';
 const myRedactor = (text: string) => Promise.resolve("REDACTED");
 const metadataCustomObject: CustomObject = {
-  name: CustomObjectMatchTypes.Pass,
-  type: CustomObjectMatchTypes.Pass,
-  id: CustomObjectMatchTypes.Shallow,
+  name: CustomObjectMatchType.Pass,
+  type: CustomObjectMatchType.Pass,
+  id: CustomObjectMatchType.Shallow,
   value: "name"
 };
 
 const actionsCustomObject: CustomObject = {
-  userId: CustomObjectMatchTypes.Pass,
-  field: CustomObjectMatchTypes.Pass,
-  action: CustomObjectMatchTypes.Pass,
+  userId: CustomObjectMatchType.Pass,
+  field: CustomObjectMatchType.Pass,
+  action: CustomObjectMatchType.Pass,
   value: "field"
-}
+};
 
 const fieldRedactor: FieldRedactor = new FieldRedactor({
   redactor: myRedactor,

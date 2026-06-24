@@ -10,6 +10,8 @@ import { FieldRedactorError } from './errors';
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
  * the secrets, deepSecrets, fullSecrets, and custom objects provided in the configuration. Refer to the README.md
  * for more details.
+ *
+ * Defaults: `ignoreNullOrUndefined` is `true`, `ignoreBooleans` is `false`.
  */
 export class FieldRedactor {
   private deepCopy = rfdc({ proto: true, circles: true });

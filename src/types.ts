@@ -10,6 +10,7 @@ export enum CustomObjectMatchType {
 }
 
 export type CustomObject = {
+  /** Keys define required fields for schema matching; input objects may contain additional keys. */
   [key: string]: CustomObjectMatchType | string;
 };
 
