@@ -92,7 +92,30 @@ export type FieldRedactorConfig = Partial<PrimitiveRedactorConfig> &
      * structural sharing. When false, those methods mutate the input in place (equivalent to `redactInPlace`).
      */
     cloneInput?: boolean;
+    /**
+     * When true, configuration warnings throw {@link FieldRedactorConfigurationError} at construction time.
+     * When false (default), warnings are exposed via {@link FieldRedactor.configWarnings} and `onConfigWarning`.
+     */
+    strict?: boolean;
+    /** Called for each non-fatal configuration warning when `strict` is false. */
+    onConfigWarning?: (message: string) => void;
   };
+
+export type MatchedSchemaReport = {
+  path: string;
+  schemaIndex: number;
+};
+
+export type DryRunReport = {
+  redactedPaths: string[];
+  deletedPaths: string[];
+  matchedSchemas: MatchedSchemaReport[];
+};
+
+export type DryRunResult<T> = {
+  result: T;
+  report: DryRunReport;
+};
 
 /** JSON object or array traversed during in-place redaction. */
 export type TraversableJson = JsonObject | JsonArray;

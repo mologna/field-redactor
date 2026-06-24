@@ -4,6 +4,9 @@ export {
   Redactor,
   FieldRedactorConfig,
   CustomObject,
+  DryRunReport,
+  DryRunResult,
+  MatchedSchemaReport,
   JsonArray,
   JsonFunction,
   JsonLeafValue,
@@ -20,4 +23,6 @@ export {
   isJsonObject
 } from './types';
 export { FieldRedactorError, FieldRedactorConfigurationError } from './errors';
+export { validateFieldRedactorConfig, hasExplicitRedactionRules } from './configValidator';
+export { presets } from './presets';
 export { FieldRedactor };

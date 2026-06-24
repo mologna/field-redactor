@@ -1,19 +1,13 @@
 import rfdc from 'rfdc';
 import { FieldRedactorConfig, JsonArray, JsonObject, RedactableInput, TraversableJson } from './types';
+import { DryRunResult } from './types';
 import { ObjectRedactor } from './objectRedactor';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
 import { CustomObjectManager } from './customObjectManager';
 import { FieldRedactorConfigurationError, FieldRedactorError } from './errors';
-
-const hasNonEmptyArray = <T>(value: T[] | undefined): value is T[] => value !== undefined && value.length > 0;
-
-const hasExplicitRedactionRules = (config: FieldRedactorConfig): boolean =>
-  hasNonEmptyArray(config.secretKeys) ||
-  hasNonEmptyArray(config.deepSecretKeys) ||
-  hasNonEmptyArray(config.fullSecretKeys) ||
-  hasNonEmptyArray(config.deleteSecretKeys) ||
-  hasNonEmptyArray(config.customObjects);
+import { hasExplicitRedactionRules, validateFieldRedactorConfig } from './configValidator';
+import { buildDryRunReport, createEmptyDryRunReport } from './dryRun';
 
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
@@ -25,10 +19,19 @@ const hasExplicitRedactionRules = (config: FieldRedactorConfig): boolean =>
 export class FieldRedactor {
   private readonly deepCopy = rfdc({ proto: true, circles: true });
   private readonly objectRedactor: ObjectRedactor;
+  private readonly customObjectManager: CustomObjectManager;
   private readonly usesAsyncRedactor: boolean;
   private readonly cloneInput: boolean;
 
+  /** Non-fatal configuration warnings from the last construction (empty when `strict` threw). */
+  public readonly configWarnings: readonly string[];
+
   constructor(config?: FieldRedactorConfig) {
+    this.configWarnings = validateFieldRedactorConfig(config);
+    for (const warning of this.configWarnings) {
+      config?.onConfigWarning?.(warning);
+    }
+
     const { redactor, syncRedactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects } =
       config || {};
 
@@ -53,9 +56,8 @@ export class FieldRedactor {
       deleteSecretKeys
     });
 
-    const customObjectChecker = new CustomObjectManager(customObjects);
-
-    this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectChecker);
+    this.customObjectManager = new CustomObjectManager(customObjects);
+    this.objectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, this.customObjectManager);
   }
 
   /**
@@ -71,6 +73,46 @@ export class FieldRedactor {
     }
 
     return new FieldRedactor(config);
+  }
+
+  /**
+   * Redacts a copy of the input and returns an audit report of affected paths without mutating the original.
+   */
+  public async dryRun<T extends RedactableInput>(value: T): Promise<DryRunResult<T>> {
+    if (this.isPrimitiveOrUndefined(value)) {
+      return { result: value, report: createEmptyDryRunReport() };
+    }
+
+    const snapshot = this.deepCopy(value) as T;
+    const result = await this.redact(value);
+    const report = buildDryRunReport(
+      snapshot,
+      result,
+      this.customObjectManager,
+      [...this.customObjectManager.getCustomObjects()]
+    );
+
+    return { result, report };
+  }
+
+  /**
+   * Synchronous {@link FieldRedactor.dryRun} without per-field Promise overhead.
+   */
+  public dryRunSync<T extends RedactableInput>(value: T): DryRunResult<T> {
+    if (this.isPrimitiveOrUndefined(value)) {
+      return { result: value, report: createEmptyDryRunReport() };
+    }
+
+    const snapshot = this.deepCopy(value) as T;
+    const result = this.redactSync(value);
+    const report = buildDryRunReport(
+      snapshot,
+      result,
+      this.customObjectManager,
+      [...this.customObjectManager.getCustomObjects()]
+    );
+
+    return { result, report };
   }
 
   /**
