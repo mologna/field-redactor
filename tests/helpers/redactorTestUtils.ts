@@ -5,13 +5,15 @@ import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { SecretManager } from '../../src/secretManager';
 import { CustomObjectManager } from '../../src/customObjectManager';
 import { EMPTY_VALUE_PATTERN_MATCHER, ValuePatternMatcher } from '../../src/valuePatternMatcher';
+import { EMPTY_PATH_RULE_MATCHER, PathRuleMatcher } from '../../src/pathRuleMatcher';
 import { CustomObject, SecretManagerConfig } from '../../src/types';
 
-export { EMPTY_VALUE_PATTERN_MATCHER };
+export { EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER };
 
 export type ObjectRedactorTestOptions = {
   secretManagerConfig?: SecretManagerConfig;
   valuePatternMatcher?: ValuePatternMatcher;
+  pathRuleMatcher?: PathRuleMatcher;
   customObjects?: CustomObject[];
   primitiveRedactor?: PrimitiveRedactor;
   customObjectManager?: CustomObjectManager;
@@ -25,7 +27,8 @@ export const createObjectRedactor = (options: ObjectRedactorTestOptions = {}): O
     options.primitiveRedactor ?? defaultPrimitiveRedactor(),
     new SecretManager(options.secretManagerConfig ?? {}),
     options.customObjectManager ?? new CustomObjectManager(options.customObjects),
-    options.valuePatternMatcher ?? EMPTY_VALUE_PATTERN_MATCHER
+    options.valuePatternMatcher ?? EMPTY_VALUE_PATTERN_MATCHER,
+    options.pathRuleMatcher ?? EMPTY_PATH_RULE_MATCHER
   );
 
 export const createSyncTraversal = (options: ObjectRedactorTestOptions = {}): ObjectRedactorTraversal =>
@@ -33,5 +36,6 @@ export const createSyncTraversal = (options: ObjectRedactorTestOptions = {}): Ob
     options.primitiveRedactor ?? defaultPrimitiveRedactor(),
     new SecretManager(options.secretManagerConfig ?? {}),
     options.customObjectManager ?? new CustomObjectManager(options.customObjects),
-    options.valuePatternMatcher ?? EMPTY_VALUE_PATTERN_MATCHER
+    options.valuePatternMatcher ?? EMPTY_VALUE_PATTERN_MATCHER,
+    options.pathRuleMatcher ?? EMPTY_PATH_RULE_MATCHER
   );

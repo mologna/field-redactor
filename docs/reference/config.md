@@ -12,6 +12,8 @@
 | **Remove** | `deleteSecretKeys` | `RegExp[]` | `[]` | Delete matching keys |
 | **Schema** | `customObjects` | `CustomObject[]` | `[]` | Per-shape rules; see [metadata guide](../guides/metadata-redaction.md) |
 | **Value-pattern** | `valuePatterns` | `RegExp[]` | `[]` | Opt-in: redact scalars whose string form matches a pattern |
+| **Path rule** | `pathRules` | `PathRule[]` | `[]` | Apply a mode at a JSON path (`metadata.*.value`) |
+| **Allowlist** | `passKeys` | `RegExp[]` | `[]` | Never redact matching key names under deep parents |
 | — | `schemaNames` | `string[]` | — | Optional labels parallel to `customObjects` for `dryRun` reports |
 | — | `ignoreBooleans` | `boolean` | `false` | Skip boolean redaction when `true` |
 | — | `ignoreNullOrUndefined` | `boolean` | `true` | Skip null/undefined redaction when `true` |
@@ -54,7 +56,9 @@ const redactor = FieldRedactorConfigBuilder.create()
   .buildSafeRedactor();
 ```
 
-Methods: `shallow`, `deep`, `opaque`, `remove` / `delete`, `schema`, `valuePattern`, `usePreset`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
+Methods: `shallow`, `deep`, `opaque`, `remove` / `delete`, `schema`, `valuePattern`, `pathRule`, `passKey`, `usePreset`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
+
+**Precedence:** Schema → path rule → opaque → deep → remove → shallow → value-pattern → default.
 
 ## Configuration validation
 

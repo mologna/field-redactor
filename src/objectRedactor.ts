@@ -3,6 +3,7 @@ import { CustomObjectManager } from './customObjectManager';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { SecretManager } from './secretManager';
 import { ValuePatternMatcher } from './valuePatternMatcher';
+import { PathRuleMatcher } from './pathRuleMatcher';
 import { ObjectRedactorTraversal } from './objectRedactorTraversal';
 
 /**
@@ -16,13 +17,15 @@ export class ObjectRedactor {
     primitiveRedactor: PrimitiveRedactor,
     secretManager: SecretManager,
     customObjManager: CustomObjectManager,
-    valuePatternMatcher: ValuePatternMatcher
+    valuePatternMatcher: ValuePatternMatcher,
+    pathRuleMatcher: PathRuleMatcher
   ) {
     this.traversal = new ObjectRedactorTraversal(
       primitiveRedactor,
       secretManager,
       customObjManager,
-      valuePatternMatcher
+      valuePatternMatcher,
+      pathRuleMatcher
     );
   }
 

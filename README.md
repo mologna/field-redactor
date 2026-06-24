@@ -69,6 +69,7 @@ Use `FieldRedactor.createSafe({ ... })` or `FieldRedactorConfigBuilder` so you n
 | [Metadata redaction](docs/guides/metadata-redaction.md) | `{ name, value }` schemas and sibling-key rules |
 | [Anti-patterns](docs/guides/anti-patterns.md) | Common config mistakes and fixes |
 | [Value-pattern redaction](docs/guides/value-pattern-redaction.md) | Detect PII in free-text field values |
+| [Path rules & allowlists](docs/guides/path-rules.md) | Target stable JSON paths; exempt keys under deep redaction |
 | [Configuration reference](docs/reference/config.md) | Full option table, API, presets, validation |
 | [Migration 1.2 → 1.5](docs/guides/migration-1.2-to-1.5.md) | Upgrade from the previous npm line |
 | [Release notes](docs/release-notes/README.md) | Per-version notes for every published tag |

@@ -3,6 +3,7 @@ import { getStringSpecifiedCustomObjectSecretKeyValueIfExists, toRedactablePrimi
 import { getJsonValueAtPath, getParentContext, parseJsonPath } from './jsonWalk';
 import { SecretManager } from './secretManager';
 import { ValuePatternMatcher } from './valuePatternMatcher';
+import { PathRuleMatcher } from './pathRuleMatcher';
 import {
   DryRunPathRule,
   isJsonObject,
@@ -22,6 +23,7 @@ type RedactAttributionContext = {
   secretManager: SecretManager;
   manager: CustomObjectManager;
   valuePatternMatcher: ValuePatternMatcher;
+  pathRuleMatcher: PathRuleMatcher;
 };
 
 const objectKeysFromPath = (segments: Array<string | number>): string[] =>
@@ -85,6 +87,19 @@ const trySchemaRule = ({
   });
 };
 
+const tryPathRule = ({ path, segments, pathRuleMatcher }: RedactAttributionContext): DryRunPathRule | undefined => {
+  const match = pathRuleMatcher.getMatchingRule(segments);
+  if (!match || match.mode === 'pass') {
+    return undefined;
+  }
+
+  if (match.mode === 'remove') {
+    return toPathRule(path, 'delete', 'remove', { pattern: match.path });
+  }
+
+  return toPathRule(path, 'redact', match.mode, { pattern: match.path });
+};
+
 const tryEnclosingOpaqueOrDeep = ({
   path,
   objectKeys,
@@ -135,6 +150,7 @@ const tryValuePatternRule = ({
 
 const REDACT_RULE_RESOLVERS = [
   trySchemaRule,
+  tryPathRule,
   tryEnclosingOpaqueOrDeep,
   tryLeafKeyRule,
   tryValuePatternRule
@@ -143,9 +159,16 @@ const REDACT_RULE_RESOLVERS = [
 export const attributeDeletePathRule = (
   before: JsonValue | undefined,
   path: string,
-  secretManager: SecretManager
+  secretManager: SecretManager,
+  pathRuleMatcher: PathRuleMatcher
 ): DryRunPathRule => {
-  const deleteKey = objectKeysFromPath(parseJsonPath(path)).at(-1);
+  const segments = parseJsonPath(path);
+  const pathRule = pathRuleMatcher.getMatchingRule(segments);
+  if (pathRule?.mode === 'remove') {
+    return toPathRule(path, 'delete', 'remove', { pattern: pathRule.path });
+  }
+
+  const deleteKey = objectKeysFromPath(segments).at(-1);
   if (deleteKey) {
     return attributeKeyRule(path, 'delete', deleteKey, secretManager);
   }
@@ -158,7 +181,8 @@ export const attributeRedactPathRule = (
   path: string,
   secretManager: SecretManager,
   manager: CustomObjectManager,
-  valuePatternMatcher: ValuePatternMatcher
+  valuePatternMatcher: ValuePatternMatcher,
+  pathRuleMatcher: PathRuleMatcher
 ): DryRunPathRule => {
   const segments = parseJsonPath(path);
   const context: RedactAttributionContext = {
@@ -168,7 +192,8 @@ export const attributeRedactPathRule = (
     objectKeys: objectKeysFromPath(segments),
     secretManager,
     manager,
-    valuePatternMatcher
+    valuePatternMatcher,
+    pathRuleMatcher
   };
 
   for (const resolve of REDACT_RULE_RESOLVERS) {
@@ -187,8 +212,11 @@ export const buildPathRules = (
   deletedPaths: readonly string[],
   secretManager: SecretManager,
   manager: CustomObjectManager,
-  valuePatternMatcher: ValuePatternMatcher
+  valuePatternMatcher: ValuePatternMatcher,
+  pathRuleMatcher: PathRuleMatcher
 ): DryRunPathRule[] => [
-  ...deletedPaths.map((path) => attributeDeletePathRule(before, path, secretManager)),
-  ...redactedPaths.map((path) => attributeRedactPathRule(before, path, secretManager, manager, valuePatternMatcher))
+  ...deletedPaths.map((path) => attributeDeletePathRule(before, path, secretManager, pathRuleMatcher)),
+  ...redactedPaths.map((path) =>
+    attributeRedactPathRule(before, path, secretManager, manager, valuePatternMatcher, pathRuleMatcher)
+  )
 ];

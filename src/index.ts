@@ -8,6 +8,8 @@ export {
   DryRunResult,
   DryRunPathRule,
   MatchedSchemaReport,
+  PathRule,
+  PathRuleMode,
   RedactionRuleLabel,
   JsonArray,
   JsonFunction,

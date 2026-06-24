@@ -31,6 +31,7 @@ export class FieldRedactor {
   private readonly usesAsyncRedactor: boolean;
   private readonly cloneInput: boolean;
   private readonly valuePatternMatcher: ReturnType<typeof buildFieldRedactorDeps>['valuePatternMatcher'];
+  private readonly pathRuleMatcher: ReturnType<typeof buildFieldRedactorDeps>['pathRuleMatcher'];
 
   /** Non-fatal configuration warnings from the last construction (empty when `strict` threw). */
   public readonly configWarnings: readonly string[];
@@ -47,6 +48,7 @@ export class FieldRedactor {
     this.cloneInput = deps.cloneInput;
     this.secretManager = deps.secretManager;
     this.valuePatternMatcher = deps.valuePatternMatcher;
+    this.pathRuleMatcher = deps.pathRuleMatcher;
     this.customObjectManager = deps.customObjectManager;
     this.objectRedactor = deps.objectRedactor;
   }
@@ -103,7 +105,8 @@ export class FieldRedactor {
         result as JsonValue,
         this.customObjectManager,
         this.secretManager,
-        this.valuePatternMatcher
+        this.valuePatternMatcher,
+        this.pathRuleMatcher
       )
     };
   }

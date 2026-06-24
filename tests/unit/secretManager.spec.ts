@@ -141,4 +141,14 @@ describe('NewSecretManager', () => {
     expect(secretManager.isDeleteSecretKey('redactMe')).toBe(false);
     expect(secretManager.isDeleteSecretKey('deleteMe')).toBe(true);
   });
+
+  it('returns true for passKeys only when configured and matching', () => {
+    const secretManager = new SecretManager({ passKeys: [/^id$/, /profile/] });
+
+    expect(secretManager.isPassKey('id')).toBe(true);
+    expect(secretManager.isPassKey('profile')).toBe(true);
+    expect(secretManager.isPassKey('ssn')).toBe(false);
+
+    expect(new SecretManager({}).isPassKey('id')).toBe(false);
+  });
 });

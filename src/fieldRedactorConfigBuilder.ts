@@ -7,7 +7,7 @@ import {
   RegisteredSchema,
   SecretRegexField
 } from './redactionRules';
-import { CustomObject, FieldRedactorConfig, Redactor, SyncRedactor } from './types';
+import { CustomObject, FieldRedactorConfig, PathRuleMode, Redactor, SyncRedactor } from './types';
 
 export type SchemaOptions = {
   /** Optional label surfaced in {@link FieldRedactor.dryRun} `matchedSchemas` reports. */
@@ -62,6 +62,20 @@ export class FieldRedactorConfigBuilder {
    */
   valuePattern(...patterns: RegExp[]): this {
     appendRegExpArray(this.config, 'valuePatterns', patterns);
+    return this;
+  }
+
+  /**
+   * Path rule — apply a redaction mode at a JSON path (`metadata.*.value`, `accountInfo.id`).
+   */
+  pathRule(path: string, mode: PathRuleMode): this {
+    this.config.pathRules = [...(this.config.pathRules ?? []), { path, mode }];
+    return this;
+  }
+
+  /** Allowlist — matching key names are never redacted under deep parents (`passKeys`). */
+  passKey(...patterns: RegExp[]): this {
+    appendRegExpArray(this.config, 'passKeys', patterns);
     return this;
   }
 

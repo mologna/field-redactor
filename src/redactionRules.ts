@@ -4,7 +4,9 @@ export const SECRET_REGEX_FIELDS = ['secretKeys', 'deepSecretKeys', 'fullSecretK
 
 export const VALUE_PATTERN_FIELDS = ['valuePatterns'] as const;
 
-export const REGEX_ARRAY_CONFIG_FIELDS = [...SECRET_REGEX_FIELDS, ...VALUE_PATTERN_FIELDS] as const;
+export const PASS_KEY_FIELDS = ['passKeys'] as const;
+
+export const REGEX_ARRAY_CONFIG_FIELDS = [...SECRET_REGEX_FIELDS, ...VALUE_PATTERN_FIELDS, ...PASS_KEY_FIELDS] as const;
 
 export type SecretRegexField = (typeof SECRET_REGEX_FIELDS)[number];
 
@@ -17,21 +19,23 @@ export const RULE_LIST_FIELDS = [...REGEX_ARRAY_CONFIG_FIELDS, 'customObjects'] 
 const hasNonEmptyArray = <T>(value: T[] | undefined): value is T[] => value !== undefined && value.length > 0;
 
 export const hasExplicitRedactionRules = (config?: FieldRedactorConfig): boolean =>
-  RULE_LIST_FIELDS.some((field) => hasNonEmptyArray(config?.[field] as unknown[] | undefined));
+  RULE_LIST_FIELDS.some((field) => hasNonEmptyArray(config?.[field] as unknown[] | undefined)) ||
+  hasNonEmptyArray(config?.pathRules);
 
 /**
  * When only value patterns are configured, shallow key matching must be disabled (`secretKeys: []`)
  * so the legacy default does not redact every field.
  */
 export const resolveSecretKeys = (config?: FieldRedactorConfig): RegExp[] | undefined => {
-  const { secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns } = config ?? {};
+  const { secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns, pathRules } =
+    config ?? {};
 
   if (secretKeys !== undefined) {
     return secretKeys;
   }
 
   if (
-    valuePatterns?.length &&
+    (valuePatterns?.length || pathRules?.length) &&
     !deepSecretKeys?.length &&
     !fullSecretKeys?.length &&
     !deleteSecretKeys?.length &&

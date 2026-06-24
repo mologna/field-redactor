@@ -80,6 +80,10 @@ export function redactPrimitiveValueIfSecret<T>(
   }
 
   if (forceDeepRedaction || secretManager.isSecretKey(key) || secretManager.isDeepSecretKey(key)) {
+    if (secretManager.isPassKey(key)) {
+      return value;
+    }
+
     return redact(value as RedactablePrimitive);
   }
 

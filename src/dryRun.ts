@@ -3,6 +3,7 @@ import { buildPathRules } from './dryRunAttribution';
 import { isTraversableJson, joinPath, walkTraversableJson } from './jsonWalk';
 import { SecretManager } from './secretManager';
 import { ValuePatternMatcher } from './valuePatternMatcher';
+import { PathRuleMatcher } from './pathRuleMatcher';
 import { DryRunReport, isJsonObject, JsonValue } from './types';
 
 export const createEmptyDryRunReport = (): DryRunReport => ({
@@ -91,7 +92,8 @@ export const buildDryRunReport = (
   after: JsonValue | undefined,
   manager: CustomObjectManager,
   secretManager: SecretManager,
-  valuePatternMatcher: ValuePatternMatcher
+  valuePatternMatcher: ValuePatternMatcher,
+  pathRuleMatcher: PathRuleMatcher
 ): DryRunReport => {
   const report = createEmptyDryRunReport();
 
@@ -104,7 +106,8 @@ export const buildDryRunReport = (
       report.deletedPaths,
       secretManager,
       manager,
-      valuePatternMatcher
+      valuePatternMatcher,
+      pathRuleMatcher
     );
   }
 

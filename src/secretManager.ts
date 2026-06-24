@@ -12,11 +12,13 @@ export class SecretManager {
   private deepSecretKeys?: RegExp[];
   private fullSecretKeys?: RegExp[];
   private deleteSecretKeys?: RegExp[];
+  private passKeys?: RegExp[];
 
   constructor(config: SecretManagerConfig) {
     this.deepSecretKeys = config.deepSecretKeys;
     this.fullSecretKeys = config.fullSecretKeys;
     this.deleteSecretKeys = config.deleteSecretKeys;
+    this.passKeys = config.passKeys;
 
     if (!config.secretKeys && (config.deepSecretKeys || config.fullSecretKeys || config.deleteSecretKeys)) {
       this.secretKeys = [];
@@ -64,6 +66,13 @@ export class SecretManager {
    */
   public isDeleteSecretKey(key: SecretSpecifierValue): boolean {
     return !!this.deleteSecretKeys && SecretManager.matchesAnyRegex(key, this.deleteSecretKeys);
+  }
+
+  /**
+   * Determines if a key is allowlisted and should not be redacted under deep or opaque parents.
+   */
+  public isPassKey(key: SecretSpecifierValue): boolean {
+    return !!this.passKeys && SecretManager.matchesAnyRegex(key, this.passKeys);
   }
 
   public getKeyRulePattern(key: SecretSpecifierValue, rule: KeyRule): string | undefined {

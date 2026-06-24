@@ -16,6 +16,7 @@ import { CustomObjectManager } from './customObjectManager';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { ContainerMutation, createContainerMutation } from './objectRedactorMutation';
 import { ValuePatternMatcher } from './valuePatternMatcher';
+import { PathRuleMatcher } from './pathRuleMatcher';
 import {
   getStringSpecifiedCustomObjectSecretKeyValueIfExists,
   getStringValue,
@@ -32,6 +33,15 @@ import {
   applyCustomObjectPrimitiveMatchTypeAsync
 } from './objectRedactorCustomObject';
 
+type FieldDisposition =
+  | { action: 'default' }
+  | { action: 'skip' }
+  | { action: 'remove' }
+  | { action: 'opaque' }
+  | { action: 'deep' }
+  | { action: 'shallow' }
+  | { action: 'pass-key-recurse' };
+
 /**
  * Unified JSON traversal for in-place and copy-on-write redaction.
  * Sync paths avoid Promise allocation; async paths use the same ContainerMutation adapter.
@@ -41,7 +51,8 @@ export class ObjectRedactorTraversal {
     private readonly primitiveRedactor: PrimitiveRedactor,
     private readonly secretManager: SecretManager,
     private readonly customObjManager: CustomObjectManager,
-    private readonly valuePatternMatcher: ValuePatternMatcher
+    private readonly valuePatternMatcher: ValuePatternMatcher,
+    private readonly pathRuleMatcher: PathRuleMatcher
   ) {}
 
   usesAsyncRedactor(): boolean {
@@ -66,17 +77,109 @@ export class ObjectRedactorTraversal {
     if (customObject && isJsonObject(value)) {
       this.handleCustomObject(container as ContainerMutation<JsonObject>, customObject);
     } else {
-      this.redactSecretFields(container, false);
+      this.redactSecretFields(container, false, []);
     }
 
     return (copyOnWrite ? container.result() : value) as T;
   }
 
-  private redactSecretFields(container: ContainerMutation<JsonObject | JsonArray>, forceDeepRedaction: boolean): void {
+  private resolveFieldDisposition(
+    key: string,
+    pathSegments: Array<string | number>,
+    forceDeepRedaction: boolean
+  ): FieldDisposition {
+    const fieldPath = [...pathSegments, key];
+    const pathRule = this.pathRuleMatcher.getMatchingRule(fieldPath);
+
+    if (pathRule?.mode === 'pass') {
+      return { action: 'skip' };
+    }
+
+    if (pathRule?.mode === 'remove') {
+      return { action: 'remove' };
+    }
+
+    if (pathRule?.mode === 'opaque') {
+      return { action: 'opaque' };
+    }
+
+    if (pathRule?.mode === 'deep') {
+      return { action: 'deep' };
+    }
+
+    if (pathRule?.mode === 'shallow') {
+      return { action: 'shallow' };
+    }
+
+    if (forceDeepRedaction && this.secretManager.isPassKey(key)) {
+      return { action: 'pass-key-recurse' };
+    }
+
+    return { action: 'default' };
+  }
+
+  private applyFieldDisposition(
+    disposition: FieldDisposition,
+    value: JsonValue | undefined,
+    key: string,
+    fieldPath: Array<string | number>,
+    container: ContainerMutation<JsonObject | JsonArray>
+  ): 'handled' | 'default' {
+    switch (disposition.action) {
+      case 'skip':
+        return 'handled';
+      case 'remove':
+        container.remove(key);
+        return 'handled';
+      case 'opaque':
+        container.set(key, this.redactPrimitive(getStringValue(value)));
+        return 'handled';
+      case 'deep':
+        this.redactFieldValue(value, key, true, container, fieldPath);
+        return 'handled';
+      case 'shallow':
+        if (Array.isArray(value) || isJsonObject(value)) {
+          this.redactFieldValue(value, key, false, container, fieldPath);
+        } else {
+          container.set(key, this.redactPrimitive(toRedactablePrimitive(value)));
+        }
+        return 'handled';
+      case 'pass-key-recurse':
+        if (Array.isArray(value) || isJsonObject(value)) {
+          this.redactFieldValue(value, key, false, container, fieldPath);
+        }
+        return 'handled';
+      default:
+        return 'default';
+    }
+  }
+
+  private redactFieldValue(
+    value: JsonValue | undefined,
+    key: string,
+    forceDeepRedaction: boolean,
+    container: ContainerMutation<JsonObject | JsonArray>,
+    fieldPath: Array<string | number>
+  ): void {
+    if (Array.isArray(value)) {
+      this.redactArrayInObject(value, key, forceDeepRedaction, container, fieldPath);
+    } else if (isJsonObject(value)) {
+      this.redactNestedObject(value, key, forceDeepRedaction, container, fieldPath);
+    } else {
+      container.set(key, this.redactPrimitiveValueIfSecret(key, value, forceDeepRedaction));
+    }
+  }
+
+  private redactSecretFields(
+    container: ContainerMutation<JsonObject | JsonArray>,
+    forceDeepRedaction: boolean,
+    pathSegments: Array<string | number>
+  ): void {
     const record = container.source as JsonRecord;
 
     for (const key of Object.keys(record)) {
       const value = record[key];
+      const fieldPath = [...pathSegments, key];
       const customObject = isJsonObject(value) ? this.customObjManager.getMatchingCustomObject(value) : undefined;
       if (customObject && isJsonObject(value)) {
         const child = createContainerMutation(value, container.copyOnWrite);
@@ -84,14 +187,22 @@ export class ObjectRedactorTraversal {
         if (container.copyOnWrite) {
           container.set(key, child.result());
         }
-      } else if (this.secretManager.isDeleteSecretKey(key)) {
+        continue;
+      }
+
+      const disposition = this.resolveFieldDisposition(key, pathSegments, forceDeepRedaction);
+      if (this.applyFieldDisposition(disposition, value, key, fieldPath, container) === 'handled') {
+        continue;
+      }
+
+      if (this.secretManager.isDeleteSecretKey(key)) {
         container.remove(key);
       } else if (this.secretManager.isFullSecretKey(key)) {
         container.set(key, this.redactPrimitive(getStringValue(value)));
       } else if (Array.isArray(value)) {
-        this.redactArrayInObject(value, key, forceDeepRedaction, container);
+        this.redactArrayInObject(value, key, forceDeepRedaction, container, fieldPath);
       } else if (isJsonObject(value)) {
-        this.redactNestedObject(value, key, forceDeepRedaction, container);
+        this.redactNestedObject(value, key, forceDeepRedaction, container, fieldPath);
       } else {
         container.set(key, this.redactPrimitiveValueIfSecret(key, value, forceDeepRedaction));
       }
@@ -102,17 +213,22 @@ export class ObjectRedactorTraversal {
     array: JsonArray,
     key: string,
     forceDeepRedaction: boolean,
-    parent: ContainerMutation<JsonObject | JsonArray>
+    parent: ContainerMutation<JsonObject | JsonArray>,
+    pathSegments: Array<string | number>
   ): void {
     const deepSecretKey = this.secretManager.isDeepSecretKey(key);
     const result =
       this.secretManager.isSecretKey(key) || deepSecretKey || forceDeepRedaction
-        ? this.redactAllArrayValues(array, forceDeepRedaction || deepSecretKey, parent.copyOnWrite)
-        : this.redactObjectsInArray(array, parent.copyOnWrite);
+        ? this.redactAllArrayValues(array, forceDeepRedaction || deepSecretKey, parent.copyOnWrite, pathSegments)
+        : this.redactObjectsInArray(array, parent.copyOnWrite, pathSegments);
     parent.set(key, result);
   }
 
-  private redactObjectsInArray(array: JsonArray, copyOnWrite: boolean): JsonArray {
+  private redactObjectsInArray(
+    array: JsonArray,
+    copyOnWrite: boolean,
+    pathSegments: Array<string | number>
+  ): JsonArray {
     const container = createContainerMutation(array, copyOnWrite);
 
     for (let index = 0; index < array.length; index++) {
@@ -120,10 +236,11 @@ export class ObjectRedactorTraversal {
       if (isJsonObject(value)) {
         const customObject = this.customObjManager.getMatchingCustomObject(value);
         const child = createContainerMutation(value, copyOnWrite);
+        const itemPath = [...pathSegments, index];
         if (customObject) {
           this.handleCustomObject(child, customObject);
         } else {
-          this.redactSecretFields(child, false);
+          this.redactSecretFields(child, false, itemPath);
         }
         container.set(String(index), child.result());
       }
@@ -132,14 +249,20 @@ export class ObjectRedactorTraversal {
     return container.result();
   }
 
-  private redactAllArrayValues(array: JsonArray, forceDeepRedaction: boolean, copyOnWrite: boolean): JsonArray {
+  private redactAllArrayValues(
+    array: JsonArray,
+    forceDeepRedaction: boolean,
+    copyOnWrite: boolean,
+    pathSegments: Array<string | number>
+  ): JsonArray {
     const container = createContainerMutation(array, copyOnWrite);
 
     for (let index = 0; index < array.length; index++) {
       const value = array[index];
       const key = String(index);
+      const itemPath = [...pathSegments, index];
       if (Array.isArray(value)) {
-        container.set(key, this.redactAllArrayValues(value, forceDeepRedaction, copyOnWrite));
+        container.set(key, this.redactAllArrayValues(value, forceDeepRedaction, copyOnWrite, itemPath));
       } else if (!isJsonObject(value)) {
         container.set(key, this.redactPrimitive(toRedactablePrimitive(value)));
       } else {
@@ -148,7 +271,7 @@ export class ObjectRedactorTraversal {
         if (customObject) {
           this.handleCustomObject(child, customObject);
         } else {
-          this.redactSecretFields(child, forceDeepRedaction);
+          this.redactSecretFields(child, forceDeepRedaction, itemPath);
         }
         container.set(key, child.result());
       }
@@ -161,14 +284,15 @@ export class ObjectRedactorTraversal {
     value: JsonObject,
     key: string,
     forceDeepRedaction: boolean,
-    parent: ContainerMutation<JsonObject | JsonArray>
+    parent: ContainerMutation<JsonObject | JsonArray>,
+    pathSegments: Array<string | number>
   ): void {
     const child = createContainerMutation(value, parent.copyOnWrite);
     const customObject = this.customObjManager.getMatchingCustomObject(value);
     if (customObject) {
       this.handleCustomObject(child, customObject);
     } else {
-      this.redactSecretFields(child, forceDeepRedaction || this.secretManager.isDeepSecretKey(key));
+      this.redactSecretFields(child, forceDeepRedaction || this.secretManager.isDeepSecretKey(key), pathSegments);
     }
     if (parent.copyOnWrite) {
       parent.set(key, child.result());
@@ -214,7 +338,7 @@ export class ObjectRedactorTraversal {
     } else {
       const isDeepSecretKey = this.secretManager.isDeepSecretKey(stringKey);
       if (isDeepSecretKey || this.secretManager.isSecretKey(stringKey)) {
-        container.set(key, this.redactAllArrayValues(fieldValue, isDeepSecretKey, container.copyOnWrite));
+        container.set(key, this.redactAllArrayValues(fieldValue, isDeepSecretKey, container.copyOnWrite, []));
       }
     }
   }
@@ -232,10 +356,10 @@ export class ObjectRedactorTraversal {
     applyCustomObjectArrayMatchType(matchType, {
       deleteKey: () => container.remove(key),
       redactFull: () => container.set(key, this.redactPrimitive(getStringValue(fieldValue))),
-      redactDeep: () => container.set(key, this.redactAllArrayValues(fieldValue, true, container.copyOnWrite)),
-      redactShallow: () => container.set(key, this.redactAllArrayValues(fieldValue, false, container.copyOnWrite)),
+      redactDeep: () => container.set(key, this.redactAllArrayValues(fieldValue, true, container.copyOnWrite, [])),
+      redactShallow: () => container.set(key, this.redactAllArrayValues(fieldValue, false, container.copyOnWrite, [])),
       passThrough: () => {
-        this.redactArrayInObject(fieldValue, key, false, container);
+        this.redactArrayInObject(fieldValue, key, false, container, []);
       }
     });
   }
@@ -270,11 +394,11 @@ export class ObjectRedactorTraversal {
       container.set(key, this.redactPrimitive(getStringValue(fieldValue)));
     } else if (this.secretManager.isDeepSecretKey(stringKey)) {
       const child = createContainerMutation(fieldValue, container.copyOnWrite);
-      this.redactSecretFields(child, true);
+      this.redactSecretFields(child, true, []);
       container.set(key, child.result());
     } else if (this.secretManager.isSecretKey(stringKey)) {
       const child = createContainerMutation(fieldValue, container.copyOnWrite);
-      this.redactSecretFields(child, false);
+      this.redactSecretFields(child, false, []);
       container.set(key, child.result());
     }
   }
@@ -294,12 +418,12 @@ export class ObjectRedactorTraversal {
       redactFull: () => container.set(key, this.redactPrimitive(getStringValue(fieldValue))),
       redactDeep: () => {
         const child = createContainerMutation(fieldValue, container.copyOnWrite);
-        this.redactSecretFields(child, true);
+        this.redactSecretFields(child, true, []);
         container.set(key, child.result());
       },
       redactShallowOrPass: () => {
         const child = createContainerMutation(fieldValue, container.copyOnWrite);
-        this.redactSecretFields(child, false);
+        this.redactSecretFields(child, false, []);
         container.set(key, child.result());
       },
       ignore: () => undefined
@@ -377,20 +501,74 @@ export class ObjectRedactorTraversal {
     if (customObject && isJsonObject(value)) {
       await this.handleCustomObjectAsync(container as ContainerMutation<JsonObject>, customObject);
     } else {
-      await this.redactSecretFieldsAsync(container, false);
+      await this.redactSecretFieldsAsync(container, false, []);
     }
 
     return (copyOnWrite ? container.result() : value) as T;
   }
 
+  private async applyFieldDispositionAsync(
+    disposition: FieldDisposition,
+    value: JsonValue | undefined,
+    key: string,
+    fieldPath: Array<string | number>,
+    container: ContainerMutation<JsonObject | JsonArray>
+  ): Promise<'handled' | 'default'> {
+    switch (disposition.action) {
+      case 'skip':
+        return 'handled';
+      case 'remove':
+        container.remove(key);
+        return 'handled';
+      case 'opaque':
+        container.set(key, await this.redactPrimitiveAsync(getStringValue(value)));
+        return 'handled';
+      case 'deep':
+        await this.redactFieldValueAsync(value, key, true, container, fieldPath);
+        return 'handled';
+      case 'shallow':
+        if (Array.isArray(value) || isJsonObject(value)) {
+          await this.redactFieldValueAsync(value, key, false, container, fieldPath);
+        } else {
+          container.set(key, await this.redactPrimitiveAsync(toRedactablePrimitive(value)));
+        }
+        return 'handled';
+      case 'pass-key-recurse':
+        if (Array.isArray(value) || isJsonObject(value)) {
+          await this.redactFieldValueAsync(value, key, false, container, fieldPath);
+        }
+        return 'handled';
+      default:
+        return 'default';
+    }
+  }
+
+  private async redactFieldValueAsync(
+    value: JsonValue | undefined,
+    key: string,
+    forceDeepRedaction: boolean,
+    container: ContainerMutation<JsonObject | JsonArray>,
+    fieldPath: Array<string | number>
+  ): Promise<void> {
+    if (Array.isArray(value)) {
+      await this.redactArrayInObjectAsync(value, key, forceDeepRedaction, container, fieldPath);
+    } else if (isJsonObject(value)) {
+      await this.redactNestedObjectAsync(value, key, forceDeepRedaction, container, fieldPath);
+    } else {
+      container.set(key, await this.redactPrimitiveValueIfSecretAsync(key, value, forceDeepRedaction));
+    }
+  }
+
   private async redactSecretFieldsAsync(
     container: ContainerMutation<JsonObject | JsonArray>,
-    forceDeepRedaction: boolean
+    forceDeepRedaction: boolean,
+    pathSegments: Array<string | number>
   ): Promise<void> {
     const record = container.source as JsonRecord;
 
     for (const key of Object.keys(record)) {
       const fieldValue = record[key];
+      const fieldPath = [...pathSegments, key];
       const customObject = isJsonObject(fieldValue) ? this.customObjManager.getMatchingCustomObject(fieldValue) : undefined;
       if (customObject && isJsonObject(fieldValue)) {
         const child = createContainerMutation(fieldValue, container.copyOnWrite);
@@ -398,14 +576,22 @@ export class ObjectRedactorTraversal {
         if (container.copyOnWrite) {
           container.set(key, child.result());
         }
-      } else if (this.secretManager.isDeleteSecretKey(key)) {
+        continue;
+      }
+
+      const disposition = this.resolveFieldDisposition(key, pathSegments, forceDeepRedaction);
+      if ((await this.applyFieldDispositionAsync(disposition, fieldValue, key, fieldPath, container)) === 'handled') {
+        continue;
+      }
+
+      if (this.secretManager.isDeleteSecretKey(key)) {
         container.remove(key);
       } else if (this.secretManager.isFullSecretKey(key)) {
         container.set(key, await this.redactPrimitiveAsync(getStringValue(fieldValue)));
       } else if (Array.isArray(fieldValue)) {
-        await this.redactArrayInObjectAsync(fieldValue, key, forceDeepRedaction, container);
+        await this.redactArrayInObjectAsync(fieldValue, key, forceDeepRedaction, container, fieldPath);
       } else if (isJsonObject(fieldValue)) {
-        await this.redactNestedObjectAsync(fieldValue, key, forceDeepRedaction, container);
+        await this.redactNestedObjectAsync(fieldValue, key, forceDeepRedaction, container, fieldPath);
       } else {
         container.set(key, await this.redactPrimitiveValueIfSecretAsync(key, fieldValue, forceDeepRedaction));
       }
@@ -416,17 +602,22 @@ export class ObjectRedactorTraversal {
     array: JsonArray,
     key: string,
     forceDeepRedaction: boolean,
-    parent: ContainerMutation<JsonObject | JsonArray>
+    parent: ContainerMutation<JsonObject | JsonArray>,
+    pathSegments: Array<string | number>
   ): Promise<void> {
     const deepSecretKey = this.secretManager.isDeepSecretKey(key);
     const result =
       this.secretManager.isSecretKey(key) || deepSecretKey || forceDeepRedaction
-        ? await this.redactAllArrayValuesAsync(array, forceDeepRedaction || deepSecretKey, parent.copyOnWrite)
-        : await this.redactObjectsInArrayAsync(array, parent.copyOnWrite);
+        ? await this.redactAllArrayValuesAsync(array, forceDeepRedaction || deepSecretKey, parent.copyOnWrite, pathSegments)
+        : await this.redactObjectsInArrayAsync(array, parent.copyOnWrite, pathSegments);
     parent.set(key, result);
   }
 
-  private async redactObjectsInArrayAsync(array: JsonArray, copyOnWrite: boolean): Promise<JsonArray> {
+  private async redactObjectsInArrayAsync(
+    array: JsonArray,
+    copyOnWrite: boolean,
+    pathSegments: Array<string | number>
+  ): Promise<JsonArray> {
     const container = createContainerMutation(array, copyOnWrite);
 
     for (let index = 0; index < array.length; index++) {
@@ -434,10 +625,11 @@ export class ObjectRedactorTraversal {
       if (isJsonObject(item)) {
         const customObject = this.customObjManager.getMatchingCustomObject(item);
         const child = createContainerMutation(item, copyOnWrite);
+        const itemPath = [...pathSegments, index];
         if (customObject) {
           await this.handleCustomObjectAsync(child, customObject);
         } else {
-          await this.redactSecretFieldsAsync(child, false);
+          await this.redactSecretFieldsAsync(child, false, itemPath);
         }
         container.set(String(index), child.result());
       }
@@ -449,15 +641,17 @@ export class ObjectRedactorTraversal {
   private async redactAllArrayValuesAsync(
     array: JsonArray,
     forceDeepRedaction: boolean,
-    copyOnWrite: boolean
+    copyOnWrite: boolean,
+    pathSegments: Array<string | number>
   ): Promise<JsonArray> {
     const container = createContainerMutation(array, copyOnWrite);
 
     for (let index = 0; index < array.length; index++) {
       const item = array[index];
       const key = String(index);
+      const itemPath = [...pathSegments, index];
       if (Array.isArray(item)) {
-        container.set(key, await this.redactAllArrayValuesAsync(item, forceDeepRedaction, copyOnWrite));
+        container.set(key, await this.redactAllArrayValuesAsync(item, forceDeepRedaction, copyOnWrite, itemPath));
       } else if (!isJsonObject(item)) {
         container.set(key, await this.redactPrimitiveAsync(toRedactablePrimitive(item)));
       } else {
@@ -466,7 +660,7 @@ export class ObjectRedactorTraversal {
         if (customObject) {
           await this.handleCustomObjectAsync(child, customObject);
         } else {
-          await this.redactSecretFieldsAsync(child, forceDeepRedaction);
+          await this.redactSecretFieldsAsync(child, forceDeepRedaction, itemPath);
         }
         container.set(key, child.result());
       }
@@ -479,14 +673,15 @@ export class ObjectRedactorTraversal {
     value: JsonObject,
     key: string,
     forceDeepRedaction: boolean,
-    parent: ContainerMutation<JsonObject | JsonArray>
+    parent: ContainerMutation<JsonObject | JsonArray>,
+    pathSegments: Array<string | number>
   ): Promise<void> {
     const child = createContainerMutation(value, parent.copyOnWrite);
     const customObject = this.customObjManager.getMatchingCustomObject(value);
     if (customObject) {
       await this.handleCustomObjectAsync(child, customObject);
     } else {
-      await this.redactSecretFieldsAsync(child, forceDeepRedaction || this.secretManager.isDeepSecretKey(key));
+      await this.redactSecretFieldsAsync(child, forceDeepRedaction || this.secretManager.isDeepSecretKey(key), pathSegments);
     }
     if (parent.copyOnWrite) {
       parent.set(key, child.result());
@@ -545,7 +740,7 @@ export class ObjectRedactorTraversal {
       if (isDeepSecretKey || this.secretManager.isSecretKey(stringKey)) {
         container.set(
           key,
-          await this.redactAllArrayValuesAsync(fieldValue, isDeepSecretKey, container.copyOnWrite)
+          await this.redactAllArrayValuesAsync(fieldValue, isDeepSecretKey, container.copyOnWrite, [])
         );
       }
     }
@@ -565,11 +760,11 @@ export class ObjectRedactorTraversal {
       deleteKey: async () => container.remove(key),
       redactFull: async () => container.set(key, await this.redactPrimitiveAsync(getStringValue(fieldValue))),
       redactDeep: async () =>
-        container.set(key, await this.redactAllArrayValuesAsync(fieldValue, true, container.copyOnWrite)),
+        container.set(key, await this.redactAllArrayValuesAsync(fieldValue, true, container.copyOnWrite, [])),
       redactShallow: async () =>
-        container.set(key, await this.redactAllArrayValuesAsync(fieldValue, false, container.copyOnWrite)),
+        container.set(key, await this.redactAllArrayValuesAsync(fieldValue, false, container.copyOnWrite, [])),
       passThrough: async () => {
-        await this.redactArrayInObjectAsync(fieldValue, key, false, container);
+        await this.redactArrayInObjectAsync(fieldValue, key, false, container, []);
       }
     });
   }
@@ -612,11 +807,11 @@ export class ObjectRedactorTraversal {
       container.set(key, await this.redactPrimitiveAsync(getStringValue(fieldValue)));
     } else if (this.secretManager.isDeepSecretKey(stringKey)) {
       const child = createContainerMutation(fieldValue, container.copyOnWrite);
-      await this.redactSecretFieldsAsync(child, true);
+      await this.redactSecretFieldsAsync(child, true, []);
       container.set(key, child.result());
     } else if (this.secretManager.isSecretKey(stringKey)) {
       const child = createContainerMutation(fieldValue, container.copyOnWrite);
-      await this.redactSecretFieldsAsync(child, false);
+      await this.redactSecretFieldsAsync(child, false, []);
       container.set(key, child.result());
     }
   }
@@ -636,12 +831,12 @@ export class ObjectRedactorTraversal {
       redactFull: async () => container.set(key, await this.redactPrimitiveAsync(getStringValue(fieldValue))),
       redactDeep: async () => {
         const child = createContainerMutation(fieldValue, container.copyOnWrite);
-        await this.redactSecretFieldsAsync(child, true);
+        await this.redactSecretFieldsAsync(child, true, []);
         container.set(key, child.result());
       },
       redactShallowOrPass: async () => {
         const child = createContainerMutation(fieldValue, container.copyOnWrite);
-        await this.redactSecretFieldsAsync(child, false);
+        await this.redactSecretFieldsAsync(child, false, []);
         container.set(key, child.result());
       },
       ignore: async () => undefined

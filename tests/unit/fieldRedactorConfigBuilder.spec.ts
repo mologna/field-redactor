@@ -79,4 +79,35 @@ describe('FieldRedactorConfigBuilder', () => {
       ])
     );
   });
+
+  it('builds path rules and passKeys', () => {
+    const config = FieldRedactorConfigBuilder.create()
+      .pathRule('metadata.*.value', 'shallow')
+      .passKey(/^id$/)
+      .build();
+
+    expect(config.pathRules).toEqual([{ path: 'metadata.*.value', mode: 'shallow' }]);
+    expect(config.passKeys).toEqual([/^id$/]);
+  });
+
+  it('supports scalar builder options', () => {
+    const warnings: string[] = [];
+    const config = FieldRedactorConfigBuilder.create()
+      .shallow(/email/i)
+      .redactor(async (value) => `async:${value}`)
+      .syncRedactor((value) => `sync:${value}`)
+      .ignoreBooleans(true)
+      .ignoreNullOrUndefined(false)
+      .cloneInput(false)
+      .strict()
+      .onConfigWarning((message) => warnings.push(message))
+      .build();
+
+    expect(config.syncRedactor?.('x')).toBe('sync:x');
+    expect(config.ignoreBooleans).toBe(true);
+    expect(config.ignoreNullOrUndefined).toBe(false);
+    expect(config.cloneInput).toBe(false);
+    expect(config.strict).toBe(true);
+    expect(config.onConfigWarning).toBeDefined();
+  });
 });

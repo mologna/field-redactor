@@ -10,4 +10,25 @@ describe('dryRunAttribution', () => {
       { path: 'authKey', action: 'delete', rule: 'remove', pattern: '/authKey/' }
     ]);
   });
+
+  it('attributes path-rule deletes and redactions', () => {
+    const redactor = FieldRedactor.createSafe({
+      pathRules: [
+        { path: 'session.token', mode: 'remove' },
+        { path: 'logs.*.message', mode: 'deep' }
+      ]
+    });
+
+    const { report } = redactor.dryRunSync({
+      session: { token: 'abc', id: '1' },
+      logs: [{ message: 'secret', meta: { note: 'nested' } }]
+    });
+
+    expect(report.pathRules).toEqual(
+      expect.arrayContaining([
+        { path: 'session.token', action: 'delete', rule: 'remove', pattern: 'session.token' },
+        { path: 'logs[0].message', action: 'redact', rule: 'deep', pattern: 'logs.*.message' }
+      ])
+    );
+  });
 });

@@ -4,12 +4,14 @@ import { PrimitiveRedactor } from './primitiveRedactor';
 import { resolveSecretKeys } from './redactionRules';
 import { SecretManager } from './secretManager';
 import { FieldRedactorConfig } from './types';
+import { EMPTY_PATH_RULE_MATCHER, PathRuleMatcher } from './pathRuleMatcher';
 import { EMPTY_VALUE_PATTERN_MATCHER, ValuePatternMatcher } from './valuePatternMatcher';
 
 export type FieldRedactorDeps = {
   primitiveRedactor: PrimitiveRedactor;
   secretManager: SecretManager;
   valuePatternMatcher: ValuePatternMatcher;
+  pathRuleMatcher: PathRuleMatcher;
   customObjectManager: CustomObjectManager;
   objectRedactor: ObjectRedactor;
   usesAsyncRedactor: boolean;
@@ -24,7 +26,9 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     fullSecretKeys,
     deleteSecretKeys,
     customObjects,
-    valuePatterns
+    valuePatterns,
+    pathRules,
+    passKeys
   } = config ?? {};
 
   const ignoreNullOrUndefined =
@@ -43,21 +47,25 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     secretKeys: resolveSecretKeys(config),
     deepSecretKeys,
     fullSecretKeys,
-    deleteSecretKeys
+    deleteSecretKeys,
+    passKeys
   });
   const valuePatternMatcher = valuePatterns?.length ? new ValuePatternMatcher(valuePatterns) : EMPTY_VALUE_PATTERN_MATCHER;
+  const pathRuleMatcher = pathRules?.length ? new PathRuleMatcher(pathRules) : EMPTY_PATH_RULE_MATCHER;
   const customObjectManager = new CustomObjectManager(customObjects, config?.schemaNames);
   const objectRedactor = new ObjectRedactor(
     primitiveRedactor,
     secretManager,
     customObjectManager,
-    valuePatternMatcher
+    valuePatternMatcher,
+    pathRuleMatcher
   );
 
   return {
     primitiveRedactor,
     secretManager,
     valuePatternMatcher,
+    pathRuleMatcher,
     customObjectManager,
     objectRedactor,
     usesAsyncRedactor: primitiveRedactor.usesAsyncRedactor(),

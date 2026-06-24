@@ -79,6 +79,26 @@ export type SecretManagerConfig = {
   fullSecretKeys?: RegExp[];
   /** Remove — delete matching keys from output (`deleteSecretKeys`). */
   deleteSecretKeys?: RegExp[];
+  /**
+   * Allowlist — matching key names are never redacted, even under deep or opaque parents (`passKeys`).
+   */
+  passKeys?: RegExp[];
+};
+
+export type PathRuleMode = 'shallow' | 'deep' | 'opaque' | 'remove' | 'pass';
+
+export type PathRule = {
+  /** JSON path pattern with `.` segments, `[index]` arrays, and `*` single-segment wildcards. */
+  path: string;
+  mode: PathRuleMode;
+};
+
+export type PathRuleConfig = {
+  /**
+   * Path-based rules apply a redaction mode at an exact JSON path (for example `metadata.*.value`).
+   * Precedence: schema → path rule → key-regex rules → value patterns.
+   */
+  pathRules?: PathRule[];
 };
 
 export type ValuePatternConfig = {
@@ -91,7 +111,8 @@ export type ValuePatternConfig = {
 
 export type FieldRedactorConfig = Partial<PrimitiveRedactorConfig> &
   SecretManagerConfig &
-  ValuePatternConfig & {
+  ValuePatternConfig &
+  PathRuleConfig & {
     redactor?: Redactor;
     syncRedactor?: SyncRedactor;
     /** Schema rules for shaped objects (`customObjects`). */
