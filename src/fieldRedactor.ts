@@ -59,9 +59,9 @@ export class FieldRedactor {
   }
 
   /**
-   * Creates a FieldRedactor that requires at least one explicit redaction rule (`secretKeys`, `deepSecretKeys`,
-   * `fullSecretKeys`, `deleteSecretKeys`, or `customObjects`). Unlike `new FieldRedactor()`, omitting all secret
-   * specifiers does not default to redacting every value.
+   * Creates a FieldRedactor that requires at least one explicit redaction rule: Shallow (`secretKeys`),
+   * Deep (`deepSecretKeys`), Opaque (`fullSecretKeys`), Remove (`deleteSecretKeys`), or Schema (`customObjects`).
+   * Unlike `new FieldRedactor()`, omitting all rules does not default to redacting every value.
    */
   public static createSafe(config: FieldRedactorConfig): FieldRedactor {
     if (!hasExplicitRedactionRules(config)) {

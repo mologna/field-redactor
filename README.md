@@ -2,7 +2,7 @@
 
 A utility `npm` module for redacting sensitive data from JSON objects using complex, recursive evaluation logic.
 
-It can redact JSON values based on Regular Expression matching of key values, custom object logic for PII values identified by fields other than their key, deeply redact sensitive objects, and other PII redaction strategies that more simplistic approaches cannot handle.
+It can redact JSON values based on Regular Expression key matching, **Schema** rules for shaped objects (PII identified by sibling fields rather than key names), **Deep** subtree redaction, **Opaque** whole-value redaction, and other strategies that simpler tools cannot handle.
 
 # History
 In many instances, redaction of sensitive data from log output is fairly straightforward and can be accomplished through existing redaction libraries. However, I often encountered scenarios where such simplistic approaches were not sufficient. Take, for example, the following object:
@@ -41,7 +41,7 @@ console.log(myJsonObject); // { foo: "REDACTED", fizz: null }
 > 
 > **Note:** `redact()` / `redactSync()` use copy-on-write by default (`cloneInput: true`), so only branches that change are cloned and unmodified subtrees are shared with the input. Set `cloneInput: false` to mutate the input in place instead.
 >
-> **Tip:** Prefer `FieldRedactor.createSafe({ secretKeys: [...] })` for new projects — it requires explicit redaction rules and avoids the default behavior where omitting all secret specifiers redacts every value. See [Safe construction](#safe-construction) below.
+> **Tip:** Prefer `FieldRedactor.createSafe({ secretKeys: [...] })` for new projects — it requires explicit Shallow / Deep / Opaque / Remove / Schema rules and avoids the default where omitting all rules redacts every value. See [Safe construction](#safe-construction) below.
 
 ## Start here
 
@@ -49,14 +49,26 @@ Not sure which config options you need? Use this decision guide:
 
 ```
 Do you know which JSON keys are always sensitive (email, password, authKey, …)?
-  ├─ yes → use secretKeys, deepSecretKeys, fullSecretKeys, or deleteSecretKeys
-  │         (see the cheat sheet below for which mode fits each case)
+  ├─ yes → pick a redaction mode (see [cheat sheet](#redaction-modes-cheat-sheet)):
+  │         Shallow (`secretKeys`), Deep (`deepSecretKeys`), Opaque (`fullSecretKeys`), or Remove (`deleteSecretKeys`)
   └─ no / only sometimes → do values live in shaped objects (e.g. { name, value })?
-        ├─ yes → use customObjects with a sibling-key schema (see metadata example below)
-        └─ no  → use secretKeys on stable field names
+        ├─ yes → define an object schema via `customObjects`
+        └─ no  → Shallow (`secretKeys`) on stable field names
 ```
 
-**Precedence** (highest wins): `customObjects` → `fullSecretKeys` → `deepSecretKeys` → `deleteSecretKeys` → `secretKeys`
+**Precedence** (highest wins): Schema (`customObjects`) → Opaque (`fullSecretKeys`) → Deep (`deepSecretKeys`) → Remove (`deleteSecretKeys`) → Shallow (`secretKeys`)
+
+Throughout this README, **Shallow / Deep / Opaque / Remove / Schema** are the conceptual names; the **config field** in backticks is what you type in code.
+
+### Terminology
+
+| Concept (docs) | Config field / type | What it does |
+| --- | --- | --- |
+| **Shallow** | `secretKeys` | Redact this field's scalar value only; recurse into nested objects with normal rules |
+| **Deep** | `deepSecretKeys` | Redact this field and all descendant primitives |
+| **Opaque** | `fullSecretKeys` | Stringify the entire value (object or array), then redact |
+| **Remove** | `deleteSecretKeys` | Delete the key from the output |
+| **Schema** | `customObjects` / `CustomObject` | Match a specific object shape and apply per-field rules (including sibling-key indirection) |
 
 ### Most common setup
 
@@ -66,12 +78,12 @@ This pattern covers typical application logs: named fields are redacted, auth ke
 import { CustomObjectMatchType, FieldRedactor } from 'field-redactor';
 
 const fieldRedactor = FieldRedactor.createSafe({
-  secretKeys: [/email/i, /password/i, /phone/i, /.+name$/i],
-  deleteSecretKeys: [/authKey/i],
+  secretKeys: [/email/i, /password/i, /phone/i, /.+name$/i], // Shallow
+  deleteSecretKeys: [/authKey/i], // Remove
   customObjects: [
     {
       name: CustomObjectMatchType.Ignore,
-      value: 'name' // redact value when sibling name matches secretKeys
+      value: 'name' // Schema: redact value when sibling name matches Shallow rules
     }
   ]
 });
@@ -98,16 +110,9 @@ Same input for every row — only the configured mode changes:
 | **Deep** | `deepSecretKeys` | `[/contactInfo/]` | All primitives inside `contactInfo` redacted (`email`, `city`) |
 | **Opaque** | `fullSecretKeys` | `[/contactInfo/]` | Entire `contactInfo` replaced with `"REDACTED"` |
 | **Remove** | `deleteSecretKeys` | `[/authKey/]` | `authKey` key removed from output |
+| **Schema** | `customObjects` | sibling `value: 'name'` | `{ name: "email", value: "…" }` → only `value` redacted when `name` matches Shallow rules |
 
-Terminology map for the existing config field names:
-
-| Config field | Shorthand |
-| --- | --- |
-| `secretKeys` | Shallow — redact this field's scalar value only |
-| `deepSecretKeys` | Deep — redact this field and all descendants |
-| `fullSecretKeys` | Opaque — stringify entire value, then redact |
-| `deleteSecretKeys` | Remove — delete key from output |
-| `customObjects` | Schema — rules for a specific object shape |
+See [Terminology](#terminology) for the full concept ↔ config field map.
 
 ### Safe construction
 
@@ -126,7 +131,7 @@ try {
 }
 ```
 
-`new FieldRedactor()` without secret specifiers still redacts **all** values (backward compatible). Use `createSafe()` when you want guardrails.
+`new FieldRedactor()` with no Shallow / Deep / Opaque / Remove / Schema rules still redacts **all** values (backward compatible). Use `createSafe()` when you want guardrails.
 
 ### Errors
 
@@ -135,7 +140,7 @@ Both error types are exported from the package entry point:
 | Class | When thrown |
 | --- | --- |
 | `FieldRedactorError` | Redaction fails at runtime (e.g. custom `redactor` throws) |
-| `FieldRedactorConfigurationError` | Invalid configuration (duplicate custom object schemas, `createSafe()` with no rules) |
+| `FieldRedactorConfigurationError` | Invalid configuration (duplicate schemas, `createSafe()` with no rules) |
 
 ```typescript
 import { FieldRedactor, FieldRedactorConfigurationError, FieldRedactorError } from 'field-redactor';
@@ -143,21 +148,21 @@ import { FieldRedactor, FieldRedactorConfigurationError, FieldRedactorError } fr
 
 
 ## Customization
-The true power of this tool comes from its customization. FieldRedactor can be customized to redact only primtive values for certain keys, deeply redact others, while stringifying and fully redacting other keys. The redactor itself can be configured, and "Custom Objects" can be specified to handle certain object shapes in a highly specific and configurable way.
+The true power of this tool comes from its customization. Combine **Shallow**, **Deep**, **Opaque**, and **Remove** key rules with **Schema**-based object rules for shaped payloads (for example `{ name, value }` metadata). The redactor function itself is also configurable.
 
 ### Overview
-| Config Field          | Type                            | Default                        | Effect                                                                 |
-|-----------------------|---------------------------------|--------------------------------|-----------------------------------------------------------------------|
-| `redactor`            | `(val: any) => Promise<string>` | `(val) => Promise.resolve("REDACTED")` | The async function to use when redacting values. When only `redactor` is set, traversal stays async. |
-| `syncRedactor`        | `(val: any) => string`          | `() => "REDACTED"` (when no `redactor`) | Synchronous redactor. When provided (or when using the default), traversal avoids per-field Promise overhead. |
-| `secretKeys`          | `RegExp[]`                     | `null`                         | Specifies which values at any level of the JSON object should be redacted. Objects are not deeply redacted, but primitive values in arrays are. If not specified, all values are considered secret. |
-| `deepSecretKeys`      | `RegExp[]`                     | `[]`                           | Specifies keys at any level of the JSON object to be deeply redacted. All values within matching objects are fully redacted unless matching a custom object. |
-| `fullSecretKeys`      | `RegExp[]`                     | `[]`                           | Specifies keys at any level of the JSON object to be stringified and fully redacted. Primarily used for objects and arrays. |
-| `deleteSecretKeys`      | `RegExp[]`                     | `[]`                           | Specifies keys at any level of the JSON object to be completely deleted. |
-| `customObjects`       | `CustomObject[]`               | `[]`                           | Specifies custom objects requiring fine-tuned redaction logic, such as referencing sibling keys. See the "Custom Objects" section for details. |
-| `ignoreBooleans`      | `boolean`                      | `false`                        | If `true`, booleans will not be redacted even if secret. When `false` (default), booleans matching a secret key are redacted. |
-| `ignoreNullOrUndefined` | `boolean`                   | `true`                         | If `true`, `null` and `undefined` values will not be redacted.        |
-| `cloneInput`            | `boolean`                      | `true`                         | When `true`, `redact()` / `redactSync()` leave the input untouched via copy-on-write. Set `false` to mutate in place. |
+| Doc label | Config field | Type | Default | Effect |
+|-----------|--------------|------|---------|--------|
+| — | `redactor` | `(val: any) => Promise<string>` | `(val) => Promise.resolve("REDACTED")` | Async function applied when a value is redacted. When only `redactor` is set, traversal stays async. |
+| — | `syncRedactor` | `(val: any) => string` | `() => "REDACTED"` (when no `redactor`) | Synchronous redactor. Avoids per-field Promise overhead when used with `redactSync()`. |
+| **Shallow** | `secretKeys` | `RegExp[]` | `null` | Redact matching keys' scalar values. Nested objects keep normal rules; array primitives are redacted. If omitted with no other rules, all values are treated as Shallow matches. |
+| **Deep** | `deepSecretKeys` | `RegExp[]` | `[]` | Deeply redact all primitives under matching keys unless a Schema or Opaque rule applies. |
+| **Opaque** | `fullSecretKeys` | `RegExp[]` | `[]` | Stringify and redact the entire value at matching keys (typical for objects and arrays). |
+| **Remove** | `deleteSecretKeys` | `RegExp[]` | `[]` | Delete matching keys from the output. |
+| **Schema** | `customObjects` | `CustomObject[]` | `[]` | Per-shape rules, including sibling-key indirection. See [Object schemas](#object-schemas-customobjects--customobject). |
+| — | `ignoreBooleans` | `boolean` | `false` | When `true`, booleans are not redacted even when their key matches a rule. |
+| — | `ignoreNullOrUndefined` | `boolean` | `true` | When `true`, `null` and `undefined` are not redacted. |
+| — | `cloneInput` | `boolean` | `true` | When `true`, `redact()` / `redactSync()` leave the input untouched via copy-on-write. Set `false` to mutate in place. |
 
 ### `redactor` Configuration
 Configures the redactor function used when a secret is encountered. Users should typically provide this configuration.
@@ -216,15 +221,16 @@ console.log(result);
 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9'
 ```
 
-### `secretKeys` Configuration
-* Specifies values which should be redacted.
-* __All values are considered secret if no secrets of any type are specified.__
-* has lowest precedence of all secret specifiers.
+### Shallow redaction (`secretKeys`)
+* **Shallow** mode — redact matching keys' scalar values without deep-walking child objects.
+* If no redaction rules of any type are specified, **every value is treated as Shallow** (all fields redacted).
+* Lowest precedence among key-based modes (see [Terminology](#terminology)).
 
 #### Details
+- **Config field:** `secretKeys`
 - **Type:** `RegExp[]`
-- **Default:** All values considered secret unless a secret field is specified.
-- **Effect:** Matches keys in objects, child objects, or array value primitives. Assessed recursively.
+- **Default:** All values considered Shallow matches unless another rule type is specified.
+- **Effect:** Matches keys in objects, child objects, or array primitives. Assessed recursively; nested objects are not deep-redacted.
 
 #### Example
 ##### Code
@@ -267,16 +273,17 @@ console.log(result);
 > - primitives in `someSecretData` array were redacted
 > - object values in `someSecretData` was evaluated and redacted if applicable
 
-### `deepSecretKeys` Configuration
-* Specifies values which should be deeply redacted
-* Has higher precedence than `secretKeys`
-* All children of the key will have their values redacted unless `fullSecretKey` or `customObject` has precedence.
+### Deep redaction (`deepSecretKeys`)
+* **Deep** mode — redact matching keys and all descendant primitives.
+* Higher precedence than **Shallow** (`secretKeys`).
+* Children are fully redacted unless **Opaque** (`fullSecretKeys`) or **Schema** (`customObjects`) rules apply.
 
 #### Details
+- **Config field:** `deepSecretKeys`
 - **Type:** `RegExp[]`
 - **Default:** `[]`
-- **Effect:** Matches keys in objects or child objects and deeply redacts all values, including values in child objects or objects within arrays. 
-  - _Note: has higher precedence than `secretKeys`._
+- **Effect:** Matches keys in objects or child objects and deeply redacts all values, including nested objects and objects within arrays.
+  - _Note: has higher precedence than Shallow (`secretKeys`)._
 
 #### Example
 ##### Code
@@ -323,15 +330,15 @@ console.log(result);
 > - All values in `contactInfo` were redacted
 > - All values in `someSecretData` were redacted
 
-### `fullSecretKeys` Configuration
-* Specifies values which should be stringified and redacted
-  * _Note: has higher precedence than `secretKeys` and `deepSecretKeys`_
+### Opaque redaction (`fullSecretKeys`)
+* **Opaque** mode — stringify the entire value at matching keys, then redact.
+* Higher precedence than **Shallow** and **Deep**; lower than **Schema** (`customObjects`).
 
 #### Details
+- **Config field:** `fullSecretKeys`
 - **Type:** `RegExp[]`
 - **Default:** `[]`
-- **Effect:** Matches keys and stringifies + redacts their values. 
-  - Has higher precedence than `secretKeys` and `deepSecretKeys` but lower precedence than `customObjects`.
+- **Effect:** Matches keys and stringifies + redacts their values. Primarily used for objects and arrays.
 
 #### Example
 ##### Code
@@ -367,14 +374,15 @@ console.log(result);
 ```
 > - Entirity of `contactInfo` was redacted.
 
-### `deleteSecretKeys` Configuration
-* Specifies values which should be completely deleted.
+### Remove (`deleteSecretKeys`)
+* **Remove** mode — delete matching keys from the output entirely.
 
 #### Details
+- **Config field:** `deleteSecretKeys`
 - **Type:** `RegExp[]`
 - **Default:** `[]`
 - **Effect:** Matches keys and deletes them from output.
-  - Has lower precedence than `customObjects` 
+  - Has lower precedence than **Schema** (`customObjects`).
 
 #### Example
 ##### Code
@@ -402,19 +410,20 @@ console.log(result);
 ```
 > - `appAuthKey` was deleted
 
-### `customObjects` Configuration
-* **One of the most powerful features of this library and why it was written in the first place.** 
-* Combining CustomObjects with secrets yields a powerful and highly customizable redaction tool capable of conditionally redacting a broad variety of input JSON objects correctly according to a user-specified schema.
+### Object schemas (`customObjects` / `CustomObject`)
+* **Schema** mode — the most powerful feature of this library and why it was written.
+* Combine schemas with Shallow / Deep / Opaque / Remove rules for conditional redaction of shaped objects (for example `{ name, type, value }` metadata).
 
 #### Details
-- **Type:** `CustomObject` (See `CustomObject` Schema Section)
+- **Config field:** `customObjects`
+- **Type:** `CustomObject` (see [Schema definition](#customobject-schema) below)
 - **Default:** `[]`
-- **Effect:** Any object that matches the schema will be redacted based on its schema.
-  - _Note: has highest precedence_
-  - _Note: If a custom object is nested inside another, the child takes precedence_
+- **Effect:** Any object matching a schema is redacted according to that schema's per-field rules.
+  - _Note: highest precedence among all modes_
+  - _Note: when schemas nest, the child schema wins_
 
-#### Schema Matching
-An input object matches a `CustomObject` schema when it contains **every key defined in the schema**. Additional keys on the input object are allowed and are not evaluated by the custom object rules.
+#### Schema matching
+An input object matches a `CustomObject` schema when it contains **every key defined in the schema**. Additional keys on the input are allowed and are not evaluated by the schema rules.
 
 When multiple schemas match the same input object, the schema with the **most keys** is selected.
 
@@ -432,7 +441,7 @@ const metadataCustomObject: CustomObject = {
 // Does not match: { name: "email", value: "foo@bar.com" } // missing required "type" key
 ```
 
-#### `CustomObject` Schema
+#### `CustomObject` schema
 ```typescript
 {
   [key]: CustomObjectMatchType | string
@@ -441,28 +450,28 @@ const metadataCustomObject: CustomObject = {
 
 - `key`
   - **Type:** `string`
-  - **Effect:** Specifies the key to match on.
+  - **Effect:** Required field for schema matching.
 - `value`:
   - **Type:** `CustomObjectMatchType | string`
-  - **Effect:** Specifies how the value should be redacted
-    - `string` - names a **sibling key** on the same object. If that sibling key is present, its value is tested against the configured secret specifiers (`secretKeys`, `deepSecretKeys`, `fullSecretKeys`, `deleteSecretKeys`) to determine how this field should be redacted. Sibling key presence is checked with `hasOwnProperty`; falsy sibling values such as `""`, `0`, and `false` are supported.
-    - `CustomObjectMatchType` - Redacts according to the match type.
+  - **Effect:** How this field is redacted when the schema matches
+    - `string` — names a **sibling key** on the same object. If that sibling is present, its value is tested against Shallow / Deep / Opaque / Remove rules (`secretKeys`, `deepSecretKeys`, `fullSecretKeys`, `deleteSecretKeys`). Sibling key presence uses `hasOwnProperty`; falsy values such as `""`, `0`, and `false` are supported.
+    - `CustomObjectMatchType` — apply the match type directly (mirrors the top-level modes where applicable).
 
 
-#### `CustomObjectMatchType` Enum
-Specifies how a value should be redacted in a CustomObject if not using a `string` sibling specifier.
+#### `CustomObjectMatchType` enum
+Per-field modes inside a schema when not using a sibling-key string specifier:
 
-| Key | Description |
-| --- | ----------- |
-| `Delete` | Delete the value from the result. |
-| `Full` | Stringify value and redact. |
-| `Deep` | Redact if primitive and deeply redact if object or array. |
-| `Shallow` | Redact if primitive or array of primitives and revert to normal rules otherwise, including objects in arrays. |
-| `Pass` | Do not redact, but revert to normal rules for child objects or objects in arrays. |
-| `Ignore` | Skip evaluation entirely. |
+| Enum value | Doc label | Description |
+| --- | --- | --- |
+| `Delete` | Remove | Delete the field from the result. |
+| `Full` | Opaque | Stringify value and redact. |
+| `Deep` | Deep | Redact if primitive; deeply redact if object or array. |
+| `Shallow` | Shallow | Redact if primitive or array of primitives; otherwise revert to normal traversal rules. |
+| `Pass` | — | Do not redact; revert to normal rules for child objects or objects in arrays. |
+| `Ignore` | — | Skip evaluation entirely. |
 
-#### Sibling Key Specifier Example
-The sibling key's **value** (not its truthiness) determines whether secret rules apply. This is the pattern used for metadata-style objects where the `name` field identifies the sensitivity of `value`.
+#### Sibling key specifier example
+The sibling key's **value** (not its truthiness) determines whether Shallow / Deep / Opaque / Remove rules apply. This is the pattern used for metadata-style objects where the `name` field identifies the sensitivity of `value`.
 
 ```typescript
 import { FieldRedactor, CustomObject, CustomObjectMatchType } from 'field-redactor';
@@ -637,7 +646,7 @@ console.log(result);
 ### `ignoreBooleans` Configuration
 - **Type:** `boolean`
 - **Default:** `false`
-- **Effect:** Specifies if boolean values should be redacted when their key matches a secret specifier. When `false` (the default), booleans are redacted like any other primitive. Set to `true` to leave boolean values unchanged even when their key is considered secret.
+- **Effect:** When `false` (default), booleans are redacted like any other primitive when their key matches a redaction rule. Set to `true` to leave booleans unchanged.
 
 ### Example
 #### Code
@@ -650,7 +659,7 @@ const myJsonObject = {
   buzz: true
 };
 
-// Default: booleans are redacted when their key matches a secret specifier
+// Default: booleans are redacted when their key matches a Shallow rule
 const defaultRedactor = new FieldRedactor({ secretKeys: [/foo/, /fizz/, /buzz/] });
 const defaultResult = await defaultRedactor.redact(myJsonObject);
 // → { foo: "REDACTED", fizz: "REDACTED", buzz: "REDACTED" }
@@ -705,7 +714,7 @@ console.log(result);
 ```
 
 ## Full Example
-The following example illustrates the power and utility of this library when conditionally redacting JSON output for logging or other purposes. It allows users to specify the manner of redaction, which fields should be redacted and how, and specify custom object schemas with highly configurable redaction logic based on sibling keys or set rules. I find it a quite useful tool!
+The following example combines Shallow, Deep, Remove, and Schema rules for realistic log redaction — including metadata entries where sensitivity is determined by a sibling `name` field.
 
 ##### Code
 ```typescript

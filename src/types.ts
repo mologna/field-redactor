@@ -42,6 +42,10 @@ export type Redactor = (value: RedactorInput) => Promise<string>;
 /** Synchronous redactor for use with {@link FieldRedactor.redactSync} without Promise overhead. */
 export type SyncRedactor = (value: RedactorInput) => string;
 
+/**
+ * Per-field redaction mode inside a {@link CustomObject} schema.
+ * Values align with the top-level doc labels: Shallow, Deep, Opaque (Full), Remove (Delete).
+ */
 export enum CustomObjectMatchType {
   Delete,
   Full,
@@ -52,7 +56,10 @@ export enum CustomObjectMatchType {
 }
 
 export type CustomObject = {
-  /** Keys define required fields for schema matching; input objects may contain additional keys. */
+  /**
+   * Object schema for **Schema** (`customObjects`) mode.
+   * Keys define required fields for matching; input objects may contain additional keys.
+   */
   [key: string]: CustomObjectMatchType | string;
 };
 
@@ -64,9 +71,13 @@ export type PrimitiveRedactorConfig = {
 };
 
 export type SecretManagerConfig = {
+  /** Shallow — redact matching keys' scalar values only (`secretKeys`). */
   secretKeys?: RegExp[];
+  /** Deep — redact matching keys and all descendant primitives (`deepSecretKeys`). */
   deepSecretKeys?: RegExp[];
+  /** Opaque — stringify entire value at matching keys, then redact (`fullSecretKeys`). */
   fullSecretKeys?: RegExp[];
+  /** Remove — delete matching keys from output (`deleteSecretKeys`). */
   deleteSecretKeys?: RegExp[];
 };
 
@@ -74,6 +85,7 @@ export type FieldRedactorConfig = Partial<PrimitiveRedactorConfig> &
   SecretManagerConfig & {
     redactor?: Redactor;
     syncRedactor?: SyncRedactor;
+    /** Schema rules for shaped objects (`customObjects`). */
     customObjects?: CustomObject[];
     /**
      * When true (default), `redact()` and `redactSync()` leave the input untouched using copy-on-write
