@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-06-24
+
+### Added
+
+- **Value-pattern redaction** — opt-in `valuePatterns` redacts scalars when their string form matches a regex, regardless of key name; lowest precedence after key and schema rules.
+- **`FieldRedactorConfigBuilder.valuePattern()`** — fluent builder support for value patterns.
+- **`dryRun` value attribution** — `report.pathRules` includes `rule: 'value'` with the matching pattern.
+- **Value-pattern guide** — [docs/guides/value-pattern-redaction.md](docs/guides/value-pattern-redaction.md).
+- **Release notes** — see [docs/release-notes/2.5.0.md](docs/release-notes/2.5.0.md).
+
+### Changed
+
+- Config validator duplicate-regex warnings apply across key-rule fields only (not between `secretKeys` and `valuePatterns`, which match different targets).
+- Internal refactor: `fieldRedactorDeps`, `regexUtils`, dry-run attribution resolvers, shared test helpers.
+
+### Internal milestones (`2.x` tags)
+
+Development tag `2.5.0` adds value-pattern redaction on top of **2.4.0**. A future **v1.5.0** npm release will publish this content. See [docs/release-notes/README.md](docs/release-notes/README.md).
+
 ## [2.4.0] - 2026-06-24
 
 ### Added
@@ -85,6 +104,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[2.5.0]: https://github.com/mologna/field-redactor/compare/2.4.0...2.5.0
 [2.4.0]: https://github.com/mologna/field-redactor/compare/2.3.1...2.4.0
 [1.3.0]: https://github.com/mologna/field-redactor/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/mologna/field-redactor/compare/v1.2.1...v1.2.2
