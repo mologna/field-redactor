@@ -2,7 +2,7 @@ import rfdc from 'rfdc';
 import * as crypto from 'crypto';
 import { SecretManager } from '../../src/secretManager';
 import { validInputWithAllTypes, validNestedInputWithAllTypes } from '../mocks/inputMocks';
-import { CustomObject, CustomObjectMatchType, JsonObject, Redactor } from '../../src/types';
+import { CustomObject, CustomObjectMatchType, JsonObject, Redactor, TraversableJson } from '../../src/types';
 import { ObjectRedactor } from '../../src/objectRedactor';
 import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { CustomObjectManager } from '../../src/customObjectManager';
@@ -10,6 +10,8 @@ import { CustomObjectManager } from '../../src/customObjectManager';
 describe('ObjectRedactor', () => {
   const DEFAULT_REDACTED_TEXT: string = 'REDACTED';
   const deepCopy = rfdc({ proto: true, circles: true });
+  const redactCopy = (redactor: ObjectRedactor, value: TraversableJson) =>
+    redactor.redactCopyOnWrite(deepCopy(value));
   let primitiveRedactor: PrimitiveRedactor;
   let secretManager: SecretManager;
   let customObjectManager: CustomObjectManager;
@@ -47,15 +49,13 @@ describe('ObjectRedactor', () => {
 
   describe('Basic/Primitive Secret Redaction', () => {
     it('Should return a redacted copy of the input JSON for all value types', async () => {
-      const copy = deepCopy(validInputWithAllTypes);
-      await basicObjectRedactor.redactInPlace(copy);
+      const copy = redactCopy(basicObjectRedactor, validInputWithAllTypes);
       expect(copy).not.toBe(validInputWithAllTypes);
       validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT);
     });
 
     it('Should be able to handle nested JSON objects of various types, sizes, and lengths', async () => {
-      const copy = deepCopy(validInputWithAllTypes);
-      await basicObjectRedactor.redactInPlace(copy);
+      const copy = redactCopy(basicObjectRedactor, validNestedInputWithAllTypes);
       expect(copy).not.toBe(validNestedInputWithAllTypes);
       validateRedactorOutput(validNestedInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT);
     });
@@ -83,8 +83,7 @@ describe('ObjectRedactor', () => {
       const secretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
       secretManager = new SecretManager({ secretKeys });
       const redactor: ObjectRedactor = new ObjectRedactor(primitiveRedactor, secretManager, customObjectManager);
-      const copy = deepCopy(validInputWithAllTypes);
-      await redactor.redactInPlace(copy);
+      const copy = redactCopy(redactor, validInputWithAllTypes);
       expect(copy).not.toBe(validInputWithAllTypes);
       validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT, false, secretKeys);
     });
@@ -881,6 +880,16 @@ describe('ObjectRedactor', () => {
       basicObjectRedactor.redactInPlaceSync(syncInput);
 
       expect(syncInput).toEqual(asyncInput);
+    });
+
+    it('redactCopyOnWrite produces the same result as redactInPlaceSync on a deep clone', () => {
+      const cowInput = deepCopy(validNestedInputWithAllTypes);
+      const syncInput = deepCopy(validNestedInputWithAllTypes);
+
+      const cowResult = basicObjectRedactor.redactCopyOnWrite(cowInput);
+      basicObjectRedactor.redactInPlaceSync(syncInput);
+
+      expect(cowResult).toEqual(syncInput);
     });
   });
 });

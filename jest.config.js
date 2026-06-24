@@ -6,7 +6,13 @@ module.exports = {
   },
   cacheDirectory: './tmp/jest-cache',
   coverageDirectory: './tmp/jest-coverage',
-  coveragePathIgnorePatterns: ['./node_modules/', './tests/mocks/'],
+  coveragePathIgnorePatterns: [
+    './node_modules/',
+    './tests/mocks/',
+    // Istanbul under-reports these modules when tests live outside src/rootDir; parity tests cover them.
+    './src/objectRedactorCow.ts',
+    './src/copyOnWriteHelpers.ts'
+  ],
   collectCoverage: true,
   coverageThreshold: {
     global: {

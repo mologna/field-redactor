@@ -39,7 +39,7 @@ console.log(myJsonObject); // { foo: "REDACTED", fizz: null }
 
 > **Note:** `null`, `undefined`, `string`, `Date`, `Function`, and primitive value inputs are completely ignored.
 > 
-> **Note:** `null` and `undefined` values are not redacted by default.
+> **Note:** `redact()` / `redactSync()` use copy-on-write by default (`cloneInput: true`), so only branches that change are cloned and unmodified subtrees are shared with the input. Set `cloneInput: false` to mutate the input in place instead.
 
 
 ## Customization
@@ -57,6 +57,7 @@ The true power of this tool comes from its customization. FieldRedactor can be c
 | `customObjects`       | `CustomObject[]`               | `[]`                           | Specifies custom objects requiring fine-tuned redaction logic, such as referencing sibling keys. See the "Custom Objects" section for details. |
 | `ignoreBooleans`      | `boolean`                      | `false`                        | If `true`, booleans will not be redacted even if secret. When `false` (default), booleans matching a secret key are redacted. |
 | `ignoreNullOrUndefined` | `boolean`                   | `true`                         | If `true`, `null` and `undefined` values will not be redacted.        |
+| `cloneInput`            | `boolean`                      | `true`                         | When `true`, `redact()` / `redactSync()` leave the input untouched via copy-on-write. Set `false` to mutate in place. |
 
 ### `redactor` Configuration
 Configures the redactor function used when a secret is encountered. Users should typically provide this configuration.
@@ -92,10 +93,10 @@ const result = fieldRedactor.redactSync({ username: 'alice', password: 'secret' 
 ### Sync API
 | Method | Returns | Notes |
 |--------|---------|-------|
-| `redactSync(value)` | Deep-cloned redacted value | No per-field Promises when sync path is active |
+| `redactSync(value)` | Deep-cloned redacted value | Copy-on-write by default; only mutated branches are cloned |
 | `redactInPlaceSync(value)` | `void` | Mutates traversable input in place synchronously |
 
-`redact()` and `redactInPlace()` automatically use the sync path when no async-only `redactor` is configured, so existing `await fieldRedactor.redact(...)` call sites benefit without code changes.
+`redact()` and `redactInPlace()` automatically use the sync path when no async-only `redactor` is configured, so existing `await fieldRedactor.redact(...)` call sites benefit without code changes. With the default `cloneInput: true`, `redact()` / `redactSync()` share unmodified subtrees with the input instead of deep-cloning the full object up front. Set `cloneInput: false` when the input is disposable or you want in-place mutation without copying.
 
 #### Example
 ##### Code

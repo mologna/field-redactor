@@ -75,6 +75,11 @@ export type FieldRedactorConfig = Partial<PrimitiveRedactorConfig> &
     redactor?: Redactor;
     syncRedactor?: SyncRedactor;
     customObjects?: CustomObject[];
+    /**
+     * When true (default), `redact()` and `redactSync()` leave the input untouched using copy-on-write
+     * structural sharing. When false, those methods mutate the input in place (equivalent to `redactInPlace`).
+     */
+    cloneInput?: boolean;
   };
 
 /** JSON object or array traversed during in-place redaction. */

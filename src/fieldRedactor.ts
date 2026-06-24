@@ -11,12 +11,13 @@ import { FieldRedactorError } from './errors';
  * the secrets, deepSecrets, fullSecrets, and custom objects provided in the configuration. Refer to the README.md
  * for more details.
  *
- * Defaults: `ignoreNullOrUndefined` is `true`, `ignoreBooleans` is `false`.
+ * Defaults: `ignoreNullOrUndefined` is `true`, `ignoreBooleans` is `false`, `cloneInput` is `true`.
  */
 export class FieldRedactor {
-  private deepCopy = rfdc({ proto: true, circles: true });
+  private readonly deepCopy = rfdc({ proto: true, circles: true });
   private readonly objectRedactor: ObjectRedactor;
   private readonly usesAsyncRedactor: boolean;
+  private readonly cloneInput: boolean;
 
   constructor(config?: FieldRedactorConfig) {
     const { redactor, syncRedactor, secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects } =
@@ -25,6 +26,7 @@ export class FieldRedactor {
     const ignoreNullOrUndefined =
       typeof config?.ignoreNullOrUndefined === 'boolean' ? config.ignoreNullOrUndefined : true;
     const ignoreBooleans = typeof config?.ignoreBooleans === 'boolean' ? config.ignoreBooleans : false;
+    this.cloneInput = config?.cloneInput !== false;
 
     const primitiveRedactor = new PrimitiveRedactor({
       ignoreBooleans,
@@ -55,6 +57,15 @@ export class FieldRedactor {
    * @returns The redacted JSON object.
    */
   public async redact<T extends RedactableInput>(value: T): Promise<T> {
+    if (this.isPrimitiveOrUndefined(value)) {
+      return value;
+    }
+
+    if (!this.cloneInput) {
+      await this.redactInPlace(value);
+      return value;
+    }
+
     if (!this.usesAsyncRedactor) {
       return Promise.resolve(this.redactSync(value));
     }
@@ -65,12 +76,20 @@ export class FieldRedactor {
   }
 
   /**
-   * Synchronously redacts fields and returns a deep-cloned result without per-field Promise overhead.
+   * Synchronously redacts fields and returns a copy without per-field Promise overhead.
+   * Uses copy-on-write structural sharing by default so only mutated branches are cloned.
    */
   public redactSync<T extends RedactableInput>(value: T): T {
-    const copy = this.deepCopy(value) as T;
-    this.redactInPlaceSync(copy);
-    return copy;
+    if (this.isPrimitiveOrUndefined(value)) {
+      return value;
+    }
+
+    if (!this.cloneInput) {
+      this.redactInPlaceSync(value);
+      return value;
+    }
+
+    return this.objectRedactor.redactCopyOnWrite(value as TraversableJson) as T;
   }
 
   /**
