@@ -1,6 +1,5 @@
 import { CustomObjectMatchType } from './types';
-
-type MaybeAsync<T> = T | Promise<T>;
+import { MaybeAsync, resolveMaybeAsync } from './maybeAsync';
 
 const run = <T>(handler: () => MaybeAsync<T>): MaybeAsync<T> => handler();
 
@@ -84,6 +83,5 @@ export const applyCustomObjectPrimitiveMatchType = (
   }
 };
 
-export const awaitCustomObjectMatchType = async (result: MaybeAsync<void>): Promise<void> => {
-  await result;
-};
+export const awaitCustomObjectMatchType = (result: MaybeAsync<void>, asyncMode = true): MaybeAsync<void> =>
+  resolveMaybeAsync(result, asyncMode);
