@@ -21,7 +21,6 @@ import {
   toRedactablePrimitive
 } from './objectRedactorHelpers';
 import { ObjectRedactorSyncTraversal } from './objectRedactorSync';
-import { ObjectRedactorCowTraversal } from './objectRedactorCow';
 
 /**
  * Redacts fields in a JSON object using the secretManager, primitiveRedactor, and CustomObjectChecker provided in the
@@ -31,7 +30,6 @@ import { ObjectRedactorCowTraversal } from './objectRedactorCow';
  */
 export class ObjectRedactor {
   private readonly syncTraversal: ObjectRedactorSyncTraversal;
-  private readonly cowTraversal: ObjectRedactorCowTraversal;
 
   constructor(
     private readonly primitiveRedactor: PrimitiveRedactor,
@@ -39,7 +37,6 @@ export class ObjectRedactor {
     private readonly customObjManager: CustomObjectManager
   ) {
     this.syncTraversal = new ObjectRedactorSyncTraversal(primitiveRedactor, secretManager, customObjManager);
-    this.cowTraversal = new ObjectRedactorCowTraversal(primitiveRedactor, secretManager, customObjManager);
   }
 
   /**
@@ -67,7 +64,7 @@ export class ObjectRedactor {
    * Returns a redacted copy using copy-on-write structural sharing. Unmodified subtrees share references with the input.
    */
   public redactCopyOnWrite<T extends TraversableJson>(value: T): T {
-    return this.cowTraversal.redactCopyOnWrite(value);
+    return this.syncTraversal.redactCopyOnWrite(value);
   }
 
   private async redactInPlaceAsync<T extends TraversableJson>(value: T): Promise<T> {

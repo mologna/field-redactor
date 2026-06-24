@@ -14,6 +14,7 @@ import {
 import { SecretManager } from './secretManager';
 import { CustomObjectManager } from './customObjectManager';
 import { PrimitiveRedactor } from './primitiveRedactor';
+import { ContainerMutation, createContainerMutation } from './objectRedactorMutation';
 import {
   getStringSpecifiedCustomObjectSecretKeyValueIfExists,
   getStringValue,
@@ -22,7 +23,8 @@ import {
 } from './objectRedactorHelpers';
 
 /**
- * Synchronous in-place JSON traversal without per-field Promise allocation.
+ * Synchronous JSON traversal without per-field Promise allocation.
+ * Supports in-place mutation or copy-on-write structural sharing via ContainerMutation.
  */
 export class ObjectRedactorSyncTraversal {
   constructor(
@@ -32,258 +34,309 @@ export class ObjectRedactorSyncTraversal {
   ) {}
 
   redactInPlace<T extends TraversableJson>(value: T): T {
-    const customObject = this.customObjManager.getMatchingCustomObject(value);
-    if (customObject) {
-      this.handleCustomObjectInPlace(value as JsonObject, customObject);
-    } else {
-      this.redactSecretObjectFieldsInPlace(value);
-    }
-
-    return value;
+    return this.redact(value, false);
   }
 
-  private redactSecretObjectFieldsInPlace(object: JsonObject | JsonArray, forceDeepRedaction: boolean = false): void {
-    const record = object as JsonRecord;
+  redactCopyOnWrite<T extends TraversableJson>(value: T): T {
+    return this.redact(value, true);
+  }
+
+  private redact<T extends TraversableJson>(value: T, copyOnWrite: boolean): T {
+    const container = createContainerMutation(value as JsonObject | JsonArray, copyOnWrite);
+    const customObject = this.customObjManager.getMatchingCustomObject(value);
+    if (customObject && isJsonObject(value)) {
+      this.handleCustomObject(container as ContainerMutation<JsonObject>, customObject);
+    } else {
+      this.redactSecretFields(container, false);
+    }
+
+    return (copyOnWrite ? container.result() : value) as T;
+  }
+
+  private redactSecretFields(container: ContainerMutation<JsonObject | JsonArray>, forceDeepRedaction: boolean): void {
+    const record = container.source as JsonRecord;
 
     for (const key of Object.keys(record)) {
       const value = record[key];
       const customObject = isJsonObject(value) ? this.customObjManager.getMatchingCustomObject(value) : undefined;
       if (customObject && isJsonObject(value)) {
-        this.handleCustomObjectInPlace(value, customObject);
+        const child = createContainerMutation(value, container.copyOnWrite);
+        this.handleCustomObject(child, customObject);
+        if (container.copyOnWrite) {
+          container.set(key, child.result());
+        }
       } else if (this.secretManager.isDeleteSecretKey(key)) {
-        delete record[key];
+        container.remove(key);
       } else if (this.secretManager.isFullSecretKey(key)) {
-        record[key] = this.redactPrimitive(getStringValue(value));
+        container.set(key, this.redactPrimitive(getStringValue(value)));
       } else if (Array.isArray(value)) {
-        record[key] = this.redactArrayInObject(value, key, forceDeepRedaction);
+        this.redactArrayInObject(value, key, forceDeepRedaction, container);
       } else if (isJsonObject(value)) {
-        this.redactObjectInObject(value, key, forceDeepRedaction);
+        this.redactNestedObject(value, key, forceDeepRedaction, container);
       } else {
-        record[key] = this.redactPrimitiveValueIfSecret(key, value, forceDeepRedaction);
+        container.set(key, this.redactPrimitiveValueIfSecret(key, value, forceDeepRedaction));
       }
     }
   }
 
-  private redactArrayInObject(array: JsonArray, key: string, forceDeepRedaction: boolean): JsonArray {
+  private redactArrayInObject(
+    array: JsonArray,
+    key: string,
+    forceDeepRedaction: boolean,
+    parent: ContainerMutation<JsonObject | JsonArray>
+  ): void {
     const deepSecretKey = this.secretManager.isDeepSecretKey(key);
-    if (this.secretManager.isSecretKey(key) || deepSecretKey || forceDeepRedaction) {
-      return this.redactAllArrayValues(array, forceDeepRedaction || deepSecretKey);
-    }
-
-    return this.redactObjectsInArray(array);
+    const result =
+      this.secretManager.isSecretKey(key) || deepSecretKey || forceDeepRedaction
+        ? this.redactAllArrayValues(array, forceDeepRedaction || deepSecretKey, parent.copyOnWrite)
+        : this.redactObjectsInArray(array, parent.copyOnWrite);
+    parent.set(key, result);
   }
 
-  private redactObjectsInArray(array: JsonArray): JsonArray {
+  private redactObjectsInArray(array: JsonArray, copyOnWrite: boolean): JsonArray {
+    const container = createContainerMutation(array, copyOnWrite);
+
     for (let index = 0; index < array.length; index++) {
       const value = array[index];
       if (isJsonObject(value)) {
         const customObject = this.customObjManager.getMatchingCustomObject(value);
+        const child = createContainerMutation(value, copyOnWrite);
         if (customObject) {
-          this.handleCustomObjectInPlace(value, customObject);
+          this.handleCustomObject(child, customObject);
         } else {
-          this.redactSecretObjectFieldsInPlace(value, false);
+          this.redactSecretFields(child, false);
         }
+        container.set(String(index), child.result());
       }
     }
 
-    return array;
+    return container.result();
   }
 
-  private redactAllArrayValues(array: JsonArray, forceDeepRedaction: boolean): JsonArray {
+  private redactAllArrayValues(array: JsonArray, forceDeepRedaction: boolean, copyOnWrite: boolean): JsonArray {
+    const container = createContainerMutation(array, copyOnWrite);
+
     for (let index = 0; index < array.length; index++) {
       const value = array[index];
+      const key = String(index);
       if (Array.isArray(value)) {
-        array[index] = this.redactAllArrayValues(value, forceDeepRedaction);
+        container.set(key, this.redactAllArrayValues(value, forceDeepRedaction, copyOnWrite));
       } else if (!isJsonObject(value)) {
-        array[index] = this.redactPrimitive(toRedactablePrimitive(value));
+        container.set(key, this.redactPrimitive(toRedactablePrimitive(value)));
       } else {
         const customObject = this.customObjManager.getMatchingCustomObject(value);
+        const child = createContainerMutation(value, copyOnWrite);
         if (customObject) {
-          this.handleCustomObjectInPlace(value, customObject);
+          this.handleCustomObject(child, customObject);
         } else {
-          this.redactSecretObjectFieldsInPlace(value, forceDeepRedaction);
+          this.redactSecretFields(child, forceDeepRedaction);
         }
+        container.set(key, child.result());
       }
     }
 
-    return array;
+    return container.result();
   }
 
-  private redactObjectInObject(value: JsonObject, key: string, forceDeepRedaction: boolean): void {
+  private redactNestedObject(
+    value: JsonObject,
+    key: string,
+    forceDeepRedaction: boolean,
+    parent: ContainerMutation<JsonObject | JsonArray>
+  ): void {
+    const child = createContainerMutation(value, parent.copyOnWrite);
     const customObject = this.customObjManager.getMatchingCustomObject(value);
     if (customObject) {
-      this.handleCustomObjectInPlace(value, customObject);
-      return;
+      this.handleCustomObject(child, customObject);
+    } else {
+      this.redactSecretFields(child, forceDeepRedaction || this.secretManager.isDeepSecretKey(key));
     }
-
-    this.redactSecretObjectFieldsInPlace(value, forceDeepRedaction || this.secretManager.isDeepSecretKey(key));
+    if (parent.copyOnWrite) {
+      parent.set(key, child.result());
+    }
   }
 
-  private handleCustomObjectInPlace(value: JsonObject, customObject: CustomObject): void {
+  private handleCustomObject(container: ContainerMutation<JsonObject>, customObject: CustomObject): void {
     for (const key of Object.keys(customObject)) {
-      const fieldValue = value[key];
+      const fieldValue = container.source[key];
       if (Array.isArray(fieldValue)) {
-        this.handleCustomObjectValueIfArray(value, key, customObject);
+        this.handleCustomObjectValueIfArray(container, key, customObject);
       } else if (isJsonObject(fieldValue)) {
-        this.handleCustomObjectValueIfObject(value, key, customObject);
+        this.handleCustomObjectValueIfObject(container, key, customObject);
       } else {
-        this.handleCustomObjectValueIfPrimitive(value, customObject, key);
+        this.handleCustomObjectValueIfPrimitive(container, customObject, key);
       }
     }
   }
 
-  private handleCustomObjectValueIfArray(value: JsonObject, key: string, customObject: CustomObject): void {
-    const stringKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
+  private handleCustomObjectValueIfArray(container: ContainerMutation<JsonObject>, key: string, customObject: CustomObject): void {
+    const stringKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(container.source, customObject, key);
     if (stringKey !== undefined) {
-      this.handleCustomObjectArrayValueIfStringKeySpecified(value, key, stringKey);
+      this.handleCustomObjectArrayValueIfStringKeySpecified(container, key, stringKey);
     } else {
-      this.handleCustomObjectArrayValueIfMatchTypeSpecified(value, key, customObject[key] as CustomObjectMatchType);
+      this.handleCustomObjectArrayValueIfMatchTypeSpecified(container, key, customObject[key] as CustomObjectMatchType);
     }
   }
 
   private handleCustomObjectArrayValueIfStringKeySpecified(
-    value: JsonObject,
+    container: ContainerMutation<JsonObject>,
     key: string,
     stringKey: SecretSpecifierValue
   ): void {
-    const fieldValue = value[key];
+    const fieldValue = container.source[key];
     if (!Array.isArray(fieldValue)) {
       return;
     }
 
     if (this.secretManager.isDeleteSecretKey(stringKey)) {
-      delete value[key];
+      container.remove(key);
     } else if (this.secretManager.isFullSecretKey(stringKey)) {
-      value[key] = this.redactPrimitive(getStringValue(fieldValue));
+      container.set(key, this.redactPrimitive(getStringValue(fieldValue)));
     } else {
       const isDeepSecretKey = this.secretManager.isDeepSecretKey(stringKey);
       if (isDeepSecretKey || this.secretManager.isSecretKey(stringKey)) {
-        value[key] = this.redactAllArrayValues(fieldValue, isDeepSecretKey);
+        container.set(key, this.redactAllArrayValues(fieldValue, isDeepSecretKey, container.copyOnWrite));
       }
     }
   }
 
   private handleCustomObjectArrayValueIfMatchTypeSpecified(
-    value: JsonObject,
+    container: ContainerMutation<JsonObject>,
     key: string,
     matchType: CustomObjectMatchType
   ): void {
-    const fieldValue = value[key];
+    const fieldValue = container.source[key];
     if (!Array.isArray(fieldValue)) {
       return;
     }
 
     switch (matchType) {
       case CustomObjectMatchType.Delete:
-        delete value[key];
+        container.remove(key);
         return;
       case CustomObjectMatchType.Full:
-        value[key] = this.redactPrimitive(getStringValue(fieldValue));
+        container.set(key, this.redactPrimitive(getStringValue(fieldValue)));
         return;
       case CustomObjectMatchType.Deep:
-        value[key] = this.redactAllArrayValues(fieldValue, true);
+        container.set(key, this.redactAllArrayValues(fieldValue, true, container.copyOnWrite));
         return;
       case CustomObjectMatchType.Shallow:
-        value[key] = this.redactAllArrayValues(fieldValue, false);
+        container.set(key, this.redactAllArrayValues(fieldValue, false, container.copyOnWrite));
         return;
       case CustomObjectMatchType.Pass:
-        value[key] = this.redactArrayInObject(fieldValue, key, false);
+        this.redactArrayInObject(fieldValue, key, false, container);
       default:
         return;
     }
   }
 
-  private handleCustomObjectValueIfObject(value: JsonObject, key: string, customObject: CustomObject): void {
-    const stringKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
+  private handleCustomObjectValueIfObject(container: ContainerMutation<JsonObject>, key: string, customObject: CustomObject): void {
+    const stringKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(container.source, customObject, key);
     if (stringKey !== undefined) {
-      this.handleCustomObjectObjectValueIfStringKeySpecified(value, key, stringKey);
+      this.handleCustomObjectObjectValueIfStringKeySpecified(container, key, stringKey);
     } else {
-      this.handleCustomObjectObjectValueIfMatchTypeSpecified(value, key, customObject[key] as CustomObjectMatchType);
+      this.handleCustomObjectObjectValueIfMatchTypeSpecified(container, key, customObject[key] as CustomObjectMatchType);
     }
   }
 
   private handleCustomObjectObjectValueIfStringKeySpecified(
-    value: JsonObject,
+    container: ContainerMutation<JsonObject>,
     key: string,
     stringKey: SecretSpecifierValue
   ): void {
-    const fieldValue = value[key];
+    const fieldValue = container.source[key];
     if (!isJsonObject(fieldValue)) {
       return;
     }
 
     const customObject = this.customObjManager.getMatchingCustomObject(fieldValue);
     if (customObject) {
-      this.handleCustomObjectInPlace(fieldValue, customObject);
+      const child = createContainerMutation(fieldValue, container.copyOnWrite);
+      this.handleCustomObject(child, customObject);
+      container.set(key, child.result());
     } else if (this.secretManager.isDeleteSecretKey(stringKey)) {
-      delete value[key];
+      container.remove(key);
     } else if (this.secretManager.isFullSecretKey(stringKey)) {
-      value[key] = this.redactPrimitive(getStringValue(fieldValue));
+      container.set(key, this.redactPrimitive(getStringValue(fieldValue)));
     } else if (this.secretManager.isDeepSecretKey(stringKey)) {
-      this.redactSecretObjectFieldsInPlace(fieldValue, true);
+      const child = createContainerMutation(fieldValue, container.copyOnWrite);
+      this.redactSecretFields(child, true);
+      container.set(key, child.result());
     } else if (this.secretManager.isSecretKey(stringKey)) {
-      this.redactSecretObjectFieldsInPlace(fieldValue, false);
+      const child = createContainerMutation(fieldValue, container.copyOnWrite);
+      this.redactSecretFields(child, false);
+      container.set(key, child.result());
     }
   }
 
   private handleCustomObjectObjectValueIfMatchTypeSpecified(
-    value: JsonObject,
+    container: ContainerMutation<JsonObject>,
     key: string,
     matchType: CustomObjectMatchType
   ): void {
-    const fieldValue = value[key];
+    const fieldValue = container.source[key];
     if (!isJsonObject(fieldValue)) {
       return;
     }
 
     switch (matchType) {
       case CustomObjectMatchType.Delete:
-        delete value[key];
+        container.remove(key);
         return;
       case CustomObjectMatchType.Full:
-        value[key] = this.redactPrimitive(getStringValue(fieldValue));
+        container.set(key, this.redactPrimitive(getStringValue(fieldValue)));
         return;
-      case CustomObjectMatchType.Deep:
-        this.redactSecretObjectFieldsInPlace(fieldValue, true);
+      case CustomObjectMatchType.Deep: {
+        const child = createContainerMutation(fieldValue, container.copyOnWrite);
+        this.redactSecretFields(child, true);
+        container.set(key, child.result());
         return;
+      }
       case CustomObjectMatchType.Shallow:
-      case CustomObjectMatchType.Pass:
-        this.redactSecretObjectFieldsInPlace(fieldValue, false);
+      case CustomObjectMatchType.Pass: {
+        const child = createContainerMutation(fieldValue, container.copyOnWrite);
+        this.redactSecretFields(child, false);
+        container.set(key, child.result());
         return;
+      }
       case CustomObjectMatchType.Ignore:
         return;
     }
   }
 
-  private handleCustomObjectValueIfPrimitive(value: JsonObject, customObject: CustomObject, key: string): void {
+  private handleCustomObjectValueIfPrimitive(
+    container: ContainerMutation<JsonObject>,
+    customObject: CustomObject,
+    key: string
+  ): void {
     if (typeof customObject[key] === 'number') {
-      this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(value, key, customObject[key]);
+      this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(container, key, customObject[key]);
       return;
     }
 
-    const secretKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(value, customObject, key);
+    const secretKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(container.source, customObject, key);
     if (secretKey === undefined) {
       return;
     }
 
-    this.handleCustomObjectPrimitiveValueIfStringKeySpecified(value, secretKey, key);
+    this.handleCustomObjectPrimitiveValueIfStringKeySpecified(container, secretKey, key);
   }
 
   private handleCustomObjectPrimitiveValueIfMatchTypeSpecified(
-    value: JsonObject,
+    container: ContainerMutation<JsonObject>,
     key: string,
     matchValue: CustomObjectMatchType
   ): void {
     switch (matchValue) {
       case CustomObjectMatchType.Delete:
-        delete value[key];
+        container.remove(key);
         return;
       case CustomObjectMatchType.Full:
-        value[key] = this.redactPrimitive(getStringValue(value[key]));
+        container.set(key, this.redactPrimitive(getStringValue(container.source[key])));
         return;
       case CustomObjectMatchType.Deep:
       case CustomObjectMatchType.Shallow:
-        value[key] = this.redactPrimitive(value[key] as RedactablePrimitive);
+        container.set(key, this.redactPrimitive(container.source[key] as RedactablePrimitive));
         return;
       case CustomObjectMatchType.Pass:
       default:
@@ -292,14 +345,17 @@ export class ObjectRedactorSyncTraversal {
   }
 
   private handleCustomObjectPrimitiveValueIfStringKeySpecified(
-    value: JsonObject,
+    container: ContainerMutation<JsonObject>,
     secretKey: SecretSpecifierValue,
     key: string
   ): void {
     if (this.secretManager.isDeleteSecretKey(secretKey)) {
-      delete value[key];
+      container.remove(key);
     } else {
-      value[key] = this.redactPrimitiveValueIfSecret(secretKey, value[key] as RedactablePrimitive, false);
+      container.set(
+        key,
+        this.redactPrimitiveValueIfSecret(secretKey, container.source[key] as RedactablePrimitive, false)
+      );
     }
   }
 

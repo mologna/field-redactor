@@ -1,20 +1,20 @@
 import rfdc from 'rfdc';
-import { ObjectRedactorCowTraversal } from '../../src/objectRedactorCow';
+import { ObjectRedactorSyncTraversal } from '../../src/objectRedactorSync';
 import { PrimitiveRedactor } from '../../src/primitiveRedactor';
 import { SecretManager } from '../../src/secretManager';
 import { CustomObjectManager } from '../../src/customObjectManager';
 import { validNestedInputWithAllTypes } from '../mocks/inputMocks';
 import { ObjectRedactor } from '../../src/objectRedactor';
 
-describe('ObjectRedactorCowTraversal', () => {
+describe('ObjectRedactorSyncTraversal copy-on-write', () => {
   const deepCopy = rfdc({ proto: true, circles: true });
-  let traversal: ObjectRedactorCowTraversal;
+  let traversal: ObjectRedactorSyncTraversal;
 
   beforeEach(() => {
     const primitiveRedactor = new PrimitiveRedactor({ ignoreBooleans: false, ignoreNullOrUndefined: true });
     const secretManager = new SecretManager({ secretKeys: [/password/] });
     const customObjectManager = new CustomObjectManager();
-    traversal = new ObjectRedactorCowTraversal(primitiveRedactor, secretManager, customObjectManager);
+    traversal = new ObjectRedactorSyncTraversal(primitiveRedactor, secretManager, customObjectManager);
   });
 
   it('redacts nested values without mutating the input', () => {
