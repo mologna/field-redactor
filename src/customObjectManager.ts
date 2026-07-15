@@ -1,5 +1,5 @@
 import { CustomObject, JsonObject, MatchedSchemaReport } from './types';
-import { assertNoIdenticalCustomObjectSchemas } from './configValidator';
+import { assertNoIdenticalCustomObjectSchemas } from './customObjectSchemas';
 
 /**
  * Utility for determining if a given object matches a CustomObject schema.
@@ -11,7 +11,7 @@ export class CustomObjectManager {
   private readonly schemaNames: readonly (string | undefined)[];
 
   /**
-   * Creates a CustomObjectChecker with the specified CustomObjects.
+   * Creates a CustomObjectManager with the specified CustomObjects.
    * @param customObjects The CustomObjects to check against.
    * @param schemaNames Optional labels parallel to `customObjects` for dry-run reports.
    */

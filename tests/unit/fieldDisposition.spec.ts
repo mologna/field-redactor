@@ -1,4 +1,5 @@
-import { resolveFieldDisposition } from '../../src/fieldDisposition';
+import { buildFieldRedactorDeps } from '../../src/fieldRedactorDeps';
+import { RuleResolver } from '../../src/ruleResolver';
 import { PathRuleMatcher } from '../../src/pathRuleMatcher';
 import { SecretManager } from '../../src/secretManager';
 
@@ -11,30 +12,36 @@ describe('resolveFieldDisposition', () => {
     { path: 'user.removed', mode: 'remove' },
     { path: 'user.publicField', mode: 'pass' }
   ]);
+  const resolver = new RuleResolver(
+    secretManager,
+    pathRuleMatcher,
+    buildFieldRedactorDeps().valuePatternMatcher,
+    buildFieldRedactorDeps().customObjectManager
+  );
 
   it('returns path-rule dispositions before key rules', () => {
-    expect(resolveFieldDisposition(secretManager, pathRuleMatcher, 'email', ['user'], false)).toEqual({
+    expect(resolver.resolvePathDisposition(['user'], 'email', false)).toEqual({
       action: 'shallow'
     });
-    expect(resolveFieldDisposition(secretManager, pathRuleMatcher, 'token', ['user'], false)).toEqual({
+    expect(resolver.resolvePathDisposition(['user'], 'token', false)).toEqual({
       action: 'opaque'
     });
-    expect(resolveFieldDisposition(secretManager, pathRuleMatcher, 'profile', ['user'], false)).toEqual({
+    expect(resolver.resolvePathDisposition(['user'], 'profile', false)).toEqual({
       action: 'deep'
     });
-    expect(resolveFieldDisposition(secretManager, pathRuleMatcher, 'removed', ['user'], false)).toEqual({
+    expect(resolver.resolvePathDisposition(['user'], 'removed', false)).toEqual({
       action: 'remove'
     });
-    expect(resolveFieldDisposition(secretManager, pathRuleMatcher, 'publicField', ['user'], false)).toEqual({
+    expect(resolver.resolvePathDisposition(['user'], 'publicField', false)).toEqual({
       action: 'skip'
     });
   });
 
   it('preserves pass keys under forced deep redaction', () => {
-    expect(resolveFieldDisposition(secretManager, pathRuleMatcher, 'public', ['nested'], true)).toEqual({
+    expect(resolver.resolvePathDisposition(['nested'], 'public', true)).toEqual({
       action: 'pass-key-recurse'
     });
-    expect(resolveFieldDisposition(secretManager, pathRuleMatcher, 'secret', ['nested'], true)).toEqual({
+    expect(resolver.resolvePathDisposition(['nested'], 'secret', true)).toEqual({
       action: 'default'
     });
   });
