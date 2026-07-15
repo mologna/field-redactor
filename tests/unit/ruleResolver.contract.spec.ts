@@ -1,6 +1,6 @@
-import { buildFieldRedactorDeps } from '../../src/fieldRedactorDeps';
-import { FieldRedactor } from '../../src/fieldRedactor';
-import { RuleResolver } from '../../src/ruleResolver';
+import { buildFieldRedactorDeps } from '../../src/api/fieldRedactorDeps';
+import { FieldRedactor } from '../../src/api/fieldRedactor';
+import { RuleResolver } from '../../src/rules/ruleResolver';
 import { CustomObjectMatchType, DryRunPathRule, FieldRedactorConfig, JsonObject } from '../../src/types';
 
 const createResolver = (config: FieldRedactorConfig): RuleResolver => {

@@ -6,9 +6,9 @@ import {
   JsonValue,
   RedactablePrimitive,
   SecretSpecifierValue
-} from './types';
-import { SecretManager } from './secretManager';
-import { ValuePatternMatcher } from './valuePatternMatcher';
+} from '../types';
+import { SecretManager } from '../rules/secretManager';
+import { ValuePatternMatcher } from '../rules/valuePatternMatcher';
 
 export type RedactPrimitiveFn<T> = (value: RedactablePrimitive) => T;
 

@@ -1,6 +1,6 @@
-import { isJsonObject, JsonArray, JsonObject } from './types';
+import { isJsonObject, JsonArray, JsonObject } from '../types';
 import { ContainerMutation, createContainerMutation } from './objectRedactorMutation';
-import { finalizeMaybeAsync, MaybeAsync, runSequential } from './maybeAsync';
+import { finalizeMaybeAsync, MaybeAsync, runSequential } from '../util/maybeAsync';
 import { toRedactablePrimitive } from './objectRedactorHelpers';
 import { TraversalServices } from './traversalServices';
 

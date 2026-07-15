@@ -1,12 +1,12 @@
 import { FieldRedactor, FieldRedactorError } from '../../src';
-import { PrimitiveRedactor } from '../../src/primitiveRedactor';
-import { SecretManager } from '../../src/secretManager';
-import { CustomObjectManager } from '../../src/customObjectManager';
-import { ObjectRedactor } from '../../src/objectRedactor';
-jest.mock('../../src/primitiveRedactor');
-jest.mock('../../src/secretManager');
-jest.mock('../../src/customObjectManager');
-jest.mock('../../src/objectRedactor');
+import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
+import { SecretManager } from '../../src/rules/secretManager';
+import { CustomObjectManager } from '../../src/rules/customObjectManager';
+import { ObjectRedactor } from '../../src/engine/objectRedactor';
+jest.mock('../../src/engine/primitiveRedactor');
+jest.mock('../../src/rules/secretManager');
+jest.mock('../../src/rules/customObjectManager');
+jest.mock('../../src/engine/objectRedactor');
 
 describe('FieldRedactor', () => {
   beforeEach(() => {

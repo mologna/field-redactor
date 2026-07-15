@@ -1,5 +1,5 @@
-import { FieldRedactorConfigurationError } from './errors';
-import { CustomObject } from './types';
+import { FieldRedactorConfigurationError } from '../errors';
+import { CustomObject } from '../types';
 
 export const analyzeSchemaPairs = (
   customObjects: CustomObject[]

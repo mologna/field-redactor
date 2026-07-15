@@ -1,5 +1,5 @@
-import { formatRegExp } from './regexUtils';
-import { RedactablePrimitive } from './types';
+import { formatRegExp } from '../util/regexUtils';
+import { RedactablePrimitive } from '../types';
 
 /**
  * Opt-in regex matching against scalar **values** (not key names).

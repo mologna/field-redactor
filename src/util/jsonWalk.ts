@@ -1,4 +1,4 @@
-import { isJsonObject, JsonArray, JsonObject, JsonValue } from './types';
+import { isJsonObject, JsonArray, JsonObject, JsonValue } from '../types';
 
 export { parseJsonPath } from './pathParsing';
 

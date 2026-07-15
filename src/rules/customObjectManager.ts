@@ -1,5 +1,5 @@
-import { CustomObject, JsonObject, MatchedSchemaReport } from './types';
-import { assertNoIdenticalCustomObjectSchemas } from './customObjectSchemas';
+import { CustomObject, JsonObject, MatchedSchemaReport } from '../types';
+import { assertNoIdenticalCustomObjectSchemas } from '../config/customObjectSchemas';
 
 /**
  * Utility for determining if a given object matches a CustomObject schema.

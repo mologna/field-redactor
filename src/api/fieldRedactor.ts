@@ -1,4 +1,4 @@
-import { FieldRedactorConfigurationError, FieldRedactorError } from './errors';
+import { FieldRedactorConfigurationError, FieldRedactorError } from '../errors';
 import { buildFieldRedactorDeps, FieldRedactorDeps } from './fieldRedactorDeps';
 import {
   DryRunResult,
@@ -8,10 +8,10 @@ import {
   JsonValue,
   RedactableInput,
   TraversableJson
-} from './types';
-import { buildDryRunReport, EMPTY_DRY_RUN_REPORT } from './dryRun';
+} from '../types';
+import { buildDryRunReport, EMPTY_DRY_RUN_REPORT } from '../dryrun/dryRun';
 import rfdc from 'rfdc';
-import { hasExplicitRedactionRules, validateFieldRedactorConfig } from './configValidator';
+import { hasExplicitRedactionRules, validateFieldRedactorConfig } from '../config/configValidator';
 
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
@@ -45,10 +45,15 @@ export class FieldRedactor {
   public static createSafe(config: FieldRedactorConfig): FieldRedactor {
     if (!hasExplicitRedactionRules(config)) {
       throw new FieldRedactorConfigurationError(
-        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, or valuePatterns entry. Without explicit rules, new FieldRedactor() redacts all values by default.'
+        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns, or pathRules entry. Without explicit rules, new FieldRedactor() redacts all values by default.'
       );
     }
 
+    return new FieldRedactor(config);
+  }
+
+  /** Convenience alias for `new FieldRedactor(config)`. */
+  public static fromConfig(config?: FieldRedactorConfig): FieldRedactor {
     return new FieldRedactor(config);
   }
 

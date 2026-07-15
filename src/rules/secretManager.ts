@@ -1,5 +1,5 @@
-import { formatRegExp } from './regexUtils';
-import { SecretManagerConfig, SecretSpecifierValue } from './types';
+import { formatRegExp } from '../util/regexUtils';
+import { SecretManagerConfig, SecretSpecifierValue } from '../types';
 
 type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
 

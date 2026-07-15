@@ -1,9 +1,9 @@
-import { TraversableJson } from './types';
-import { CustomObjectManager } from './customObjectManager';
+import { TraversableJson } from '../types';
+import { CustomObjectManager } from '../rules/customObjectManager';
 import { PrimitiveRedactor } from './primitiveRedactor';
-import { SecretManager } from './secretManager';
-import { ValuePatternMatcher } from './valuePatternMatcher';
-import { PathRuleMatcher } from './pathRuleMatcher';
+import { SecretManager } from '../rules/secretManager';
+import { ValuePatternMatcher } from '../rules/valuePatternMatcher';
+import { PathRuleMatcher } from '../rules/pathRuleMatcher';
 import { ObjectRedactorTraversal } from './objectRedactorTraversal';
 
 /**

@@ -1,11 +1,11 @@
-import { CustomObjectManager } from './customObjectManager';
-import { PathRuleMatcher } from './pathRuleMatcher';
-import { RuleResolver, buildPathRules as buildPathRulesFromResolver } from './ruleResolver';
-import { SecretManager } from './secretManager';
-import { ValuePatternMatcher } from './valuePatternMatcher';
-import { DryRunPathRule, JsonValue } from './types';
+import { CustomObjectManager } from '../rules/customObjectManager';
+import { PathRuleMatcher } from '../rules/pathRuleMatcher';
+import { RuleResolver, buildPathRules as buildPathRulesFromResolver } from '../rules/ruleResolver';
+import { SecretManager } from '../rules/secretManager';
+import { ValuePatternMatcher } from '../rules/valuePatternMatcher';
+import { DryRunPathRule, JsonValue } from '../types';
 
-export { RuleResolver } from './ruleResolver';
+export { RuleResolver } from '../rules/ruleResolver';
 
 const createResolver = (
   secretManager: SecretManager,

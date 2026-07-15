@@ -1,7 +1,7 @@
-import { buildFieldRedactorDeps } from '../../src/fieldRedactorDeps';
-import { RuleResolver } from '../../src/ruleResolver';
-import { PathRuleMatcher } from '../../src/pathRuleMatcher';
-import { SecretManager } from '../../src/secretManager';
+import { buildFieldRedactorDeps } from '../../src/api/fieldRedactorDeps';
+import { RuleResolver } from '../../src/rules/ruleResolver';
+import { PathRuleMatcher } from '../../src/rules/pathRuleMatcher';
+import { SecretManager } from '../../src/rules/secretManager';
 
 describe('resolveFieldDisposition', () => {
   const secretManager = new SecretManager({ passKeys: [/^public$/] });

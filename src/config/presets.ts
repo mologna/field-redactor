@@ -1,4 +1,4 @@
-import { CustomObjectMatchType, CustomObject, FieldRedactorConfig } from './types';
+import { CustomObjectMatchType, CustomObject, FieldRedactorConfig } from '../types';
 
 const AUTH_KEY_REMOVAL: Pick<FieldRedactorConfig, 'deleteSecretKeys'> = {
   deleteSecretKeys: [/authKey/i]

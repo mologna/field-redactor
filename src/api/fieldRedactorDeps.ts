@@ -1,11 +1,11 @@
-import { CustomObjectManager } from './customObjectManager';
-import { ObjectRedactor } from './objectRedactor';
-import { PrimitiveRedactor } from './primitiveRedactor';
-import { resolveSecretKeys } from './redactionRules';
-import { SecretManager } from './secretManager';
-import { FieldRedactorConfig } from './types';
-import { EMPTY_PATH_RULE_MATCHER, PathRuleMatcher } from './pathRuleMatcher';
-import { EMPTY_VALUE_PATTERN_MATCHER, ValuePatternMatcher } from './valuePatternMatcher';
+import { CustomObjectManager } from '../rules/customObjectManager';
+import { ObjectRedactor } from '../engine/objectRedactor';
+import { PrimitiveRedactor } from '../engine/primitiveRedactor';
+import { resolveSecretKeys } from '../config/redactionRules';
+import { SecretManager } from '../rules/secretManager';
+import { FieldRedactorConfig } from '../types';
+import { EMPTY_PATH_RULE_MATCHER, PathRuleMatcher } from '../rules/pathRuleMatcher';
+import { EMPTY_VALUE_PATTERN_MATCHER, ValuePatternMatcher } from '../rules/valuePatternMatcher';
 
 export type FieldRedactorDeps = {
   primitiveRedactor: PrimitiveRedactor;

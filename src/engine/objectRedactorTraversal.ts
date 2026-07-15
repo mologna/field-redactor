@@ -9,20 +9,20 @@ import {
   RedactablePrimitive,
   SecretSpecifierValue,
   TraversableJson
-} from './types';
-import { SecretManager } from './secretManager';
-import { CustomObjectManager } from './customObjectManager';
+} from '../types';
+import { SecretManager } from '../rules/secretManager';
+import { CustomObjectManager } from '../rules/customObjectManager';
 import { PrimitiveRedactor } from './primitiveRedactor';
 import { ContainerMutation, createContainerMutation } from './objectRedactorMutation';
-import { ValuePatternMatcher } from './valuePatternMatcher';
-import { PathRuleMatcher } from './pathRuleMatcher';
+import { ValuePatternMatcher } from '../rules/valuePatternMatcher';
+import { PathRuleMatcher } from '../rules/pathRuleMatcher';
 import {
   getStringValue,
   redactPrimitiveValueIfSecret,
   toRedactablePrimitive
 } from './objectRedactorHelpers';
-import { FieldDisposition, RuleResolver } from './ruleResolver';
-import { finalizeMaybeAsync, MaybeAsync, runSequential } from './maybeAsync';
+import { FieldDisposition, RuleResolver } from '../rules/ruleResolver';
+import { finalizeMaybeAsync, MaybeAsync, runSequential } from '../util/maybeAsync';
 import { ArrayRedactor } from './arrayRedaction';
 import { CustomObjectFieldHandler } from './customObjectFieldHandler';
 import { TraversalServices } from './traversalServices';

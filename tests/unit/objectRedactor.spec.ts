@@ -1,11 +1,11 @@
 import rfdc from 'rfdc';
 import * as crypto from 'crypto';
-import { SecretManager } from '../../src/secretManager';
+import { SecretManager } from '../../src/rules/secretManager';
 import { validInputWithAllTypes, validNestedInputWithAllTypes } from '../mocks/inputMocks';
 import { CustomObject, CustomObjectMatchType, JsonObject, Redactor, SecretManagerConfig, TraversableJson } from '../../src/types';
-import { ObjectRedactor } from '../../src/objectRedactor';
-import { PrimitiveRedactor } from '../../src/primitiveRedactor';
-import { CustomObjectManager } from '../../src/customObjectManager';
+import { ObjectRedactor } from '../../src/engine/objectRedactor';
+import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
+import { CustomObjectManager } from '../../src/rules/customObjectManager';
 import { createObjectRedactor, EMPTY_PATH_RULE_MATCHER, EMPTY_VALUE_PATTERN_MATCHER } from '../helpers/redactorTestUtils';
 
 describe('ObjectRedactor', () => {

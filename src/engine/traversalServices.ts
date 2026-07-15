@@ -6,12 +6,12 @@ import {
   JsonValue,
   RedactablePrimitive,
   SecretSpecifierValue
-} from './types';
+} from '../types';
 import { ContainerMutation } from './objectRedactorMutation';
-import { RuleResolver } from './ruleResolver';
-import { SecretManager } from './secretManager';
-import { ValuePatternMatcher } from './valuePatternMatcher';
-import { MaybeAsync } from './maybeAsync';
+import { RuleResolver } from '../rules/ruleResolver';
+import { SecretManager } from '../rules/secretManager';
+import { ValuePatternMatcher } from '../rules/valuePatternMatcher';
+import { MaybeAsync } from '../util/maybeAsync';
 
 /** Shared capabilities used by array and custom-object redaction modules. */
 export type TraversalServices = {

@@ -1,13 +1,13 @@
-import { ObjectRedactorSyncTraversal } from '../../src/objectRedactorSync';
-import { ObjectRedactorTraversal } from '../../src/objectRedactorTraversal';
-import { ObjectRedactor } from '../../src/objectRedactor';
-import { PrimitiveRedactor } from '../../src/primitiveRedactor';
-import { SecretManager } from '../../src/secretManager';
-import { CustomObjectManager } from '../../src/customObjectManager';
-import { EMPTY_VALUE_PATTERN_MATCHER, ValuePatternMatcher } from '../../src/valuePatternMatcher';
-import { EMPTY_PATH_RULE_MATCHER, PathRuleMatcher } from '../../src/pathRuleMatcher';
+import { ObjectRedactorSyncTraversal } from '../../src/engine/objectRedactorSync';
+import { ObjectRedactorTraversal } from '../../src/engine/objectRedactorTraversal';
+import { ObjectRedactor } from '../../src/engine/objectRedactor';
+import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
+import { SecretManager } from '../../src/rules/secretManager';
+import { CustomObjectManager } from '../../src/rules/customObjectManager';
+import { EMPTY_VALUE_PATTERN_MATCHER, ValuePatternMatcher } from '../../src/rules/valuePatternMatcher';
+import { EMPTY_PATH_RULE_MATCHER, PathRuleMatcher } from '../../src/rules/pathRuleMatcher';
 import { CustomObject, SecretManagerConfig } from '../../src/types';
-import { buildFieldRedactorDeps, FieldRedactorDeps } from '../../src/fieldRedactorDeps';
+import { buildFieldRedactorDeps, FieldRedactorDeps } from '../../src/api/fieldRedactorDeps';
 
 export { EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER };
 

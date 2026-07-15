@@ -1,4 +1,4 @@
-import { JsonArray, JsonObject, JsonRecord, JsonValue } from './types';
+import { JsonArray, JsonObject, JsonRecord, JsonValue } from '../types';
 
 type ObjectCopyState<T extends JsonObject> = {
   source: T;

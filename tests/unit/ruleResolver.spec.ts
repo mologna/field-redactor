@@ -1,9 +1,9 @@
 import { CustomObjectMatchType } from '../../src/types';
-import { RuleResolver } from '../../src/ruleResolver';
-import { PathRuleMatcher } from '../../src/pathRuleMatcher';
-import { SecretManager } from '../../src/secretManager';
-import { ValuePatternMatcher } from '../../src/valuePatternMatcher';
-import { CustomObjectManager } from '../../src/customObjectManager';
+import { RuleResolver } from '../../src/rules/ruleResolver';
+import { PathRuleMatcher } from '../../src/rules/pathRuleMatcher';
+import { SecretManager } from '../../src/rules/secretManager';
+import { ValuePatternMatcher } from '../../src/rules/valuePatternMatcher';
+import { CustomObjectManager } from '../../src/rules/customObjectManager';
 
 const createResolver = (options: {
   secretManager?: ConstructorParameters<typeof SecretManager>[0];

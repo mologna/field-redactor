@@ -1,10 +1,10 @@
-import { CustomObjectManager } from './customObjectManager';
+import { CustomObjectManager } from '../rules/customObjectManager';
 import { buildPathRules } from './dryRunAttribution';
-import { isTraversableJson, joinPath, walkTraversableJson } from './jsonWalk';
-import { SecretManager } from './secretManager';
-import { ValuePatternMatcher } from './valuePatternMatcher';
-import { PathRuleMatcher } from './pathRuleMatcher';
-import { DryRunReport, isJsonObject, JsonValue } from './types';
+import { isTraversableJson, joinPath, walkTraversableJson } from '../util/jsonWalk';
+import { SecretManager } from '../rules/secretManager';
+import { ValuePatternMatcher } from '../rules/valuePatternMatcher';
+import { PathRuleMatcher } from '../rules/pathRuleMatcher';
+import { DryRunReport, isJsonObject, JsonValue } from '../types';
 
 export const createEmptyDryRunReport = (): DryRunReport => ({
   redactedPaths: [],

@@ -1,12 +1,12 @@
-import { FieldRedactor } from './fieldRedactor';
+import type { FieldRedactor } from './fieldRedactor';
 import {
   appendRegExpArray,
   finalizeRegisteredSchemas,
   mergePartialConfig,
   RegisteredSchema,
   SecretRegexField
-} from './redactionRules';
-import { CustomObject, FieldRedactorConfig, PathRuleMode, Redactor, SyncRedactor } from './types';
+} from '../config/redactionRules';
+import { CustomObject, FieldRedactorConfig, PathRuleMode, Redactor, SyncRedactor } from '../types';
 
 export type SchemaOptions = {
   /** Optional label surfaced in {@link FieldRedactor.dryRun} `matchedSchemas` reports. */
@@ -119,12 +119,17 @@ export class FieldRedactorConfigBuilder {
     return { ...this.config, ...finalizeRegisteredSchemas(this.schemas) };
   }
 
+  /** Constructs a {@link FieldRedactor} from the built config. */
   buildRedactor(): FieldRedactor {
-    return new FieldRedactor(this.build());
+    // Lazy require avoids a module cycle: builder → FieldRedactor → deps → …
+    const { FieldRedactor: Redactor } = require('./fieldRedactor') as typeof import('./fieldRedactor');
+    return new Redactor(this.build());
   }
 
+  /** Like {@link FieldRedactor.createSafe} using the built config. */
   buildSafeRedactor(): FieldRedactor {
-    return FieldRedactor.createSafe(this.build());
+    const { FieldRedactor: Redactor } = require('./fieldRedactor') as typeof import('./fieldRedactor');
+    return Redactor.createSafe(this.build());
   }
 
   private appendRegex(field: SecretRegexField, patterns: RegExp[]): this {

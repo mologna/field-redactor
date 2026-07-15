@@ -1,5 +1,5 @@
-import { parsePathRulePattern, PathPatternSegment } from './pathParsing';
-import { PathRule, PathRuleMode } from './types';
+import { parsePathRulePattern, PathPatternSegment } from '../util/pathParsing';
+import { PathRule, PathRuleMode } from '../types';
 
 type CompiledPathRule = {
   segments: PathPatternSegment[];
@@ -50,6 +50,6 @@ export class PathRuleMatcher {
   }
 }
 
-export { parsePathRulePattern } from './pathParsing';
+export { parsePathRulePattern } from '../util/pathParsing';
 
 export const EMPTY_PATH_RULE_MATCHER = new PathRuleMatcher();

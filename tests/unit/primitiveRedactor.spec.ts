@@ -1,4 +1,4 @@
-import { PrimitiveRedactor } from '../../src/primitiveRedactor';
+import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
 
 describe('PrimitiveRedactor', () => {
   const DEFAULT_REDACTED_TEXT = 'REDACTED';

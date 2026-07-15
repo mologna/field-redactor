@@ -1,8 +1,8 @@
-import { FieldRedactorConfigurationError } from './errors';
-import { formatRegExp, regexIdentity } from './regexUtils';
+import { FieldRedactorConfigurationError } from '../errors';
+import { formatRegExp, regexIdentity } from '../util/regexUtils';
 import { hasExplicitRedactionRules, REGEX_ARRAY_CONFIG_FIELDS, SECRET_REGEX_FIELDS } from './redactionRules';
 import { analyzeSchemaPairs, assertNoIdenticalCustomObjectSchemas } from './customObjectSchemas';
-import { CustomObject, FieldRedactorConfig } from './types';
+import { CustomObject, FieldRedactorConfig } from '../types';
 
 export { hasExplicitRedactionRules } from './redactionRules';
 export { assertNoIdenticalCustomObjectSchemas } from './customObjectSchemas';

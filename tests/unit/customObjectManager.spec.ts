@@ -1,4 +1,4 @@
-import { CustomObjectManager } from '../../src/customObjectManager';
+import { CustomObjectManager } from '../../src/rules/customObjectManager';
 import { FieldRedactorConfigurationError } from '../../src';
 import { CustomObject, CustomObjectMatchType } from '../../src/types';
 

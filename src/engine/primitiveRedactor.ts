@@ -5,7 +5,7 @@ import {
   Redactor,
   RedactorInput,
   SyncRedactor
-} from './types';
+} from '../types';
 
 /**
  * Redacts primitive values based on the configuration provided in the constructor. Uses the redactor

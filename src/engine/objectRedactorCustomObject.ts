@@ -1,5 +1,5 @@
-import { CustomObjectMatchType } from './types';
-import { MaybeAsync, resolveMaybeAsync } from './maybeAsync';
+import { CustomObjectMatchType } from '../types';
+import { MaybeAsync, resolveMaybeAsync } from '../util/maybeAsync';
 
 const run = <T>(handler: () => MaybeAsync<T>): MaybeAsync<T> => handler();
 

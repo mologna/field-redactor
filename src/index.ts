@@ -1,4 +1,4 @@
-import { FieldRedactor } from './fieldRedactor';
+import { FieldRedactor } from './api/fieldRedactor';
 export {
   CustomObjectMatchType,
   Redactor,
@@ -27,9 +27,9 @@ export {
   isJsonObject
 } from './types';
 export { FieldRedactorError, FieldRedactorConfigurationError } from './errors';
-export { validateFieldRedactorConfig, hasExplicitRedactionRules } from './configValidator';
-export { EMPTY_DRY_RUN_REPORT } from './dryRun';
-export { presets } from './presets';
-export { FieldRedactorConfigBuilder } from './fieldRedactorConfigBuilder';
-export type { SchemaOptions } from './fieldRedactorConfigBuilder';
+export { validateFieldRedactorConfig, hasExplicitRedactionRules } from './config/configValidator';
+export { EMPTY_DRY_RUN_REPORT } from './dryrun/dryRun';
+export { presets } from './config/presets';
+export { FieldRedactorConfigBuilder } from './api/fieldRedactorConfigBuilder';
+export type { SchemaOptions } from './api/fieldRedactorConfigBuilder';
 export { FieldRedactor };

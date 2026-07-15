@@ -1,4 +1,4 @@
-import { parseJsonPath, parsePathRulePattern, parsePathSegments } from '../../src/pathParsing';
+import { parseJsonPath, parsePathRulePattern, parsePathSegments } from '../../src/util/pathParsing';
 
 describe('pathParsing', () => {
   it('parseJsonPath keeps numeric-looking segments as strings', () => {

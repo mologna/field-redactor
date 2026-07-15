@@ -1,4 +1,4 @@
-import { ValuePatternMatcher } from '../../src/valuePatternMatcher';
+import { ValuePatternMatcher } from '../../src/rules/valuePatternMatcher';
 
 describe('ValuePatternMatcher', () => {
   it('reports whether patterns are configured', () => {

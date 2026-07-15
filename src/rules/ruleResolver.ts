@@ -1,6 +1,6 @@
 import { CustomObjectManager } from './customObjectManager';
-import { getStringSpecifiedCustomObjectSecretKeyValueIfExists, toRedactablePrimitive } from './objectRedactorHelpers';
-import { getJsonValueAtPath, getParentContext, parseJsonPath } from './jsonWalk';
+import { getStringSpecifiedCustomObjectSecretKeyValueIfExists, toRedactablePrimitive } from '../engine/objectRedactorHelpers';
+import { getJsonValueAtPath, getParentContext, parseJsonPath } from '../util/jsonWalk';
 import { PathRuleMatcher } from './pathRuleMatcher';
 import { SecretManager } from './secretManager';
 import { ValuePatternMatcher } from './valuePatternMatcher';
@@ -13,7 +13,7 @@ import {
   PathRule,
   RedactionRuleLabel,
   SecretSpecifierValue
-} from './types';
+} from '../types';
 
 export type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
 

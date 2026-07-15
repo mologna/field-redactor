@@ -6,7 +6,7 @@ import {
   JsonObject,
   RedactablePrimitive,
   SecretSpecifierValue
-} from './types';
+} from '../types';
 import { ContainerMutation, createContainerMutation } from './objectRedactorMutation';
 import {
   applyCustomObjectArrayMatchType,
@@ -14,7 +14,7 @@ import {
   applyCustomObjectPrimitiveMatchType
 } from './objectRedactorCustomObject';
 import { getStringSpecifiedCustomObjectSecretKeyValueIfExists } from './objectRedactorHelpers';
-import { finalizeMaybeAsync, MaybeAsync, resolveMaybeAsync, runSequential } from './maybeAsync';
+import { finalizeMaybeAsync, MaybeAsync, resolveMaybeAsync, runSequential } from '../util/maybeAsync';
 import { TraversalServices } from './traversalServices';
 
 export class CustomObjectFieldHandler {

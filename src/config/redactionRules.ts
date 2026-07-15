@@ -1,4 +1,4 @@
-import { CustomObject, FieldRedactorConfig } from './types';
+import { CustomObject, FieldRedactorConfig } from '../types';
 
 export const SECRET_REGEX_FIELDS = ['secretKeys', 'deepSecretKeys', 'fullSecretKeys', 'deleteSecretKeys'] as const;
 
