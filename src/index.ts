@@ -10,6 +10,7 @@ export {
   MatchedSchemaReport,
   PathRule,
   PathRuleMode,
+  RedactionMode,
   RedactionRuleLabel,
   JsonArray,
   JsonFunction,

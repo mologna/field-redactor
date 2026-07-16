@@ -1,6 +1,6 @@
 import { FieldRedactorConfigurationError } from '../errors';
 import { formatRegExp, regexIdentity } from '../util/regexUtils';
-import { hasExplicitRedactionRules, REGEX_ARRAY_CONFIG_FIELDS, SECRET_REGEX_FIELDS } from './redactionRules';
+import { hasExplicitRedactionRules, normalizeFieldRedactorConfig, REGEX_ARRAY_CONFIG_FIELDS, SECRET_REGEX_FIELDS } from './redactionRules';
 import { analyzeSchemaPairs, assertNoIdenticalCustomObjectSchemas } from './customObjectSchemas';
 import { CustomObject, FieldRedactorConfig } from '../types';
 
@@ -74,7 +74,7 @@ const collectSchemaWarnings = (customObjects: CustomObject[]): string[] => {
  * invalid custom object duplicates and when `strict` is true on any warning.
  */
 export const validateFieldRedactorConfig = (config?: FieldRedactorConfig): string[] => {
-  const resolved = config ?? {};
+  const resolved = normalizeFieldRedactorConfig(config) ?? {};
   assertNoIdenticalCustomObjectSchemas(resolved.customObjects);
 
   const warnings = [

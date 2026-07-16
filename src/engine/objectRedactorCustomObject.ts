@@ -31,9 +31,9 @@ export const applyCustomObjectArrayMatchType = (
   handlers: CustomObjectArrayHandlers
 ): MaybeAsync<void> => {
   switch (matchType) {
-    case CustomObjectMatchType.Delete:
+    case CustomObjectMatchType.Remove:
       return run(handlers.deleteKey);
-    case CustomObjectMatchType.Full:
+    case CustomObjectMatchType.Opaque:
       return run(handlers.redactFull);
     case CustomObjectMatchType.Deep:
       return run(handlers.redactDeep);
@@ -51,9 +51,9 @@ export const applyCustomObjectObjectMatchType = (
   handlers: CustomObjectObjectHandlers
 ): MaybeAsync<void> => {
   switch (matchType) {
-    case CustomObjectMatchType.Delete:
+    case CustomObjectMatchType.Remove:
       return run(handlers.deleteKey);
-    case CustomObjectMatchType.Full:
+    case CustomObjectMatchType.Opaque:
       return run(handlers.redactFull);
     case CustomObjectMatchType.Deep:
       return run(handlers.redactDeep);
@@ -70,9 +70,9 @@ export const applyCustomObjectPrimitiveMatchType = (
   handlers: CustomObjectPrimitiveHandlers
 ): MaybeAsync<void> => {
   switch (matchType) {
-    case CustomObjectMatchType.Delete:
+    case CustomObjectMatchType.Remove:
       return run(handlers.deleteKey);
-    case CustomObjectMatchType.Full:
+    case CustomObjectMatchType.Opaque:
       return run(handlers.redactFull);
     case CustomObjectMatchType.Deep:
     case CustomObjectMatchType.Shallow:

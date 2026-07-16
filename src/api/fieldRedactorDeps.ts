@@ -1,7 +1,7 @@
 import { CustomObjectManager } from '../rules/customObjectManager';
 import { ObjectRedactor } from '../engine/objectRedactor';
 import { PrimitiveRedactor } from '../engine/primitiveRedactor';
-import { resolveSecretKeys } from '../config/redactionRules';
+import { normalizeFieldRedactorConfig, resolveSecretKeys } from '../config/redactionRules';
 import { SecretManager } from '../rules/secretManager';
 import { FieldRedactorConfig } from '../types';
 import { EMPTY_PATH_RULE_MATCHER, PathRuleMatcher } from '../rules/pathRuleMatcher';
@@ -22,6 +22,7 @@ const resolveBoolean = (value: boolean | undefined, defaultValue: boolean): bool
   typeof value === 'boolean' ? value : defaultValue;
 
 export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedactorDeps => {
+  const normalized = normalizeFieldRedactorConfig(config) ?? {};
   const {
     redactor,
     syncRedactor,
@@ -32,17 +33,17 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     valuePatterns,
     pathRules,
     passKeys
-  } = config ?? {};
+  } = normalized;
 
   const primitiveRedactor = new PrimitiveRedactor({
-    ignoreBooleans: resolveBoolean(config?.ignoreBooleans, false),
-    ignoreNullOrUndefined: resolveBoolean(config?.ignoreNullOrUndefined, true),
+    ignoreBooleans: resolveBoolean(normalized.ignoreBooleans, false),
+    ignoreNullOrUndefined: resolveBoolean(normalized.ignoreNullOrUndefined, true),
     redactor,
     syncRedactor
   });
 
   const secretManager = new SecretManager({
-    secretKeys: resolveSecretKeys(config),
+    secretKeys: resolveSecretKeys(normalized),
     deepSecretKeys,
     fullSecretKeys,
     deleteSecretKeys,
@@ -50,7 +51,7 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
   });
   const valuePatternMatcher = valuePatterns?.length ? new ValuePatternMatcher(valuePatterns) : EMPTY_VALUE_PATTERN_MATCHER;
   const pathRuleMatcher = pathRules?.length ? new PathRuleMatcher(pathRules) : EMPTY_PATH_RULE_MATCHER;
-  const customObjectManager = new CustomObjectManager(customObjects, config?.schemaNames);
+  const customObjectManager = new CustomObjectManager(customObjects, normalized.schemaNames);
   const objectRedactor = new ObjectRedactor(
     primitiveRedactor,
     secretManager,
@@ -67,6 +68,6 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     customObjectManager,
     objectRedactor,
     usesAsyncRedactor: primitiveRedactor.usesAsyncRedactor(),
-    cloneInput: config?.cloneInput !== false
+    cloneInput: normalized.cloneInput !== false
   };
 };

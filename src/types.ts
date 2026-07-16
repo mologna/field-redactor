@@ -44,15 +44,22 @@ export type SyncRedactor = (value: RedactorInput) => string;
 
 /**
  * Per-field redaction mode inside a {@link CustomObject} schema.
- * Values align with the top-level doc labels: Shallow, Deep, Opaque (Full), Remove (Delete).
+ * Prefer {@link CustomObjectMatchType.Opaque} / {@link CustomObjectMatchType.Remove}
+ * over the legacy Full / Delete names (same numeric values).
  */
 export enum CustomObjectMatchType {
-  Delete,
-  Full,
-  Deep,
-  Shallow,
-  Pass,
-  Ignore
+  /** @deprecated Prefer {@link CustomObjectMatchType.Remove}. */
+  Delete = 0,
+  /** Remove — delete the field from output. */
+  Remove = 0,
+  /** @deprecated Prefer {@link CustomObjectMatchType.Opaque}. */
+  Full = 1,
+  /** Opaque — stringify the entire value, then redact. */
+  Opaque = 1,
+  Deep = 2,
+  Shallow = 3,
+  Pass = 4,
+  Ignore = 5
 }
 
 export type CustomObject = {
@@ -75,17 +82,30 @@ export type SecretManagerConfig = {
   secretKeys?: RegExp[];
   /** Deep — redact matching keys and all descendant primitives (`deepSecretKeys`). */
   deepSecretKeys?: RegExp[];
-  /** Opaque — stringify entire value at matching keys, then redact (`fullSecretKeys`). */
+  /**
+   * Opaque — stringify entire value at matching keys, then redact.
+   * Preferred alias: {@link SecretManagerConfig.opaqueSecretKeys}.
+   */
   fullSecretKeys?: RegExp[];
-  /** Remove — delete matching keys from output (`deleteSecretKeys`). */
+  /** Opaque — preferred name for {@link SecretManagerConfig.fullSecretKeys}. */
+  opaqueSecretKeys?: RegExp[];
+  /**
+   * Remove — delete matching keys from output.
+   * Preferred alias: {@link SecretManagerConfig.removeSecretKeys}.
+   */
   deleteSecretKeys?: RegExp[];
+  /** Remove — preferred name for {@link SecretManagerConfig.deleteSecretKeys}. */
+  removeSecretKeys?: RegExp[];
   /**
    * Allowlist — matching key names are never redacted, even under deep or opaque parents (`passKeys`).
    */
   passKeys?: RegExp[];
 };
 
-export type PathRuleMode = 'shallow' | 'deep' | 'opaque' | 'remove' | 'pass';
+/** Canonical redaction modes shared by path rules, disposition, and dry-run labels. */
+export type RedactionMode = 'shallow' | 'deep' | 'opaque' | 'remove';
+
+export type PathRuleMode = RedactionMode | 'pass';
 
 export type PathRule = {
   /** JSON path pattern with `.` segments, `[index]` arrays, and `*` single-segment wildcards. */
@@ -142,7 +162,7 @@ export type MatchedSchemaReport = {
   schemaName?: string;
 };
 
-export type RedactionRuleLabel = 'schema' | 'opaque' | 'deep' | 'remove' | 'shallow' | 'value' | 'default';
+export type RedactionRuleLabel = 'schema' | RedactionMode | 'value' | 'default';
 
 export type DryRunPathRule = {
   path: string;

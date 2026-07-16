@@ -2,11 +2,18 @@ import { CustomObject, FieldRedactorConfig } from '../types';
 
 export const SECRET_REGEX_FIELDS = ['secretKeys', 'deepSecretKeys', 'fullSecretKeys', 'deleteSecretKeys'] as const;
 
+export const SECRET_REGEX_ALIAS_FIELDS = ['opaqueSecretKeys', 'removeSecretKeys'] as const;
+
 export const VALUE_PATTERN_FIELDS = ['valuePatterns'] as const;
 
 export const PASS_KEY_FIELDS = ['passKeys'] as const;
 
-export const REGEX_ARRAY_CONFIG_FIELDS = [...SECRET_REGEX_FIELDS, ...VALUE_PATTERN_FIELDS, ...PASS_KEY_FIELDS] as const;
+export const REGEX_ARRAY_CONFIG_FIELDS = [
+  ...SECRET_REGEX_FIELDS,
+  ...SECRET_REGEX_ALIAS_FIELDS,
+  ...VALUE_PATTERN_FIELDS,
+  ...PASS_KEY_FIELDS
+] as const;
 
 export type SecretRegexField = (typeof SECRET_REGEX_FIELDS)[number];
 export type RegexArrayConfigField = (typeof REGEX_ARRAY_CONFIG_FIELDS)[number];
@@ -19,13 +26,34 @@ export const hasExplicitRedactionRules = (config?: FieldRedactorConfig): boolean
   RULE_LIST_FIELDS.some((field) => hasNonEmptyArray(config?.[field] as unknown[] | undefined)) ||
   hasNonEmptyArray(config?.pathRules);
 
+/** Merge preferred Opaque/Remove aliases into legacy full/delete fields. */
+export const normalizeFieldRedactorConfig = (config?: FieldRedactorConfig): FieldRedactorConfig | undefined => {
+  if (!config) {
+    return config;
+  }
+
+  const opaqueSecretKeys = config.opaqueSecretKeys;
+  const removeSecretKeys = config.removeSecretKeys;
+  if (!opaqueSecretKeys?.length && !removeSecretKeys?.length) {
+    return config;
+  }
+
+  const { opaqueSecretKeys: _opaque, removeSecretKeys: _remove, ...rest } = config;
+  return {
+    ...rest,
+    fullSecretKeys: [...(config.fullSecretKeys ?? []), ...(opaqueSecretKeys ?? [])],
+    deleteSecretKeys: [...(config.deleteSecretKeys ?? []), ...(removeSecretKeys ?? [])]
+  };
+};
+
 /**
  * When only value patterns are configured, shallow key matching must be disabled (`secretKeys: []`)
  * so the legacy default does not redact every field.
  */
 export const resolveSecretKeys = (config?: FieldRedactorConfig): RegExp[] | undefined => {
+  const normalized = normalizeFieldRedactorConfig(config) ?? {};
   const { secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns, pathRules } =
-    config ?? {};
+    normalized;
 
   if (secretKeys !== undefined) {
     return secretKeys;
