@@ -1,4 +1,5 @@
-import { getJsonValueAtPath, getParentContext, parseJsonPath } from '../../src/util/jsonWalk';
+import { getJsonValueAtPath, getParentContext } from '../../src/util/jsonWalk';
+import { parseJsonPath } from '../../src/util/pathParsing';
 
 describe('jsonWalk path helpers', () => {
   it('parseJsonPath handles root, nested, and indexed segments', () => {

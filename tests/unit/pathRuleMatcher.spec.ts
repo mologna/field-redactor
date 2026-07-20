@@ -1,4 +1,5 @@
-import { parsePathRulePattern, PathRuleMatcher } from '../../src/rules/pathRuleMatcher';
+import { PathRuleMatcher } from '../../src/rules/pathRuleMatcher';
+import { parsePathRulePattern } from '../../src/util/pathParsing';
 
 describe('parsePathRulePattern', () => {
   it('parses dotted paths and array indices', () => {

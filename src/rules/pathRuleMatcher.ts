@@ -50,6 +50,4 @@ export class PathRuleMatcher {
   }
 }
 
-export { parsePathRulePattern } from '../util/pathParsing';
-
 export const EMPTY_PATH_RULE_MATCHER = new PathRuleMatcher();

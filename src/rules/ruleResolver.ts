@@ -1,6 +1,7 @@
 import { CustomObjectManager } from './customObjectManager';
 import { getStringSpecifiedCustomObjectSecretKeyValueIfExists, toRedactablePrimitive } from '../engine/objectRedactorHelpers';
-import { getJsonValueAtPath, getParentContext, parseJsonPath } from '../util/jsonWalk';
+import { getJsonValueAtPath, getParentContext } from '../util/jsonWalk';
+import { parseJsonPath } from '../util/pathParsing';
 import { PathRuleMatcher } from './pathRuleMatcher';
 import { SecretManager } from './secretManager';
 import { ValuePatternMatcher } from './valuePatternMatcher';

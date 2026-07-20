@@ -1,13 +1,13 @@
 import rfdc from 'rfdc';
 import { validNestedInputWithAllTypes } from '../mocks/inputMocks';
-import { createObjectRedactor, createSyncTraversal } from '../helpers/redactorTestUtils';
+import { createObjectRedactor, createTraversal } from '../helpers/redactorTestUtils';
 
-describe('ObjectRedactorSyncTraversal copy-on-write', () => {
+describe('ObjectRedactorTraversal copy-on-write', () => {
   const deepCopy = rfdc({ proto: true, circles: true });
-  let traversal: ReturnType<typeof createSyncTraversal>;
+  let traversal: ReturnType<typeof createTraversal>;
 
   beforeEach(() => {
-    traversal = createSyncTraversal({ secretManagerConfig: { secretKeys: [/password/] } });
+    traversal = createTraversal({ secretManagerConfig: { secretKeys: [/password/] } });
   });
 
   it('redacts nested values without mutating the input', () => {

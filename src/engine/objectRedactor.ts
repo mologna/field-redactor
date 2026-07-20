@@ -7,8 +7,8 @@ import { PathRuleMatcher } from '../rules/pathRuleMatcher';
 import { ObjectRedactorTraversal } from './objectRedactorTraversal';
 
 /**
- * Redacts fields in a JSON object using the secretManager, primitiveRedactor, and CustomObjectChecker provided in the
- * constructor. CustomObjects take highest precedence, followed by fullSecretKeys, then deepSecretKeys, and finally secretKeys.
+ * Redacts fields in a JSON object using the secretManager, primitiveRedactor, and CustomObjectManager provided in the
+ * constructor. CustomObjects take highest precedence, followed by opaque (`fullSecretKeys`), then deep, then shallow.
  */
 export class ObjectRedactor {
   private readonly traversal: ObjectRedactorTraversal;

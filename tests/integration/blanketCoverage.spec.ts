@@ -1,10 +1,9 @@
 import * as crypto from 'crypto';
-import { FieldRedactor, CustomObject, CustomObjectMatchType, JsonArray, JsonObject, Redactor } from '../../src';
+import { FieldRedactor, JsonArray, JsonObject } from '../../src';
 import {
   mockClientName,
   mockEmail,
   mockFirstName,
-  mockLastName,
   mockMdn,
   mockOwner,
   mockUserId,
@@ -18,204 +17,18 @@ import {
   sha256HashedTrue,
   sha256HashedUserId
 } from '../mocks/cryptoMockValues';
-
-const secretKeys = [
-  /email/,
-  /mdn/,
-  /balance/,
-  /address/,
-  /city/,
-  /fullname/i,
-  /firstName/i,
-  /lastName/i,
-  /client/i,
-  /owner/i,
-  /nullkey/i,
-  /undefinedkey/i,
-  /booleankey/i,
-  /userid/i,
-  /password/i
-];
-const deepSecretKeys = [/^user$/, /deepRedactMe/i];
-const fullSecretKeys = [/account/];
-const deleteSecretKeys = [/authKey/i, /authenticationKey/i];
-
-export const fullCustomObject: CustomObject = {
-  ignore: CustomObjectMatchType.Ignore,
-  pass: CustomObjectMatchType.Pass,
-  shallow: CustomObjectMatchType.Shallow,
-  deep: CustomObjectMatchType.Deep,
-  full: CustomObjectMatchType.Full,
-  delete: CustomObjectMatchType.Delete,
-  secretName: CustomObjectMatchType.Ignore,
-  deepSecretName: CustomObjectMatchType.Ignore,
-  fullSecretName: CustomObjectMatchType.Ignore,
-  deleteSecretName: CustomObjectMatchType.Ignore,
-  secretValue: 'secretName',
-  deepSecretValue: 'deepSecretName',
-  fullSecretValue: 'fullSecretName',
-  deleteSecretValue: 'deleteSecretName'
-};
-
-const smallCustomObject: CustomObject = {
-  key: CustomObjectMatchType.Ignore,
-  value: 'key'
-};
-
-const mediumCustomObject: CustomObject = {
-  key: CustomObjectMatchType.Ignore,
-  metadata: CustomObjectMatchType.Pass,
-  type: CustomObjectMatchType.Ignore,
-  value: 'key'
-};
-
-const blanketDataToRedact = {
-  '@timestamp': '2024-12-01T22:07:26.448Z',
-  level: 'info',
-  appId: 271,
-  // delete secret keys which should be redacted
-  appAuthKey: '12345',
-  // secret keys which should be redacted
-  clientName: mockClientName,
-  owner: mockOwner,
-  nullKey: null,
-  undefinedKey: undefined,
-  trueBooleanKey: true,
-  falseBooleanKey: false,
-  deepRedactMe: [
-    mockEmail,
-    {
-      a: mockEmail
-    },
-    {
-      key: 'dontRedactMe',
-      value: mockEmail
-    },
-    [mockEmail]
-  ],
-  // deep secret keys which should be redacted
-  // include arrays in objects and objects in arrays for testing
-  user: {
-    id: mockUserId,
-    a: mockFirstName,
-    b: mockLastName,
-    c: [mockFirstName, { b: mockLastName }],
-    d: {
-      first: mockFirstName,
-      last: mockLastName,
-      full: [mockFirstName, mockLastName]
-    }
-  },
-  // full secret keys which should be redacted
-  account: {
-    foo: 'bar'
-  },
-  // custom object value where all values are primitives and secrets are hits
-  customWithPrimitives: {
-    ignore: mockFirstName,
-    pass: mockFirstName,
-    shallow: mockFirstName,
-    deep: mockFirstName,
-    full: mockFirstName,
-    delete: mockFirstName,
-    secretName: 'email',
-    deepSecretName: 'user',
-    fullSecretName: 'account',
-    deleteSecretName: 'authKey',
-    secretValue: mockEmail,
-    deepSecretValue: mockEmail,
-    fullSecretValue: mockEmail,
-    deleteSecretValue: '12345'
-  },
-  // custom object where all values are primitives and secrets are misses
-  customWithPrimitivesAndSecretMisses: {
-    ignore: mockFirstName,
-    pass: mockFirstName,
-    shallow: mockFirstName,
-    deep: mockFirstName,
-    full: mockFirstName,
-    delete: mockFirstName,
-    secretName: 'foo',
-    deepSecretName: 'foo',
-    fullSecretName: 'foo',
-    deleteSecretName: 'foo',
-    secretValue: mockEmail,
-    deepSecretValue: mockEmail,
-    fullSecretValue: mockEmail,
-    deleteSecretValue: mockEmail
-  },
-  // custom object where all values are objects and secrets are hits
-  customWithObjects: {
-    ignore: {
-      email: mockEmail
-    },
-    pass: {
-      email: mockEmail,
-      foo: mockEmail
-    },
-    shallow: {
-      email: mockEmail,
-      foo: mockEmail
-    },
-    deep: {
-      email: mockEmail,
-      foo: mockEmail
-    },
-    full: {
-      email: mockEmail,
-      foo: mockEmail
-    },
-    delete: {
-      foo: "bar"
-    },
-    secretName: 'email',
-    deepSecretName: 'user',
-    fullSecretName: 'account',
-    deleteSecretName: 'authKey',
-    secretValue: {
-      email: mockEmail,
-      foo: mockEmail
-    },
-    deepSecretValue: {
-      email: mockEmail,
-      foo: mockEmail
-    },
-    fullSecretValue: {
-      email: mockEmail,
-      foo: mockEmail
-    },
-    deleteSecretValue: {
-      email: mockEmail,
-      foo: mockEmail
-    }
-  },
-  // custom object where all values are arrays and secrets are hits
-  customWithArrays: {
-    ignore: [mockEmail],
-    pass: [mockEmail],
-    shallow: [mockEmail],
-    deep: [mockEmail],
-    full: [mockEmail],
-    delete: [mockEmail],
-    secretName: 'email',
-    deepSecretName: 'user',
-    fullSecretName: 'account',
-    deleteSecretName: 'authKey',
-    secretValue: [mockEmail],
-    deepSecretValue: [mockEmail],
-    fullSecretValue: [mockEmail],
-    deleteSecretValue: [mockEmail]
-  }
-};
-
-const NULL_OR_UNDEFINED_TEXT = 'REDACTED_NULL_OR_UNDEFINED';
-
-const redactor: Redactor = (val) => {
-  if (val === null || val === undefined) {
-    return Promise.resolve(NULL_OR_UNDEFINED_TEXT);
-  }
-  return Promise.resolve(crypto.createHash('sha256').update(val.toString()).digest('hex'));
-};
+import {
+  blanketDataToRedact,
+  deepSecretKeys,
+  deleteSecretKeys,
+  fullCustomObject,
+  fullSecretKeys,
+  mediumCustomObject,
+  NULL_OR_UNDEFINED_TEXT,
+  redactor,
+  secretKeys,
+  smallCustomObject
+} from './fixtures/blanketFixtures';
 
 describe('Blanket Coverage Integration Tests', () => {
   it('Can handle a blanket suite of integration tests with all configuration options specified', async () => {
@@ -298,10 +111,6 @@ describe('Blanket Coverage Integration Tests', () => {
       crypto.createHash('sha256').update(JSON.stringify(blanketDataToRedact.customWithObjects.full)).digest('hex')
     );
     expect(result.customWithObjects.delete).toBeUndefined();
-    expect(result.customWithObjects.secretName).toBe(blanketDataToRedact.customWithObjects.secretName);
-    expect(result.customWithObjects.deepSecretName).toBe(blanketDataToRedact.customWithObjects.deepSecretName);
-    expect(result.customWithObjects.fullSecretName).toBe(blanketDataToRedact.customWithObjects.fullSecretName);
-
     expect(result.customWithObjects.secretName).toBe(blanketDataToRedact.customWithObjects.secretName);
     expect(result.customWithObjects.deepSecretName).toBe(blanketDataToRedact.customWithObjects.deepSecretName);
     expect(result.customWithObjects.fullSecretName).toBe(blanketDataToRedact.customWithObjects.fullSecretName);

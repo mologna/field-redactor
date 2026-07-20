@@ -1,7 +1,5 @@
 import { isJsonObject, JsonArray, JsonObject, JsonValue } from '../types';
 
-export { parseJsonPath } from './pathParsing';
-
 export const getJsonValueAtPath = (value: JsonValue | undefined, segments: Array<string | number>): JsonValue | undefined => {
   let current: JsonValue | undefined = value;
 

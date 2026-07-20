@@ -9,7 +9,8 @@ module.exports = {
   coveragePathIgnorePatterns: [
     './node_modules/',
     './tests/mocks/',
-    './tests/helpers/'
+    './tests/helpers/',
+    './tests/integration/fixtures/'
   ],
   collectCoverage: true,
   coverageThreshold: {

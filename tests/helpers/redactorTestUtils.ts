@@ -1,4 +1,3 @@
-import { ObjectRedactorSyncTraversal } from '../../src/engine/objectRedactorSync';
 import { ObjectRedactorTraversal } from '../../src/engine/objectRedactorTraversal';
 import { ObjectRedactor } from '../../src/engine/objectRedactor';
 import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
@@ -63,7 +62,10 @@ export const createObjectRedactor = (options: ObjectRedactorTestOptions = {}): O
   );
 };
 
-export const createSyncTraversal = (options: ObjectRedactorTestOptions = {}): ObjectRedactorSyncTraversal => {
+export const createTraversal = (options: ObjectRedactorTestOptions = {}): ObjectRedactorTraversal => {
   const deps = buildTestDeps(options);
   return buildTraversal(options, deps);
 };
+
+/** @deprecated Use {@link createTraversal}. */
+export const createSyncTraversal = createTraversal;

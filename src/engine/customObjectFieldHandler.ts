@@ -16,6 +16,34 @@ import {
 import { getStringSpecifiedCustomObjectSecretKeyValueIfExists } from './objectRedactorHelpers';
 import { finalizeMaybeAsync, MaybeAsync, resolveMaybeAsync, runSequential } from '../util/maybeAsync';
 import { TraversalServices } from './traversalServices';
+import { SecretManager } from '../rules/secretManager';
+
+type StringKeyAction =
+  | { type: 'remove' }
+  | { type: 'opaque' }
+  | { type: 'traverse'; forceDeep: boolean }
+  | { type: 'none' };
+
+/** Shared delete/opaque/deep/shallow ladder for schema sibling-key rules. */
+export const resolveCustomObjectStringKeyAction = (
+  secretManager: SecretManager,
+  stringKey: SecretSpecifierValue
+): StringKeyAction => {
+  if (secretManager.isDeleteSecretKey(stringKey)) {
+    return { type: 'remove' };
+  }
+
+  if (secretManager.isFullSecretKey(stringKey)) {
+    return { type: 'opaque' };
+  }
+
+  const forceDeep = secretManager.isDeepSecretKey(stringKey);
+  if (forceDeep || secretManager.isSecretKey(stringKey)) {
+    return { type: 'traverse', forceDeep };
+  }
+
+  return { type: 'none' };
+};
 
 export class CustomObjectFieldHandler {
   constructor(private readonly services: TraversalServices) {}
@@ -66,28 +94,18 @@ export class CustomObjectFieldHandler {
       return;
     }
 
-    if (this.services.secretManager.isDeleteSecretKey(stringKey)) {
-      container.remove(key);
-      return;
+    const action = resolveCustomObjectStringKeyAction(this.services.secretManager, stringKey);
+    switch (action.type) {
+      case 'remove':
+        container.remove(key);
+        return;
+      case 'opaque':
+        return this.services.setPrimitiveFromValue(container, key, fieldValue);
+      case 'traverse':
+        return this.setRedactedArray(container, key, fieldValue, action.forceDeep);
+      case 'none':
+        return;
     }
-
-    if (this.services.secretManager.isFullSecretKey(stringKey)) {
-      return this.services.setPrimitiveFromValue(container, key, fieldValue);
-    }
-
-    const isDeepSecretKey = this.services.secretManager.isDeepSecretKey(stringKey);
-    if (!isDeepSecretKey && !this.services.secretManager.isSecretKey(stringKey)) {
-      return;
-    }
-
-    const redacted = this.services.redactAllArrayValues(fieldValue, isDeepSecretKey, container.copyOnWrite, []);
-    if (redacted instanceof Promise) {
-      return redacted.then((result) => {
-        container.set(key, result);
-      });
-    }
-
-    container.set(key, redacted);
   }
 
   private handleCustomObjectArrayValueIfMatchTypeSpecified(
@@ -167,28 +185,18 @@ export class CustomObjectFieldHandler {
       );
     }
 
-    if (this.services.secretManager.isDeleteSecretKey(stringKey)) {
-      container.remove(key);
-      return;
+    const action = resolveCustomObjectStringKeyAction(this.services.secretManager, stringKey);
+    switch (action.type) {
+      case 'remove':
+        container.remove(key);
+        return;
+      case 'opaque':
+        return this.services.setPrimitiveFromValue(container, key, fieldValue);
+      case 'traverse':
+        return this.setRedactedObject(container, key, fieldValue, action.forceDeep);
+      case 'none':
+        return;
     }
-
-    if (this.services.secretManager.isFullSecretKey(stringKey)) {
-      return this.services.setPrimitiveFromValue(container, key, fieldValue);
-    }
-
-    const forceDeep = this.services.secretManager.isDeepSecretKey(stringKey);
-    if (!forceDeep && !this.services.secretManager.isSecretKey(stringKey)) {
-      return;
-    }
-
-    const child = createContainerMutation(fieldValue, container.copyOnWrite);
-    return finalizeMaybeAsync(
-      this.services.redactSecretFields(child, forceDeep, []),
-      () => {
-        container.set(key, child.result());
-      },
-      this.services.asyncMode
-    );
   }
 
   private handleCustomObjectObjectValueIfMatchTypeSpecified(
@@ -267,11 +275,13 @@ export class CustomObjectFieldHandler {
     secretKey: SecretSpecifierValue,
     key: string
   ): MaybeAsync<void> {
-    if (this.services.secretManager.isDeleteSecretKey(secretKey)) {
+    const action = resolveCustomObjectStringKeyAction(this.services.secretManager, secretKey);
+    if (action.type === 'remove') {
       container.remove(key);
       return;
     }
 
+    // Opaque/shallow/deep scalar handling stays in setPrimitiveValueIfSecret for value-pattern fallthrough.
     return this.services.setPrimitiveValueIfSecret(
       container,
       key,
