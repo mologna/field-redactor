@@ -6,7 +6,7 @@ This repository publishes the npm package **`field-redactor`**. The local folder
 
 | Channel | Meaning |
 |---------|---------|
-| npm `1.x` | Public releases (current line: `1.5.x`) |
+| npm `1.x` | Public releases (current line: `1.6.x`) |
 | Internal `2.x` tags / release notes | Historical development tags; not the npm line of record |
 
 Prefer npm version numbers in user-facing docs. Internal release notes under `docs/release-notes/` may still mention older `2.x` tags for chronology.

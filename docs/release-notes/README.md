@@ -4,6 +4,7 @@ Per-version release notes for published **field-redactor** git tags. npm release
 
 | Version | npm | Notes |
 | --- | --- | --- |
+| **v1.6.0** | Yes | [v1.6.0.md](v1.6.0.md) — path rules, passKeys, naming aliases, architecture |
 | **v1.5.0** | Yes | [v1.5.0.md](v1.5.0.md) — DX polish, value patterns, unified traversal |
 | v1.3.0 | No (superseded by 1.5.0) | [v1.3.0.md](v1.3.0.md) — sync API, COW, builder, dryRun, presets |
 | v1.2.2 | No | [v1.2.2.md](v1.2.2.md) |
@@ -14,7 +15,8 @@ Per-version release notes for published **field-redactor** git tags. npm release
 
 ## Migration
 
-- [1.2.x → 1.5.0](../guides/migration-1.2-to-1.5.md) — recommended upgrade path from the previous npm line.
+- [1.5.x → 1.6.0](../guides/migration-1.5-to-1.6.md) — path rules, naming aliases, package exports
+- [1.2.x → 1.5.0](../guides/migration-1.2-to-1.5.md) — upgrade path from the previous npm line
 
 ## Internal milestones (removed)
 

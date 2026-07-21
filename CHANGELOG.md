@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-07-21
+
+Path rules, pass-key allowlists, Opaque/Remove naming aliases, and architecture cleanup. See [docs/release-notes/v1.6.0.md](docs/release-notes/v1.6.0.md) and [docs/guides/migration-1.5-to-1.6.md](docs/guides/migration-1.5-to-1.6.md).
+
+### Added
+
+- **`pathRules` / `.pathRule()`** — path-based redaction modes (`shallow`, `deep`, `opaque`, `remove`, `pass`) with `*` wildcards.
+- **`passKeys` / `.passKey()`** — allowlisted keys preserved under deep parents.
+- **Naming aliases** — `opaqueSecretKeys`, `removeSecretKeys`, `CustomObjectMatchType.Opaque` / `Remove` (legacy `full`/`delete` names retained).
+- **`RedactionMode`**, **`PathRule`**, **`PathRuleMode`** exports.
+- **`RuleResolver`** — shared precedence for traversal and dry-run attribution.
+- **Path rules guide** — [docs/guides/path-rules.md](docs/guides/path-rules.md).
+- **Migration guide** — [docs/guides/migration-1.5-to-1.6.md](docs/guides/migration-1.5-to-1.6.md).
+- **Contributing guide** — [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Changed
+
+- Source layout under `api/`, `engine/`, `rules/`, `dryrun/`, `config/`, `util/`.
+- Unified sync/async traversal behind `MaybeAsync` helpers.
+- `package.json` `"exports"` limited to the package root (`.`).
+- Internal sync-traversal alias removed (`ObjectRedactorSyncTraversal`).
+
 ## [1.5.0] - 2026-06-24
 
 Published npm release bundling **v1.2.1**–**v1.3.0** git work and former internal milestones **2.4.0**–**2.5.1**. See [docs/guides/migration-1.2-to-1.5.md](docs/guides/migration-1.2-to-1.5.md) when upgrading from npm **1.2.x**.
@@ -144,7 +166,8 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
-[1.5.0]: https://github.com/mologna/field-redactor/releases/tag/v1.5.0
+[1.6.0]: https://github.com/mologna/field-redactor/releases/tag/v1.6.0
+[1.5.0]: https://github.com/mologna/field-redactor/compare/v1.5.0...v1.6.0
 [2.5.1]: https://github.com/mologna/field-redactor/compare/2.5.0...2.5.1
 [2.5.0]: https://github.com/mologna/field-redactor/compare/2.4.0...2.5.0
 [2.4.0]: https://github.com/mologna/field-redactor/compare/2.3.1...2.4.0
