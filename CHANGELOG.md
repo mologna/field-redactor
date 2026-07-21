@@ -166,8 +166,8 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
-[1.6.0]: https://github.com/mologna/field-redactor/releases/tag/v1.6.0
-[1.5.0]: https://github.com/mologna/field-redactor/compare/v1.5.0...v1.6.0
+[1.6.0]: https://github.com/mologna/field-redactor/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/mologna/field-redactor/releases/tag/v1.5.0
 [2.5.1]: https://github.com/mologna/field-redactor/compare/2.5.0...2.5.1
 [2.5.0]: https://github.com/mologna/field-redactor/compare/2.4.0...2.5.0
 [2.4.0]: https://github.com/mologna/field-redactor/compare/2.3.1...2.4.0
