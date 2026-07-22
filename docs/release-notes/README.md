@@ -4,6 +4,7 @@ Per-version release notes for published **field-redactor** git tags. npm release
 
 | Version | npm | Notes |
 | --- | --- | --- |
+| **v1.6.2** | Yes | [v1.6.2.md](v1.6.2.md) — canonical opaque/remove naming; drop ObjectRedactor façade |
 | **v1.6.1** | Yes | [v1.6.1.md](v1.6.1.md) — internal simplification / layering cleanup |
 | **v1.6.0** | Yes | [v1.6.0.md](v1.6.0.md) — path rules, passKeys, naming aliases, architecture |
 | **v1.5.0** | Yes | [v1.5.0.md](v1.5.0.md) — DX polish, value patterns, unified traversal |
