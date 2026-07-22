@@ -27,8 +27,8 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     redactor,
     syncRedactor,
     deepSecretKeys,
-    fullSecretKeys,
-    deleteSecretKeys,
+    opaqueSecretKeys,
+    removeSecretKeys,
     customObjects,
     valuePatterns,
     pathRules,
@@ -45,8 +45,8 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
   const secretManager = new SecretManager({
     secretKeys: resolveSecretKeys(normalized),
     deepSecretKeys,
-    fullSecretKeys,
-    deleteSecretKeys,
+    opaqueSecretKeys,
+    removeSecretKeys,
     passKeys
   });
   const valuePatternMatcher = valuePatterns?.length ? new ValuePatternMatcher(valuePatterns) : EMPTY_VALUE_PATTERN_MATCHER;

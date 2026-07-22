@@ -1,7 +1,7 @@
 import { CustomObjectMatchType, CustomObject, FieldRedactorConfig } from '../types';
 
-const AUTH_KEY_REMOVAL: Pick<FieldRedactorConfig, 'deleteSecretKeys'> = {
-  deleteSecretKeys: [/authKey/i]
+const AUTH_KEY_REMOVAL: Pick<FieldRedactorConfig, 'removeSecretKeys'> = {
+  removeSecretKeys: [/authKey/i]
 };
 
 const NAME_VALUE_EVENT_SCHEMA: CustomObject = {
@@ -31,7 +31,7 @@ export const presets = {
    * `{ name, type, value }` metadata entries with sibling-key redaction and auth key removal.
    * Pair with your own `secretKeys` for field names that should trigger redaction.
    */
-  loggingMetadata(): Pick<FieldRedactorConfig, 'customObjects' | 'deleteSecretKeys'> {
+  loggingMetadata(): Pick<FieldRedactorConfig, 'customObjects' | 'removeSecretKeys'> {
     return {
       ...AUTH_KEY_REMOVAL,
       customObjects: [NAME_TYPE_VALUE_METADATA_SCHEMA]
@@ -42,7 +42,7 @@ export const presets = {
    * Application log preset from `realExamples.spec.ts`: common PII field patterns,
    * auth key removal, and `{ name, value }` event metadata schemas.
    */
-  applicationLogging(): Pick<FieldRedactorConfig, 'secretKeys' | 'deleteSecretKeys' | 'customObjects'> {
+  applicationLogging(): Pick<FieldRedactorConfig, 'secretKeys' | 'removeSecretKeys' | 'customObjects'> {
     return {
       secretKeys: APPLICATION_LOG_SECRET_KEYS,
       ...AUTH_KEY_REMOVAL,

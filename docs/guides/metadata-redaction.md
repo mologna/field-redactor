@@ -33,7 +33,7 @@ const metadataSchema: CustomObject = {
 
 ## Sibling key rules
 
-When a schema field is a **string** (e.g. `value: 'name'`), that string names a sibling key. The sibling's **value** is tested against `secretKeys`, `deepSecretKeys`, `fullSecretKeys`, and `deleteSecretKeys`.
+When a schema field is a **string** (e.g. `value: 'name'`), that string names a sibling key. The sibling's **value** is tested against `secretKeys`, `deepSecretKeys`, `opaqueSecretKeys`, and `removeSecretKeys`.
 
 Falsy sibling values (`""`, `0`, `false`) are evaluated when the sibling key is present.
 
@@ -104,7 +104,7 @@ const redactor = FieldRedactor.createSafe({
 });
 ```
 
-`presets.loggingMetadata()` includes `{ name, type, value }` schema and `deleteSecretKeys: [/authKey/i]`.
+`presets.loggingMetadata()` includes `{ name, type, value }` schema and `removeSecretKeys: [/authKey/i]`.
 
 ## Related
 

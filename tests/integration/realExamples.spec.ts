@@ -35,7 +35,7 @@ describe('Real Examples', () => {
     const config: FieldRedactorConfig = {
       redactor: mockRedactor,
       secretKeys: [/email/i, /mdn/i, /phone/i, /.+name$/i, /auth/i],
-      deleteSecretKeys: [/authKey/i],
+      removeSecretKeys: [/authKey/i],
       customObjects: [eventDataCustomObject]
     };
 

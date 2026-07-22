@@ -34,14 +34,14 @@ export class FieldRedactorConfigBuilder {
     return this.appendRegex('deepSecretKeys', patterns);
   }
 
-  /** Opaque — stringify entire values at matching keys (`fullSecretKeys`). */
+  /** Opaque — stringify entire values at matching keys (`opaqueSecretKeys`). */
   opaque(...patterns: RegExp[]): this {
-    return this.appendRegex('fullSecretKeys', patterns);
+    return this.appendRegex('opaqueSecretKeys', patterns);
   }
 
-  /** Remove — delete matching keys from output (`deleteSecretKeys`). */
+  /** Remove — delete matching keys from output (`removeSecretKeys`). */
   remove(...patterns: RegExp[]): this {
-    return this.appendRegex('deleteSecretKeys', patterns);
+    return this.appendRegex('removeSecretKeys', patterns);
   }
 
   /** Alias for {@link FieldRedactorConfigBuilder.remove}. */

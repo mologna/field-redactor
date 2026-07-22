@@ -5,24 +5,30 @@ export type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
 
 const KEY_RULE_PRECEDENCE: KeyRule[] = ['remove', 'opaque', 'deep', 'shallow'];
 
+const mergeRegexLists = (...lists: Array<RegExp[] | undefined>): RegExp[] | undefined => {
+  const merged = lists.flatMap((list) => list ?? []);
+  return merged.length ? merged : undefined;
+};
+
 /**
  * Utility class for managing secrets and determining if a given value is a secret of any type. If no secrets of
- * any type are provided in the configuration then all values are considered secrets (but not deep or full secrets).
+ * any type are provided in the configuration then all values are considered secrets (but not deep or opaque secrets).
  */
 export class SecretManager {
   private secretKeys?: RegExp[];
   private deepSecretKeys?: RegExp[];
-  private fullSecretKeys?: RegExp[];
-  private deleteSecretKeys?: RegExp[];
+  private opaqueSecretKeys?: RegExp[];
+  private removeSecretKeys?: RegExp[];
   private passKeys?: RegExp[];
 
   constructor(config: SecretManagerConfig) {
     this.deepSecretKeys = config.deepSecretKeys;
-    this.fullSecretKeys = config.fullSecretKeys;
-    this.deleteSecretKeys = config.deleteSecretKeys;
+    this.opaqueSecretKeys = mergeRegexLists(config.opaqueSecretKeys, config.fullSecretKeys);
+    this.removeSecretKeys = mergeRegexLists(config.removeSecretKeys, config.deleteSecretKeys);
     this.passKeys = config.passKeys;
 
-    if (!config.secretKeys && (config.deepSecretKeys || config.fullSecretKeys || config.deleteSecretKeys)) {
+    const hasScopedKeyRules = !!(this.deepSecretKeys || this.opaqueSecretKeys || this.removeSecretKeys);
+    if (!config.secretKeys && hasScopedKeyRules) {
       this.secretKeys = [];
     } else {
       this.secretKeys = config.secretKeys;
@@ -45,11 +51,11 @@ export class SecretManager {
     return this.matchesRule(key, 'deep');
   }
 
-  public isFullSecretKey(key: SecretSpecifierValue): boolean {
+  public isOpaqueSecretKey(key: SecretSpecifierValue): boolean {
     return this.matchesRule(key, 'opaque');
   }
 
-  public isDeleteSecretKey(key: SecretSpecifierValue): boolean {
+  public isRemoveSecretKey(key: SecretSpecifierValue): boolean {
     return this.matchesRule(key, 'remove');
   }
 
@@ -85,9 +91,9 @@ export class SecretManager {
   private regexListFor(rule: KeyRule): RegExp[] | undefined {
     switch (rule) {
       case 'remove':
-        return this.deleteSecretKeys;
+        return this.removeSecretKeys;
       case 'opaque':
-        return this.fullSecretKeys;
+        return this.opaqueSecretKeys;
       case 'deep':
         return this.deepSecretKeys;
       case 'shallow':

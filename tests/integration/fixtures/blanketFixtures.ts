@@ -27,16 +27,16 @@ export const secretKeys = [
   /password/i
 ];
 export const deepSecretKeys = [/^user$/, /deepRedactMe/i];
-export const fullSecretKeys = [/account/];
-export const deleteSecretKeys = [/authKey/i, /authenticationKey/i];
+export const opaqueSecretKeys = [/account/];
+export const removeSecretKeys = [/authKey/i, /authenticationKey/i];
 
 export const fullCustomObject: CustomObject = {
   ignore: CustomObjectMatchType.Ignore,
   pass: CustomObjectMatchType.Pass,
   shallow: CustomObjectMatchType.Shallow,
   deep: CustomObjectMatchType.Deep,
-  full: CustomObjectMatchType.Full,
-  delete: CustomObjectMatchType.Delete,
+  full: CustomObjectMatchType.Opaque,
+  delete: CustomObjectMatchType.Remove,
   secretName: CustomObjectMatchType.Ignore,
   deepSecretName: CustomObjectMatchType.Ignore,
   fullSecretName: CustomObjectMatchType.Ignore,

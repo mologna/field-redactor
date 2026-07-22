@@ -1,6 +1,6 @@
 # Secret key modes
 
-FieldRedactor applies **Shallow**, **Deep**, **Opaque**, and **Remove** rules via regex key matching. Throughout the docs, these are the conceptual names; the config fields are `secretKeys`, `deepSecretKeys`, `fullSecretKeys`, and `deleteSecretKeys`.
+FieldRedactor applies **Shallow**, **Deep**, **Opaque**, and **Remove** rules via regex key matching. Throughout the docs, these are the conceptual names; the config fields are `secretKeys`, `deepSecretKeys`, `opaqueSecretKeys`, and `removeSecretKeys` (legacy aliases `fullSecretKeys` / `deleteSecretKeys` still work).
 
 **Precedence** (highest wins): Schema (`customObjects`) → Opaque → Deep → Remove → Shallow → Value-pattern (`valuePatterns`)
 
@@ -20,8 +20,8 @@ Same input for every row:
 | --- | --- | --- | --- |
 | **Shallow** | `secretKeys` | `[/email/]` | `contactInfo.email` → `"REDACTED"`; `city`, `username` unchanged |
 | **Deep** | `deepSecretKeys` | `[/contactInfo/]` | All primitives inside `contactInfo` redacted |
-| **Opaque** | `fullSecretKeys` | `[/contactInfo/]` | Entire `contactInfo` replaced with `"REDACTED"` |
-| **Remove** | `deleteSecretKeys` | `[/authKey/]` | `authKey` key removed from output |
+| **Opaque** | `opaqueSecretKeys` | `[/contactInfo/]` | Entire `contactInfo` replaced with `"REDACTED"` |
+| **Remove** | `removeSecretKeys` | `[/authKey/]` | `authKey` key removed from output |
 
 ### Builder API
 
@@ -74,13 +74,13 @@ await fieldRedactor.redact({
 // → email, id, and other primitives under contactInfo are redacted
 ```
 
-## Opaque (`fullSecretKeys`)
+## Opaque (`opaqueSecretKeys`)
 
 Stringify the entire value at matching keys, then redact. Typical for objects and arrays you want to hide completely.
 
 ```typescript
 const fieldRedactor = new FieldRedactor({
-  fullSecretKeys: [/contactInfo/i]
+  opaqueSecretKeys: [/contactInfo/i]
 });
 
 await fieldRedactor.redact({
@@ -89,20 +89,15 @@ await fieldRedactor.redact({
 // → { contactInfo: "REDACTED" }
 ```
 
-## Remove (`deleteSecretKeys`)
+## Remove (`removeSecretKeys`)
 
 Delete matching keys from the output.
 
 ```typescript
 const fieldRedactor = new FieldRedactor({
-  deleteSecretKeys: [/authKey/i]
+  removeSecretKeys: [/authKey/i]
 });
 
-await fieldRedactor.redact({ userId: 271, appAuthKey: '12345' });
-// → { userId: 271 }
+await fieldRedactor.redact({ authKey: 'secret-token', username: 'alice' });
+// → { username: 'alice' }
 ```
-
-## Related
-
-- [Metadata redaction](metadata-redaction.md) — when sensitivity depends on sibling fields
-- [Configuration reference](../reference/config.md) — all options and API details

@@ -5,8 +5,8 @@ describe('resolveCustomObjectStringKeyAction', () => {
   const manager = new SecretManager({
     secretKeys: [/shallow/],
     deepSecretKeys: [/deep/],
-    fullSecretKeys: [/opaque/],
-    deleteSecretKeys: [/removed/]
+    opaqueSecretKeys: [/opaque/],
+    removeSecretKeys: [/removed/]
   });
 
   it('classifies sibling key rules by precedence', () => {

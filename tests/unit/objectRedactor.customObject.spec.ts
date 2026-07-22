@@ -20,12 +20,12 @@ describe('ObjectRedactor custom objects', () => {
 describe('Custom Object Redaction', () => {
   it('Can handle CustomObjectMatchTypes correctly when value is primitive', async () => {
     const customObject: CustomObject = {
-      full: CustomObjectMatchType.Full,
+      full: CustomObjectMatchType.Opaque,
       deep: CustomObjectMatchType.Deep,
       shallow: CustomObjectMatchType.Shallow,
       pass: CustomObjectMatchType.Pass,
       ignore: CustomObjectMatchType.Ignore,
-      delete: CustomObjectMatchType.Delete
+      delete: CustomObjectMatchType.Remove
     };
 
     fixture.customObjectManager = new CustomObjectManager([customObject]);
@@ -75,12 +75,12 @@ describe('Custom Object Redaction', () => {
 
   it('Can handle CustomObjectMatchTypes correctly when value is an array', async () => {
     const customObject: CustomObject = {
-      full: CustomObjectMatchType.Full,
+      full: CustomObjectMatchType.Opaque,
       deep: CustomObjectMatchType.Deep,
       shallow: CustomObjectMatchType.Shallow,
       pass: CustomObjectMatchType.Pass,
       ignore: CustomObjectMatchType.Ignore,
-      delete: CustomObjectMatchType.Delete
+      delete: CustomObjectMatchType.Remove
     };
 
     fixture.customObjectManager = new CustomObjectManager([customObject]);
@@ -106,12 +106,12 @@ describe('Custom Object Redaction', () => {
 
   it('Can handle CustomObjectMatchTypes correctly when value is an object', async () => {
     const customObject: CustomObject = {
-      full: CustomObjectMatchType.Full,
+      full: CustomObjectMatchType.Opaque,
       deep: CustomObjectMatchType.Deep,
       shallow: CustomObjectMatchType.Shallow,
       pass: CustomObjectMatchType.Pass,
       ignore: CustomObjectMatchType.Ignore,
-      delete: CustomObjectMatchType.Delete
+      delete: CustomObjectMatchType.Remove
     };
 
     fixture.customObjectManager = new CustomObjectManager([customObject]);
@@ -298,8 +298,8 @@ describe('Custom Object Redaction', () => {
 
     const secretKeys: RegExp[] = [/email/];
     const deepSecretKeys: RegExp[] = [/name/];
-    const fullSecretKeys: RegExp[] = [/address/];
-    fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, fullSecretKeys });
+    const opaqueSecretKeys: RegExp[] = [/address/];
+    fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, opaqueSecretKeys });
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
 
     const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
@@ -334,8 +334,8 @@ describe('Custom Object Redaction', () => {
 
     const secretKeys: RegExp[] = [/email/];
     const deepSecretKeys: RegExp[] = [/name/];
-    const fullSecretKeys: RegExp[] = [/address/];
-    fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, fullSecretKeys });
+    const opaqueSecretKeys: RegExp[] = [/address/];
+    fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, opaqueSecretKeys });
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
@@ -385,8 +385,8 @@ describe('Custom Object Redaction', () => {
 
     const secretKeys: RegExp[] = [/email/];
     const deepSecretKeys: RegExp[] = [/name/];
-    const fullSecretKeys: RegExp[] = [/address/];
-    fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, fullSecretKeys });
+    const opaqueSecretKeys: RegExp[] = [/address/];
+    fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, opaqueSecretKeys });
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
@@ -514,7 +514,7 @@ describe('Custom Object Redaction', () => {
     });
   });
 
-  it('Gives CustomObjects highest precedence, followed by fullSecretKeys, deepSecretKeys, then secretKeys', async () => {
+  it('Gives CustomObjects highest precedence, followed by opaqueSecretKeys, deepSecretKeys, then secretKeys', async () => {
     const specialObject: CustomObject = {
       name: CustomObjectMatchType.Ignore,
       kind: CustomObjectMatchType.Ignore,
@@ -523,9 +523,9 @@ describe('Custom Object Redaction', () => {
 
     const secretKeys: RegExp[] = [/email/, /account/, /customObject/, /userInfo/];
     const deepSecretKeys: RegExp[] = [/account/, /customObject/, /userInfo/];
-    const fullSecretKeys = [/account/, /customObject/];
+    const opaqueSecretKeys = [/account/, /customObject/];
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
-    fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, fullSecretKeys });
+    fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, opaqueSecretKeys });
     const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = {

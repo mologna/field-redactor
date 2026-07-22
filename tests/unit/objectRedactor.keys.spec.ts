@@ -62,9 +62,9 @@ describe('Basic/Primitive Secret Redaction', () => {
     validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT, false, secretKeys);
   });
 
-  it('Can delete keys when specified as deleteSecretKeys', async () => {
-    const deleteSecretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
-    fixture.secretManager = new SecretManager({ deleteSecretKeys });
+  it('Can delete keys when specified as removeSecretKeys', async () => {
+    const removeSecretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
+    fixture.secretManager = new SecretManager({ removeSecretKeys });
     const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     const copy = deepCopy(validInputWithAllTypes);
     await redactor.redactInPlace(copy);
@@ -105,7 +105,7 @@ describe('Basic/Primitive Secret Redaction', () => {
   it('Can perform fullRedaction on objects and arrays when fullSecretKey matches', async () => {
     fixture.primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false, ignoreBooleans: true });
     fixture.secretManager = new SecretManager({
-      fullSecretKeys: [/foo/, /bar/, /undefinedValue/, /nullValue/],
+      opaqueSecretKeys: [/foo/, /bar/, /undefinedValue/, /nullValue/],
       secretKeys: []
     });
     const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);

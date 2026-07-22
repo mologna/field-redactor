@@ -42,8 +42,10 @@ Traversal and dry-run attribution both use this module. When adding a rule type,
 |------|-------------------------|----------------|
 | Shallow | `secretKeys`, `CustomObjectMatchType.Shallow` | — |
 | Deep | `deepSecretKeys` | — |
-| Opaque | `opaqueSecretKeys`, `CustomObjectMatchType.Opaque` | `fullSecretKeys`, `Full` |
-| Remove | `removeSecretKeys`, `CustomObjectMatchType.Remove` | `deleteSecretKeys`, `Delete` |
+| Opaque | `opaqueSecretKeys`, `CustomObjectMatchType.Opaque`, `isOpaqueSecretKey` | `fullSecretKeys`, `Full` |
+| Remove | `removeSecretKeys`, `CustomObjectMatchType.Remove`, `isRemoveSecretKey` | `deleteSecretKeys`, `Delete` |
+
+Internally, normalize + `SecretManager` store and match on the preferred field names. Legacy config keys are input-only aliases.
 
 ## Development
 

@@ -8,6 +8,8 @@ describe('FieldRedactor.createSafe', () => {
 
   it('accepts each secret specifier type as an explicit rule', () => {
     expect(() => FieldRedactor.createSafe({ deepSecretKeys: [/account/] })).not.toThrow();
+    expect(() => FieldRedactor.createSafe({ opaqueSecretKeys: [/payload/] })).not.toThrow();
+    expect(() => FieldRedactor.createSafe({ removeSecretKeys: [/authKey/] })).not.toThrow();
     expect(() => FieldRedactor.createSafe({ fullSecretKeys: [/payload/] })).not.toThrow();
     expect(() => FieldRedactor.createSafe({ deleteSecretKeys: [/authKey/] })).not.toThrow();
   });

@@ -48,14 +48,14 @@ export type SyncRedactor = (value: RedactorInput) => string;
  * over the legacy Full / Delete names (same numeric values).
  */
 export enum CustomObjectMatchType {
-  /** @deprecated Prefer {@link CustomObjectMatchType.Remove}. */
-  Delete = 0,
   /** Remove — delete the field from output. */
   Remove = 0,
-  /** @deprecated Prefer {@link CustomObjectMatchType.Opaque}. */
-  Full = 1,
+  /** @deprecated Prefer {@link CustomObjectMatchType.Remove}. */
+  Delete = 0,
   /** Opaque — stringify the entire value, then redact. */
   Opaque = 1,
+  /** @deprecated Prefer {@link CustomObjectMatchType.Opaque}. */
+  Full = 1,
   Deep = 2,
   Shallow = 3,
   Pass = 4,
@@ -82,20 +82,20 @@ export type SecretManagerConfig = {
   secretKeys?: RegExp[];
   /** Deep — redact matching keys and all descendant primitives (`deepSecretKeys`). */
   deepSecretKeys?: RegExp[];
-  /**
-   * Opaque — stringify entire value at matching keys, then redact.
-   * Preferred alias: {@link SecretManagerConfig.opaqueSecretKeys}.
-   */
-  fullSecretKeys?: RegExp[];
-  /** Opaque — preferred name for {@link SecretManagerConfig.fullSecretKeys}. */
+  /** Opaque — stringify entire value at matching keys, then redact. */
   opaqueSecretKeys?: RegExp[];
   /**
-   * Remove — delete matching keys from output.
-   * Preferred alias: {@link SecretManagerConfig.removeSecretKeys}.
+   * @deprecated Prefer {@link SecretManagerConfig.opaqueSecretKeys}.
+   * Still accepted and merged into opaqueSecretKeys during construction / normalize.
+   */
+  fullSecretKeys?: RegExp[];
+  /** Remove — delete matching keys from output. */
+  removeSecretKeys?: RegExp[];
+  /**
+   * @deprecated Prefer {@link SecretManagerConfig.removeSecretKeys}.
+   * Still accepted and merged into removeSecretKeys during construction / normalize.
    */
   deleteSecretKeys?: RegExp[];
-  /** Remove — preferred name for {@link SecretManagerConfig.deleteSecretKeys}. */
-  removeSecretKeys?: RegExp[];
   /**
    * Allowlist — matching key names are never redacted, even under deep or opaque parents (`passKeys`).
    */

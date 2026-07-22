@@ -3,7 +3,7 @@ import { CustomObjectMatchType, EMPTY_DRY_RUN_REPORT, FieldRedactor, presets } f
 describe('FieldRedactor dryRun', () => {
   const redactor = FieldRedactor.createSafe({
     secretKeys: [/email/, /password/],
-    deleteSecretKeys: [/authKey/],
+    removeSecretKeys: [/authKey/],
     customObjects: [
       {
         name: CustomObjectMatchType.Ignore,
@@ -62,7 +62,7 @@ describe('FieldRedactor dryRun', () => {
   it('attributes deep, opaque, and default rules in pathRules', () => {
     const configured = FieldRedactor.createSafe({
       deepSecretKeys: [/contactInfo/],
-      fullSecretKeys: [/rawPayload/]
+      opaqueSecretKeys: [/rawPayload/]
     });
 
     const { report: configuredReport } = configured.dryRunSync({
@@ -86,7 +86,7 @@ describe('presets', () => {
   it('applicationLogging matches the real examples fixture configuration', () => {
     const config = presets.applicationLogging();
     expect(config.secretKeys).toEqual([/email/i, /mdn/i, /phone/i, /.+name$/i, /auth/i]);
-    expect(config.deleteSecretKeys).toEqual([/authKey/i]);
+    expect(config.removeSecretKeys).toEqual([/authKey/i]);
     expect(config.customObjects?.[0]).toEqual({
       name: CustomObjectMatchType.Ignore,
       value: 'name'

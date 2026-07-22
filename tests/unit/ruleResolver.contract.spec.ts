@@ -23,7 +23,7 @@ describe('RuleResolver contract', () => {
       name: 'shallow and remove keys',
       config: {
         secretKeys: [/password/, /email/],
-        deleteSecretKeys: [/authKey/]
+        removeSecretKeys: [/authKey/]
       },
       input: {
         password: 'secret',
@@ -35,7 +35,7 @@ describe('RuleResolver contract', () => {
       name: 'deep and opaque parents',
       config: {
         deepSecretKeys: [/contactInfo/],
-        fullSecretKeys: [/rawPayload/]
+        opaqueSecretKeys: [/rawPayload/]
       },
       input: {
         contactInfo: { email: 'alice@example.com' },

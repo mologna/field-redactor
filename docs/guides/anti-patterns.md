@@ -4,7 +4,7 @@ Common mistakes when configuring Field Redactor — and what to do instead. Many
 
 ## Using `new FieldRedactor()` without rules
 
-**Problem:** With no `secretKeys`, `deepSecretKeys`, `fullSecretKeys`, `deleteSecretKeys`, or `customObjects`, every value is redacted. Easy to ship a config that wipes entire payloads.
+**Problem:** With no `secretKeys`, `deepSecretKeys`, `opaqueSecretKeys`, `removeSecretKeys`, or `customObjects`, every value is redacted. Easy to ship a config that wipes entire payloads.
 
 **Instead:** Use `FieldRedactor.createSafe()`, `FieldRedactorConfigBuilder.buildSafeRedactor()`, or the builder with at least one explicit rule.
 

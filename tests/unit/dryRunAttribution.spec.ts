@@ -2,7 +2,7 @@ import { CustomObjectMatchType, FieldRedactor, FieldRedactorConfigBuilder } from
 
 describe('dryRunAttribution', () => {
   it('attributes delete paths without value-pattern matching', () => {
-    const redactor = FieldRedactor.createSafe({ deleteSecretKeys: [/authKey/] });
+    const redactor = FieldRedactor.createSafe({ removeSecretKeys: [/authKey/] });
     const { report } = redactor.dryRunSync({ authKey: 'token', body: 'alice@example.com' });
 
     expect(report.deletedPaths).toEqual(['authKey']);
@@ -67,7 +67,7 @@ describe('dryRunAttribution', () => {
     },
     {
       name: 'enclosing opaque key',
-      config: { fullSecretKeys: [/rawPayload/] },
+      config: { opaqueSecretKeys: [/rawPayload/] },
       input: { rawPayload: { token: 'secret' } },
       expected: {
         path: 'rawPayload',
@@ -145,26 +145,27 @@ describe('dryRunAttribution', () => {
     );
   });
 
-  it('attributes removeSecretKeys alias the same as deleteSecretKeys', () => {
-    const redactor = FieldRedactor.createSafe({ removeSecretKeys: [/authKey/] });
-    const { report } = redactor.dryRunSync({ authKey: 'token' });
+  it('attributes removeSecretKeys the same as legacy deleteSecretKeys', () => {
+    const viaPreferred = FieldRedactor.createSafe({ removeSecretKeys: [/authKey/] });
+    const viaLegacy = FieldRedactor.createSafe({ deleteSecretKeys: [/authKey/] });
+    const input = { authKey: 'token' };
 
-    expect(report.pathRules).toEqual([
-      { path: 'authKey', action: 'delete', rule: 'remove', pattern: '/authKey/' }
-    ]);
+    expect(viaPreferred.dryRunSync(input).report.pathRules).toEqual(
+      viaLegacy.dryRunSync(input).report.pathRules
+    );
   });
 });
 
 describe('naming vocabulary aliases', () => {
-  it('treats opaqueSecretKeys as fullSecretKeys', () => {
-    const redactor = FieldRedactor.createSafe({ opaqueSecretKeys: [/payload/] });
+  it('treats legacy fullSecretKeys as opaqueSecretKeys', () => {
+    const redactor = FieldRedactor.createSafe({ fullSecretKeys: [/payload/] });
     const result = redactor.redactSync({ payload: { token: 'secret' }, note: 'ok' });
 
     expect(result.payload).toBe('REDACTED');
     expect(result.note).toBe('ok');
   });
 
-  it('treats CustomObjectMatchType.Opaque/Remove as Full/Delete', () => {
+  it('treats CustomObjectMatchType.Full/Delete as Opaque/Remove', () => {
     expect(CustomObjectMatchType.Opaque).toBe(CustomObjectMatchType.Full);
     expect(CustomObjectMatchType.Remove).toBe(CustomObjectMatchType.Delete);
 

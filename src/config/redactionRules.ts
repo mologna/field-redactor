@@ -1,8 +1,10 @@
 import { CustomObject, FieldRedactorConfig } from '../types';
 
-export const SECRET_REGEX_FIELDS = ['secretKeys', 'deepSecretKeys', 'fullSecretKeys', 'deleteSecretKeys'] as const;
+/** Canonical key-rule regex fields (preferred Opaque/Remove names). */
+export const SECRET_REGEX_FIELDS = ['secretKeys', 'deepSecretKeys', 'opaqueSecretKeys', 'removeSecretKeys'] as const;
 
-export const SECRET_REGEX_ALIAS_FIELDS = ['opaqueSecretKeys', 'removeSecretKeys'] as const;
+/** Legacy aliases accepted on input and merged into {@link SECRET_REGEX_FIELDS}. */
+export const SECRET_REGEX_ALIAS_FIELDS = ['fullSecretKeys', 'deleteSecretKeys'] as const;
 
 export const VALUE_PATTERN_FIELDS = ['valuePatterns'] as const;
 
@@ -26,23 +28,26 @@ export const hasExplicitRedactionRules = (config?: FieldRedactorConfig): boolean
   RULE_LIST_FIELDS.some((field) => hasNonEmptyArray(config?.[field] as unknown[] | undefined)) ||
   hasNonEmptyArray(config?.pathRules);
 
-/** Merge preferred Opaque/Remove aliases into legacy full/delete fields. */
+/**
+ * Merge legacy `fullSecretKeys` / `deleteSecretKeys` into canonical
+ * `opaqueSecretKeys` / `removeSecretKeys` and drop the legacy keys.
+ */
 export const normalizeFieldRedactorConfig = (config?: FieldRedactorConfig): FieldRedactorConfig | undefined => {
   if (!config) {
     return config;
   }
 
-  const opaqueSecretKeys = config.opaqueSecretKeys;
-  const removeSecretKeys = config.removeSecretKeys;
-  if (!opaqueSecretKeys?.length && !removeSecretKeys?.length) {
+  const fullSecretKeys = config.fullSecretKeys;
+  const deleteSecretKeys = config.deleteSecretKeys;
+  if (!fullSecretKeys?.length && !deleteSecretKeys?.length) {
     return config;
   }
 
-  const { opaqueSecretKeys: _opaque, removeSecretKeys: _remove, ...rest } = config;
+  const { fullSecretKeys: _full, deleteSecretKeys: _delete, ...rest } = config;
   return {
     ...rest,
-    fullSecretKeys: [...(config.fullSecretKeys ?? []), ...(opaqueSecretKeys ?? [])],
-    deleteSecretKeys: [...(config.deleteSecretKeys ?? []), ...(removeSecretKeys ?? [])]
+    opaqueSecretKeys: [...(config.opaqueSecretKeys ?? []), ...(fullSecretKeys ?? [])],
+    removeSecretKeys: [...(config.removeSecretKeys ?? []), ...(deleteSecretKeys ?? [])]
   };
 };
 
@@ -52,7 +57,7 @@ export const normalizeFieldRedactorConfig = (config?: FieldRedactorConfig): Fiel
  * Expects an already-normalized config (aliases merged).
  */
 export const resolveSecretKeys = (config: FieldRedactorConfig = {}): RegExp[] | undefined => {
-  const { secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns, pathRules } =
+  const { secretKeys, deepSecretKeys, opaqueSecretKeys, removeSecretKeys, customObjects, valuePatterns, pathRules } =
     config;
 
   if (secretKeys !== undefined) {
@@ -62,8 +67,8 @@ export const resolveSecretKeys = (config: FieldRedactorConfig = {}): RegExp[] | 
   if (
     (valuePatterns?.length || pathRules?.length) &&
     !deepSecretKeys?.length &&
-    !fullSecretKeys?.length &&
-    !deleteSecretKeys?.length &&
+    !opaqueSecretKeys?.length &&
+    !removeSecretKeys?.length &&
     !customObjects?.length
   ) {
     return [];

@@ -18,7 +18,7 @@ export function redactPrimitiveValueIfSecret<T>(
 ): JsonValue | undefined | T {
   if (value instanceof Date || typeof value === 'function') {
     if (
-      secretManager.isFullSecretKey(key) ||
+      secretManager.isOpaqueSecretKey(key) ||
       forceDeepRedaction ||
       secretManager.isSecretKey(key) ||
       secretManager.isDeepSecretKey(key)
@@ -29,7 +29,7 @@ export function redactPrimitiveValueIfSecret<T>(
     return value;
   }
 
-  if (secretManager.isFullSecretKey(key)) {
+  if (secretManager.isOpaqueSecretKey(key)) {
     return redact(getStringValue(value));
   }
 

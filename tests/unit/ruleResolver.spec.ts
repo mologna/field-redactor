@@ -20,7 +20,7 @@ const createResolver = (options: {
 
 describe('RuleResolver', () => {
   it('attributes delete paths by key or path rule', () => {
-    const byKey = createResolver({ secretManager: { deleteSecretKeys: [/authKey/] } });
+    const byKey = createResolver({ secretManager: { removeSecretKeys: [/authKey/] } });
     expect(byKey.attributeDeletePath({ authKey: 'token' }, 'authKey')).toEqual({
       path: 'authKey',
       action: 'delete',
@@ -90,7 +90,7 @@ describe('RuleResolver', () => {
 
   it('finds enclosing opaque or deep keys for nested attribution', () => {
     const resolver = createResolver({
-      secretManager: { fullSecretKeys: [/rawPayload/], deepSecretKeys: [/contactInfo/] }
+      secretManager: { opaqueSecretKeys: [/rawPayload/], deepSecretKeys: [/contactInfo/] }
     });
 
     expect(resolver.findEnclosingOpaqueOrDeepKey(['rawPayload', 'token'])).toEqual({
@@ -106,8 +106,8 @@ describe('RuleResolver', () => {
   it('exposes key-rule helpers for traversal', () => {
     const resolver = createResolver({
       secretManager: {
-        deleteSecretKeys: [/removed/],
-        fullSecretKeys: [/opaque/],
+        removeSecretKeys: [/removed/],
+        opaqueSecretKeys: [/opaque/],
         deepSecretKeys: [/deep/],
         secretKeys: [/shallow/]
       }

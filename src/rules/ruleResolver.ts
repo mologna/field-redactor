@@ -103,11 +103,11 @@ export class RuleResolver {
   }
 
   shouldRemoveByKey(key: SecretSpecifierValue): boolean {
-    return this.secretManager.isDeleteSecretKey(key);
+    return this.secretManager.isRemoveSecretKey(key);
   }
 
   shouldOpaqueByKey(key: SecretSpecifierValue): boolean {
-    return this.secretManager.isFullSecretKey(key);
+    return this.secretManager.isOpaqueSecretKey(key);
   }
 
   shouldTraverseContainerByKey(key: SecretSpecifierValue, forceDeepRedaction: boolean): boolean {

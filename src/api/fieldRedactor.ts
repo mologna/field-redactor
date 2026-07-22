@@ -15,7 +15,7 @@ import { hasExplicitRedactionRules, validateFieldRedactorConfig } from '../confi
 
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
- * the secrets, deepSecrets, fullSecrets, and custom objects provided in the configuration. Refer to the README.md
+ * the secret key rules, path rules, value patterns, and custom object schemas in the configuration. Refer to the README.md
  * for more details.
  *
  * Defaults: `ignoreNullOrUndefined` is `true`, `ignoreBooleans` is `false`, `cloneInput` is `true`.
@@ -38,14 +38,14 @@ export class FieldRedactor {
 
   /**
    * Creates a FieldRedactor that requires at least one explicit redaction rule: Shallow (`secretKeys`),
-   * Deep (`deepSecretKeys`), Opaque (`fullSecretKeys`), Remove (`deleteSecretKeys`), Schema (`customObjects`),
-   * or Value-pattern (`valuePatterns`).
+   * Deep (`deepSecretKeys`), Opaque (`opaqueSecretKeys` / legacy `fullSecretKeys`), Remove (`removeSecretKeys` /
+   * legacy `deleteSecretKeys`), Schema (`customObjects`), Value-pattern (`valuePatterns`), or Path (`pathRules`).
    * Unlike `new FieldRedactor()`, omitting all rules does not default to redacting every value.
    */
   public static createSafe(config: FieldRedactorConfig): FieldRedactor {
     if (!hasExplicitRedactionRules(config)) {
       throw new FieldRedactorConfigurationError(
-        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns, or pathRules entry. Without explicit rules, new FieldRedactor() redacts all values by default.'
+        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, opaqueSecretKeys, removeSecretKeys, customObjects, valuePatterns, or pathRules entry (legacy fullSecretKeys / deleteSecretKeys also count). Without explicit rules, new FieldRedactor() redacts all values by default.'
       );
     }
 

@@ -6,7 +6,7 @@ describe('CustomObjectManager', () => {
   describe('getMatchingSpecialObject', () => {
     it('can return a matching CustomObject with all CustomObjectMatchTypes', () => {
       const specialObject: CustomObject = {
-        foo: CustomObjectMatchType.Full,
+        foo: CustomObjectMatchType.Opaque,
         bar: CustomObjectMatchType.Deep,
         bim: CustomObjectMatchType.Shallow,
         bam: CustomObjectMatchType.Pass,
@@ -25,7 +25,7 @@ describe('CustomObjectManager', () => {
 
     it('Can return a matching CustomObject for an input that has null and undefined values', () => {
       const specialObject: CustomObject = {
-        foo: CustomObjectMatchType.Full,
+        foo: CustomObjectMatchType.Opaque,
         bar: CustomObjectMatchType.Ignore
       };
       const checker = new CustomObjectManager([specialObject]);

@@ -32,7 +32,7 @@ See [Path rules & allowlists](path-rules.md).
 | `CustomObjectMatchType.Opaque` | `CustomObjectMatchType.Full` |
 | `CustomObjectMatchType.Remove` | `CustomObjectMatchType.Delete` |
 
-Builder methods `.opaque()` / `.remove()` were already the preferred labels in 1.5.0.
+Builder methods `.opaque()` / `.remove()` write `opaqueSecretKeys` / `removeSecretKeys`. Legacy `fullSecretKeys` / `deleteSecretKeys` remain accepted on config objects and are normalized internally.
 
 ## Behavior-sensitive notes
 

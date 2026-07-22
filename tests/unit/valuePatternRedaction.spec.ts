@@ -88,7 +88,7 @@ describe('value pattern redaction', () => {
 
   it('does not attribute value rule when an object value is redacted opaquely', () => {
     const redactor = FieldRedactor.createSafe({
-      fullSecretKeys: [/payload/],
+      opaqueSecretKeys: [/payload/],
       valuePatterns: [/email/]
     });
 

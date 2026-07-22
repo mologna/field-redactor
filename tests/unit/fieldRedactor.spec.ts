@@ -44,13 +44,19 @@ describe('FieldRedactor', () => {
       const config = {
         secretKeys: [/password/],
         deepSecretKeys: [/token/],
-        fullSecretKeys: [/key/],
-        deleteSecretKeys: [/delete/]
+        opaqueSecretKeys: [/key/],
+        removeSecretKeys: [/delete/]
       };
 
       new FieldRedactor(config);
       expect(SecretManager).toHaveBeenCalledTimes(1);
-      expect(SecretManager).toHaveBeenCalledWith(config);
+      expect(SecretManager).toHaveBeenCalledWith({
+        secretKeys: config.secretKeys,
+        deepSecretKeys: config.deepSecretKeys,
+        opaqueSecretKeys: config.opaqueSecretKeys,
+        removeSecretKeys: config.removeSecretKeys,
+        passKeys: undefined
+      });
     });
 
     it('Should create the CustomObjectManager with the correct configuration', () => {

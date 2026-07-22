@@ -20,9 +20,9 @@ import {
 import {
   blanketDataToRedact,
   deepSecretKeys,
-  deleteSecretKeys,
+  removeSecretKeys,
   fullCustomObject,
-  fullSecretKeys,
+  opaqueSecretKeys,
   mediumCustomObject,
   NULL_OR_UNDEFINED_TEXT,
   redactor,
@@ -36,8 +36,8 @@ describe('Blanket Coverage Integration Tests', () => {
       redactor,
       secretKeys,
       deepSecretKeys,
-      fullSecretKeys,
-      deleteSecretKeys,
+      opaqueSecretKeys,
+      removeSecretKeys,
       customObjects: [fullCustomObject, smallCustomObject],
       ignoreNullOrUndefined: false,
       ignoreBooleans: false
@@ -156,8 +156,8 @@ describe('Blanket Coverage Integration Tests', () => {
       redactor,
       secretKeys,
       deepSecretKeys,
-      fullSecretKeys,
-      deleteSecretKeys,
+      opaqueSecretKeys,
+      removeSecretKeys,
       customObjects: [fullCustomObject]
     });
 
@@ -244,8 +244,8 @@ describe('Blanket Coverage Integration Tests', () => {
       redactor,
       secretKeys,
       deepSecretKeys,
-      fullSecretKeys,
-      deleteSecretKeys,
+      opaqueSecretKeys,
+      removeSecretKeys,
       customObjects: [fullCustomObject]
     });
 
@@ -304,7 +304,7 @@ describe('Blanket Coverage Integration Tests', () => {
       redactor,
       secretKeys,
       deepSecretKeys,
-      fullSecretKeys,
+      opaqueSecretKeys,
       customObjects: [smallCustomObject, mediumCustomObject]
     });
 

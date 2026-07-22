@@ -8,8 +8,8 @@
 | — | `syncRedactor` | `(val) => string` | `"REDACTED"` sync | Sync redactor; enables `redactSync()` without per-field Promises |
 | **Shallow** | `secretKeys` | `RegExp[]` | `null` | Redact matching scalar values; if no rules at all, everything matches |
 | **Deep** | `deepSecretKeys` | `RegExp[]` | `[]` | Deeply redact all primitives under matching keys |
-| **Opaque** | `fullSecretKeys` | `RegExp[]` | `[]` | Stringify and redact entire values |
-| **Remove** | `deleteSecretKeys` | `RegExp[]` | `[]` | Delete matching keys |
+| **Opaque** | `opaqueSecretKeys` | `RegExp[]` | `[]` | Stringify and redact entire values (legacy alias: `fullSecretKeys`) |
+| **Remove** | `removeSecretKeys` | `RegExp[]` | `[]` | Delete matching keys (legacy alias: `deleteSecretKeys`) |
 | **Schema** | `customObjects` | `CustomObject[]` | `[]` | Per-shape rules; see [metadata guide](../guides/metadata-redaction.md) |
 | **Value-pattern** | `valuePatterns` | `RegExp[]` | `[]` | Opt-in: redact scalars whose string form matches a pattern |
 | **Path rule** | `pathRules` | `PathRule[]` | `[]` | Apply a mode at a JSON path (`metadata.*.value`) |

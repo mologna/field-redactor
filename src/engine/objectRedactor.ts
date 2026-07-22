@@ -8,7 +8,7 @@ import { ObjectRedactorTraversal } from './objectRedactorTraversal';
 
 /**
  * Redacts fields in a JSON object using the secretManager, primitiveRedactor, and CustomObjectManager provided in the
- * constructor. CustomObjects take highest precedence, followed by opaque (`fullSecretKeys`), then deep, then shallow.
+ * constructor. CustomObjects take highest precedence, followed by opaque (`opaqueSecretKeys`), then deep, then shallow.
  */
 export class ObjectRedactor {
   private readonly traversal: ObjectRedactorTraversal;

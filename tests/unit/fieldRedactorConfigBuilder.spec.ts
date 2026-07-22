@@ -11,8 +11,8 @@ describe('FieldRedactorConfigBuilder', () => {
 
     expect(config.secretKeys).toEqual([/email/i]);
     expect(config.deepSecretKeys).toEqual([/accountInfo/i]);
-    expect(config.fullSecretKeys).toEqual([/rawPayload/i]);
-    expect(config.deleteSecretKeys).toEqual([/authKey/i]);
+    expect(config.opaqueSecretKeys).toEqual([/rawPayload/i]);
+    expect(config.removeSecretKeys).toEqual([/authKey/i]);
   });
 
   it('accumulates patterns across repeated calls', () => {
@@ -31,7 +31,7 @@ describe('FieldRedactorConfigBuilder', () => {
 
   it('supports delete as an alias for remove', () => {
     const config = FieldRedactorConfigBuilder.create().delete(/authKey/i).build();
-    expect(config.deleteSecretKeys).toEqual([/authKey/i]);
+    expect(config.removeSecretKeys).toEqual([/authKey/i]);
   });
 
   it('registers schemas with optional names for dry-run reports', () => {

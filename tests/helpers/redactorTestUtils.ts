@@ -23,6 +23,8 @@ const buildTestDeps = (options: ObjectRedactorTestOptions = {}): FieldRedactorDe
   buildFieldRedactorDeps({
     secretKeys: options.secretManagerConfig?.secretKeys,
     deepSecretKeys: options.secretManagerConfig?.deepSecretKeys,
+    opaqueSecretKeys: options.secretManagerConfig?.opaqueSecretKeys,
+    removeSecretKeys: options.secretManagerConfig?.removeSecretKeys,
     fullSecretKeys: options.secretManagerConfig?.fullSecretKeys,
     deleteSecretKeys: options.secretManagerConfig?.deleteSecretKeys,
     passKeys: options.secretManagerConfig?.passKeys,

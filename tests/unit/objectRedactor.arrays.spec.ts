@@ -106,7 +106,7 @@ describe('Complex Object Redaction', () => {
     expect(input.emails[1][1]).toBe(DEFAULT_REDACTED_TEXT);
   });
 
-  it('Can delete keys when specified as deleteSecretKeys in nested objects', async () => {
+  it('Can delete keys when specified as removeSecretKeys in nested objects', async () => {
     const obj = {
       foo: {
         bar: {
@@ -114,14 +114,14 @@ describe('Complex Object Redaction', () => {
         }
       }
     };
-    const deleteSecretKeys: RegExp[] = [/bar/];
-    fixture.secretManager = new SecretManager({ deleteSecretKeys });
+    const removeSecretKeys: RegExp[] = [/bar/];
+    fixture.secretManager = new SecretManager({ removeSecretKeys });
     const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     await redactor.redactInPlace(obj);
     expect(obj.foo.bar).toBeUndefined();
   });
 
-  it('Can delete keys when specified as deleteSecretKeys in nested arrays and objects', async () => {
+  it('Can delete keys when specified as removeSecretKeys in nested arrays and objects', async () => {
     const obj = {
       bar: ['this', 'is', 'an', 'array'],
       fizz: [
@@ -131,15 +131,15 @@ describe('Complex Object Redaction', () => {
         }
       ]
     };
-    const deleteSecretKeys: RegExp[] = [/bar/];
-    fixture.secretManager = new SecretManager({ deleteSecretKeys });
+    const removeSecretKeys: RegExp[] = [/bar/];
+    fixture.secretManager = new SecretManager({ removeSecretKeys });
     const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     await redactor.redactInPlace(obj);
     expect(obj.bar).toBeUndefined();
     expect(obj.fizz[0].bar).toBeUndefined();
   });
 
-  it('Can delete keys when specified as deleteSecretKeys ', async () => {
+  it('Can delete keys when specified as removeSecretKeys ', async () => {
     const obj = {
       foo: {
         bar: {
@@ -147,8 +147,8 @@ describe('Complex Object Redaction', () => {
         }
       }
     };
-    const deleteSecretKeys: RegExp[] = [/bar/];
-    fixture.secretManager = new SecretManager({ deleteSecretKeys });
+    const removeSecretKeys: RegExp[] = [/bar/];
+    fixture.secretManager = new SecretManager({ removeSecretKeys });
     const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     await redactor.redactInPlace(obj);
     expect(obj.foo.bar).toBeUndefined();

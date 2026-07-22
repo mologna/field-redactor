@@ -55,8 +55,8 @@ Do you know which JSON keys are always sensitive?
 | --- | --- |
 | Shallow | `secretKeys` |
 | Deep | `deepSecretKeys` |
-| Opaque | `fullSecretKeys` |
-| Remove | `deleteSecretKeys` |
+| Opaque | `opaqueSecretKeys` (legacy: `fullSecretKeys`) |
+| Remove | `removeSecretKeys` (legacy: `deleteSecretKeys`) |
 | Schema | `customObjects` |
 
 Use `FieldRedactor.createSafe({ ... })` or `FieldRedactorConfigBuilder` so you never accidentally redact every field. `new FieldRedactor()` without rules still redacts all values (legacy default).

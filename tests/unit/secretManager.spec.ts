@@ -8,7 +8,7 @@ describe('NewSecretManager', () => {
     expect(secretManager.isSecretKey('baz')).toBe(true);
     expect(secretManager.isSecretKey('qux')).toBe(true);
     expect(secretManager.isDeepSecretKey('qux')).toBe(false);
-    expect(secretManager.isFullSecretKey('qux')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('qux')).toBe(false);
   });
 
   it('Returns true for secretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
@@ -23,8 +23,8 @@ describe('NewSecretManager', () => {
 
     expect(secretManager.isDeepSecretKey('foo')).toBe(false);
     expect(secretManager.isDeepSecretKey('pass')).toBe(false);
-    expect(secretManager.isFullSecretKey('foo')).toBe(false);
-    expect(secretManager.isFullSecretKey('pass')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('foo')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('pass')).toBe(false);
   });
 
   it('Returns true for deepSecretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
@@ -36,24 +36,24 @@ describe('NewSecretManager', () => {
     expect(secretManager.isDeepSecretKey('bar')).toBe(false);
     expect(secretManager.isDeepSecretKey('pass')).toBe(true);
     expect(secretManager.isDeepSecretKey('password')).toBe(true);
-    expect(secretManager.isFullSecretKey('superpass')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('superpass')).toBe(false);
 
-    expect(secretManager.isFullSecretKey('foo')).toBe(false);
-    expect(secretManager.isFullSecretKey('pass')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('foo')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('pass')).toBe(false);
     expect(secretManager.isSecretKey('foo')).toBe(false);
     expect(secretManager.isSecretKey('pass')).toBe(false);
   });
 
-  it('Returns true for fullSecretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
+  it('Returns true for opaqueSecretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
     const secretManager = new SecretManager({
-      fullSecretKeys: [/foo/, /^pass/]
+      opaqueSecretKeys: [/foo/, /^pass/]
     });
 
-    expect(secretManager.isFullSecretKey('foo')).toBe(true);
-    expect(secretManager.isFullSecretKey('bar')).toBe(false);
-    expect(secretManager.isFullSecretKey('pass')).toBe(true);
-    expect(secretManager.isFullSecretKey('password')).toBe(true);
-    expect(secretManager.isFullSecretKey('superpass')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('foo')).toBe(true);
+    expect(secretManager.isOpaqueSecretKey('bar')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('pass')).toBe(true);
+    expect(secretManager.isOpaqueSecretKey('password')).toBe(true);
+    expect(secretManager.isOpaqueSecretKey('superpass')).toBe(false);
 
     expect(secretManager.isDeepSecretKey('foo')).toBe(false);
     expect(secretManager.isDeepSecretKey('pass')).toBe(false);
@@ -61,16 +61,16 @@ describe('NewSecretManager', () => {
     expect(secretManager.isSecretKey('pass')).toBe(false);
   });
 
-  it('Returns true for deleteSecretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
+  it('Returns true for removeSecretKeys only if they match the provided RegEx values and does not return true for other secret types on the same values', () => {
     const secretManager = new SecretManager({
-      deleteSecretKeys: [/foo/, /^pass/]
+      removeSecretKeys: [/foo/, /^pass/]
     });
 
-    expect(secretManager.isDeleteSecretKey('foo')).toBe(true);
-    expect(secretManager.isDeleteSecretKey('bar')).toBe(false);
-    expect(secretManager.isDeleteSecretKey('pass')).toBe(true);
-    expect(secretManager.isDeleteSecretKey('password')).toBe(true);
-    expect(secretManager.isDeleteSecretKey('superpass')).toBe(false);
+    expect(secretManager.isRemoveSecretKey('foo')).toBe(true);
+    expect(secretManager.isRemoveSecretKey('bar')).toBe(false);
+    expect(secretManager.isRemoveSecretKey('pass')).toBe(true);
+    expect(secretManager.isRemoveSecretKey('password')).toBe(true);
+    expect(secretManager.isRemoveSecretKey('superpass')).toBe(false);
 
     expect(secretManager.isDeepSecretKey('foo')).toBe(false);
     expect(secretManager.isDeepSecretKey('pass')).toBe(false);
@@ -78,7 +78,7 @@ describe('NewSecretManager', () => {
     expect(secretManager.isSecretKey('pass')).toBe(false);
   });
 
-  it('Does not default to all values being secret if either deepSecretKeys, fullSecretKeys, or both are provided', () => {
+  it('Does not default to all values being secret if either deepSecretKeys, opaqueSecretKeys, or both are provided', () => {
     // deep secret
     const deepSecretManager = new SecretManager({
       deepSecretKeys: [/foo/]
@@ -89,7 +89,7 @@ describe('NewSecretManager', () => {
 
     // full secret
     const fullSecretManager = new SecretManager({
-      fullSecretKeys: [/foo/]
+      opaqueSecretKeys: [/foo/]
     });
     expect(fullSecretManager.isSecretKey('foo')).toBe(false);
     expect(fullSecretManager.isSecretKey('bar')).toBe(false);
@@ -97,7 +97,7 @@ describe('NewSecretManager', () => {
 
     // both
     const combinedSecretManager = new SecretManager({
-      fullSecretKeys: [/foo/],
+      opaqueSecretKeys: [/foo/],
       deepSecretKeys: [/bar/]
     });
     expect(combinedSecretManager.isSecretKey('foo')).toBe(false);
@@ -109,8 +109,8 @@ describe('NewSecretManager', () => {
     const secretManager = new SecretManager({
       secretKeys: [/foo/, /^pass/],
       deepSecretKeys: [/parentAccount/],
-      fullSecretKeys: [/redactMe/],
-      deleteSecretKeys: [/deleteMe/]
+      opaqueSecretKeys: [/redactMe/],
+      removeSecretKeys: [/deleteMe/]
     });
 
     // secretKeys
@@ -128,18 +128,18 @@ describe('NewSecretManager', () => {
     expect(secretManager.isDeepSecretKey('deleteMe')).toBe(false);
 
     // full redaction keys
-    expect(secretManager.isFullSecretKey('parentAccount')).toBe(false);
-    expect(secretManager.isFullSecretKey('foo')).toBe(false);
-    expect(secretManager.isFullSecretKey('pass')).toBe(false);
-    expect(secretManager.isFullSecretKey('redactMe')).toBe(true);
-    expect(secretManager.isFullSecretKey('deleteMe')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('parentAccount')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('foo')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('pass')).toBe(false);
+    expect(secretManager.isOpaqueSecretKey('redactMe')).toBe(true);
+    expect(secretManager.isOpaqueSecretKey('deleteMe')).toBe(false);
 
     // delete redaction keys
-    expect(secretManager.isDeleteSecretKey('parentAccount')).toBe(false);
-    expect(secretManager.isDeleteSecretKey('foo')).toBe(false);
-    expect(secretManager.isDeleteSecretKey('pass')).toBe(false);
-    expect(secretManager.isDeleteSecretKey('redactMe')).toBe(false);
-    expect(secretManager.isDeleteSecretKey('deleteMe')).toBe(true);
+    expect(secretManager.isRemoveSecretKey('parentAccount')).toBe(false);
+    expect(secretManager.isRemoveSecretKey('foo')).toBe(false);
+    expect(secretManager.isRemoveSecretKey('pass')).toBe(false);
+    expect(secretManager.isRemoveSecretKey('redactMe')).toBe(false);
+    expect(secretManager.isRemoveSecretKey('deleteMe')).toBe(true);
   });
 
   it('returns true for passKeys only when configured and matching', () => {
@@ -156,8 +156,8 @@ describe('NewSecretManager', () => {
     const manager = new SecretManager({
       secretKeys: [/shallow/],
       deepSecretKeys: [/deep/],
-      fullSecretKeys: [/opaque/],
-      deleteSecretKeys: [/removed/]
+      opaqueSecretKeys: [/opaque/],
+      removeSecretKeys: [/removed/]
     });
 
     expect(manager.classifyKeyRule('removed')).toBe('remove');
@@ -170,5 +170,16 @@ describe('NewSecretManager', () => {
 
     const defaultManager = new SecretManager({});
     expect(defaultManager.classifyKeyRule('anything')).toBe('default');
+  });
+
+  it('accepts legacy fullSecretKeys / deleteSecretKeys as opaque / remove', () => {
+    const manager = new SecretManager({
+      fullSecretKeys: [/payload/],
+      deleteSecretKeys: [/authKey/]
+    });
+
+    expect(manager.isOpaqueSecretKey('payload')).toBe(true);
+    expect(manager.isRemoveSecretKey('authKey')).toBe(true);
+    expect(manager.isSecretKey('other')).toBe(false);
   });
 });
