@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-07-22
+
+Internal simplification and layering cleanup with no intended public API changes for typical consumers. See [docs/release-notes/v1.6.1.md](docs/release-notes/v1.6.1.md).
+
+### Changed
+
+- Unified custom-object field handling into a single `handleField` path and one match-type dispatcher.
+- Sibling-key and primitive coercion helpers moved out of the engine layer (`schemaSiblingKey`, `primitiveCoercion`) so rules no longer import engine.
+- Config construction normalizes aliases once; `resolveSecretKeys` assumes already-normalized input.
+- Path-rule disposition uses a mode map; identical force-deep helpers merged into `forceDeepForKey`.
+- Dry-run attribution builds `RuleResolver` directly (removed unused attribution shim).
+
+### Removed
+
+- Dead internal re-exports (`fieldDisposition`, unused dry-run attribution wrappers, `awaitMaybe`).
+- Unused public convenience alias `FieldRedactor.fromConfig()` (equivalent to `new FieldRedactor(config)`).
+
 ## [1.6.0] - 2026-07-21
 
 Path rules, pass-key allowlists, Opaque/Remove naming aliases, and architecture cleanup. See [docs/release-notes/v1.6.0.md](docs/release-notes/v1.6.0.md) and [docs/guides/migration-1.5-to-1.6.md](docs/guides/migration-1.5-to-1.6.md).
@@ -166,6 +183,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[1.6.1]: https://github.com/mologna/field-redactor/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/mologna/field-redactor/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/mologna/field-redactor/releases/tag/v1.5.0
 [2.5.1]: https://github.com/mologna/field-redactor/compare/2.5.0...2.5.1

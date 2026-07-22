@@ -16,4 +16,12 @@ describe('resolveCustomObjectStringKeyAction', () => {
     expect(resolveCustomObjectStringKeyAction(manager, 'shallow')).toEqual({ type: 'traverse', forceDeep: false });
     expect(resolveCustomObjectStringKeyAction(manager, 'other')).toEqual({ type: 'none' });
   });
+
+  it('treats legacy default-all-secret as shallow traverse', () => {
+    const defaultManager = new SecretManager({});
+    expect(resolveCustomObjectStringKeyAction(defaultManager, 'anything')).toEqual({
+      type: 'traverse',
+      forceDeep: false
+    });
+  });
 });

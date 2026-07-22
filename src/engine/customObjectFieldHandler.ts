@@ -4,16 +4,13 @@ import {
   isJsonObject,
   JsonArray,
   JsonObject,
+  JsonValue,
   RedactablePrimitive,
   SecretSpecifierValue
 } from '../types';
 import { ContainerMutation, createContainerMutation } from './objectRedactorMutation';
-import {
-  applyCustomObjectArrayMatchType,
-  applyCustomObjectObjectMatchType,
-  applyCustomObjectPrimitiveMatchType
-} from './objectRedactorCustomObject';
-import { getStringSpecifiedCustomObjectSecretKeyValueIfExists } from './objectRedactorHelpers';
+import { applyCustomObjectMatchType } from './objectRedactorCustomObject';
+import { getStringSpecifiedCustomObjectSecretKeyValueIfExists } from '../rules/schemaSiblingKey';
 import { finalizeMaybeAsync, MaybeAsync, resolveMaybeAsync, runSequential } from '../util/maybeAsync';
 import { TraversalServices } from './traversalServices';
 import { SecretManager } from '../rules/secretManager';
@@ -24,25 +21,36 @@ type StringKeyAction =
   | { type: 'traverse'; forceDeep: boolean }
   | { type: 'none' };
 
+type ValueShape = 'array' | 'object' | 'primitive';
+
 /** Shared delete/opaque/deep/shallow ladder for schema sibling-key rules. */
 export const resolveCustomObjectStringKeyAction = (
   secretManager: SecretManager,
   stringKey: SecretSpecifierValue
 ): StringKeyAction => {
-  if (secretManager.isDeleteSecretKey(stringKey)) {
-    return { type: 'remove' };
+  switch (secretManager.classifyKeyRule(stringKey)) {
+    case 'remove':
+      return { type: 'remove' };
+    case 'opaque':
+      return { type: 'opaque' };
+    case 'deep':
+      return { type: 'traverse', forceDeep: true };
+    case 'shallow':
+    case 'default':
+      return { type: 'traverse', forceDeep: false };
+    default:
+      return { type: 'none' };
   }
+};
 
-  if (secretManager.isFullSecretKey(stringKey)) {
-    return { type: 'opaque' };
+const shapeOf = (value: JsonValue | undefined): ValueShape => {
+  if (Array.isArray(value)) {
+    return 'array';
   }
-
-  const forceDeep = secretManager.isDeepSecretKey(stringKey);
-  if (forceDeep || secretManager.isSecretKey(stringKey)) {
-    return { type: 'traverse', forceDeep };
+  if (isJsonObject(value)) {
+    return 'object';
   }
-
-  return { type: 'none' };
+  return 'primitive';
 };
 
 export class CustomObjectFieldHandler {
@@ -51,50 +59,85 @@ export class CustomObjectFieldHandler {
   handleCustomObject(container: ContainerMutation<JsonObject>, customObject: CustomObject): MaybeAsync<void> {
     return runSequential(
       Object.keys(customObject),
-      (key) => {
-        const fieldValue = container.source[key];
-        if (Array.isArray(fieldValue)) {
-          return this.handleCustomObjectValueIfArray(container, key, customObject);
-        }
-
-        if (isJsonObject(fieldValue)) {
-          return this.handleCustomObjectValueIfObject(container, key, customObject);
-        }
-
-        return this.handleCustomObjectValueIfPrimitive(container, customObject, key);
-      },
+      (key) => this.handleField(container, key, customObject),
       this.services.asyncMode
     );
   }
 
-  private handleCustomObjectValueIfArray(
+  private handleField(
     container: ContainerMutation<JsonObject>,
     key: string,
     customObject: CustomObject
   ): MaybeAsync<void> {
+    const fieldValue = container.source[key];
+    const shape = shapeOf(fieldValue);
     const stringKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(container.source, customObject, key);
+
     if (stringKey !== undefined) {
-      return this.handleCustomObjectArrayValueIfStringKeySpecified(container, key, stringKey);
+      return this.applyStringKeyRule(container, key, stringKey, shape);
     }
 
-    return this.handleCustomObjectArrayValueIfMatchTypeSpecified(
-      container,
-      key,
-      customObject[key] as CustomObjectMatchType
-    );
+    if (typeof customObject[key] === 'number') {
+      return this.applyMatchTypeRule(container, key, customObject[key], shape);
+    }
+
+    return undefined;
   }
 
-  private handleCustomObjectArrayValueIfStringKeySpecified(
+  private applyStringKeyRule(
     container: ContainerMutation<JsonObject>,
     key: string,
-    stringKey: SecretSpecifierValue
+    stringKey: SecretSpecifierValue,
+    shape: ValueShape
   ): MaybeAsync<void> {
-    const fieldValue = container.source[key];
-    if (!Array.isArray(fieldValue)) {
-      return;
+    if (shape === 'primitive') {
+      const action = resolveCustomObjectStringKeyAction(this.services.secretManager, stringKey);
+      if (action.type === 'remove') {
+        container.remove(key);
+        return;
+      }
+
+      // Opaque/shallow/deep scalar handling stays in setPrimitiveValueIfSecret for value-pattern fallthrough.
+      return this.services.setPrimitiveValueIfSecret(
+        container,
+        key,
+        stringKey,
+        container.source[key] as RedactablePrimitive,
+        false
+      );
     }
 
+    if (shape === 'object') {
+      const fieldValue = container.source[key];
+      if (!isJsonObject(fieldValue)) {
+        return;
+      }
+
+      const nestedSchema = this.services.ruleResolver.getMatchingSchema(fieldValue);
+      if (nestedSchema) {
+        const child = createContainerMutation(fieldValue, container.copyOnWrite);
+        return finalizeMaybeAsync(
+          this.handleCustomObject(child, nestedSchema),
+          () => {
+            container.set(key, child.result());
+          },
+          this.services.asyncMode
+        );
+      }
+    }
+
+    return this.applyContainerStringKeyAction(container, key, stringKey, shape);
+  }
+
+  private applyContainerStringKeyAction(
+    container: ContainerMutation<JsonObject>,
+    key: string,
+    stringKey: SecretSpecifierValue,
+    shape: 'array' | 'object'
+  ): MaybeAsync<void> {
+    const fieldValue = container.source[key];
     const action = resolveCustomObjectStringKeyAction(this.services.secretManager, stringKey);
+
     switch (action.type) {
       case 'remove':
         container.remove(key);
@@ -102,29 +145,65 @@ export class CustomObjectFieldHandler {
       case 'opaque':
         return this.services.setPrimitiveFromValue(container, key, fieldValue);
       case 'traverse':
-        return this.setRedactedArray(container, key, fieldValue, action.forceDeep);
+        return shape === 'array'
+          ? this.setRedactedArray(container, key, fieldValue as JsonArray, action.forceDeep)
+          : this.setRedactedObject(container, key, fieldValue as JsonObject, action.forceDeep);
       case 'none':
         return;
     }
   }
 
-  private handleCustomObjectArrayValueIfMatchTypeSpecified(
+  private applyMatchTypeRule(
     container: ContainerMutation<JsonObject>,
     key: string,
-    matchType: CustomObjectMatchType
+    matchType: CustomObjectMatchType,
+    shape: ValueShape
   ): MaybeAsync<void> {
     const fieldValue = container.source[key];
-    if (!Array.isArray(fieldValue)) {
+
+    if (shape === 'primitive') {
+      return resolveMaybeAsync(
+        applyCustomObjectMatchType(matchType, {
+          remove: () => container.remove(key),
+          opaque: () => this.services.setPrimitiveFromValue(container, key, fieldValue),
+          deep: () => this.services.setPrimitive(container, key, fieldValue as RedactablePrimitive),
+          shallow: () => this.services.setPrimitive(container, key, fieldValue as RedactablePrimitive),
+          pass: () => undefined
+        }),
+        this.services.asyncMode
+      );
+    }
+
+    if (shape === 'array') {
+      if (!Array.isArray(fieldValue)) {
+        return;
+      }
+
+      return resolveMaybeAsync(
+        applyCustomObjectMatchType(matchType, {
+          remove: () => container.remove(key),
+          opaque: () => this.services.setPrimitiveFromValue(container, key, fieldValue),
+          deep: () => this.setRedactedArray(container, key, fieldValue, true),
+          shallow: () => this.setRedactedArray(container, key, fieldValue, false),
+          pass: () => this.services.redactArrayInObject(fieldValue, key, false, container, [])
+        }),
+        this.services.asyncMode
+      );
+    }
+
+    if (!isJsonObject(fieldValue)) {
       return;
     }
 
+    const traverseShallow = () => this.setRedactedObject(container, key, fieldValue, false);
     return resolveMaybeAsync(
-      applyCustomObjectArrayMatchType(matchType, {
-        deleteKey: () => container.remove(key),
-        redactFull: () => this.services.setPrimitiveFromValue(container, key, fieldValue),
-        redactDeep: () => this.setRedactedArray(container, key, fieldValue, true),
-        redactShallow: () => this.setRedactedArray(container, key, fieldValue, false),
-        passThrough: () => this.services.redactArrayInObject(fieldValue, key, false, container, [])
+      applyCustomObjectMatchType(matchType, {
+        remove: () => container.remove(key),
+        opaque: () => this.services.setPrimitiveFromValue(container, key, fieldValue),
+        deep: () => this.setRedactedObject(container, key, fieldValue, true),
+        shallow: traverseShallow,
+        // Object Pass ≈ shallow traverse (walk nested secrets, keep structure).
+        pass: traverseShallow
       }),
       this.services.asyncMode
     );
@@ -146,81 +225,6 @@ export class CustomObjectFieldHandler {
     container.set(key, redacted);
   }
 
-  private handleCustomObjectValueIfObject(
-    container: ContainerMutation<JsonObject>,
-    key: string,
-    customObject: CustomObject
-  ): MaybeAsync<void> {
-    const stringKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(container.source, customObject, key);
-    if (stringKey !== undefined) {
-      return this.handleCustomObjectObjectValueIfStringKeySpecified(container, key, stringKey);
-    }
-
-    return this.handleCustomObjectObjectValueIfMatchTypeSpecified(
-      container,
-      key,
-      customObject[key] as CustomObjectMatchType
-    );
-  }
-
-  private handleCustomObjectObjectValueIfStringKeySpecified(
-    container: ContainerMutation<JsonObject>,
-    key: string,
-    stringKey: SecretSpecifierValue
-  ): MaybeAsync<void> {
-    const fieldValue = container.source[key];
-    if (!isJsonObject(fieldValue)) {
-      return;
-    }
-
-    const nestedSchema = this.services.ruleResolver.getMatchingSchema(fieldValue);
-    if (nestedSchema) {
-      const child = createContainerMutation(fieldValue, container.copyOnWrite);
-      return finalizeMaybeAsync(
-        this.handleCustomObject(child, nestedSchema),
-        () => {
-          container.set(key, child.result());
-        },
-        this.services.asyncMode
-      );
-    }
-
-    const action = resolveCustomObjectStringKeyAction(this.services.secretManager, stringKey);
-    switch (action.type) {
-      case 'remove':
-        container.remove(key);
-        return;
-      case 'opaque':
-        return this.services.setPrimitiveFromValue(container, key, fieldValue);
-      case 'traverse':
-        return this.setRedactedObject(container, key, fieldValue, action.forceDeep);
-      case 'none':
-        return;
-    }
-  }
-
-  private handleCustomObjectObjectValueIfMatchTypeSpecified(
-    container: ContainerMutation<JsonObject>,
-    key: string,
-    matchType: CustomObjectMatchType
-  ): MaybeAsync<void> {
-    const fieldValue = container.source[key];
-    if (!isJsonObject(fieldValue)) {
-      return;
-    }
-
-    return resolveMaybeAsync(
-      applyCustomObjectObjectMatchType(matchType, {
-        deleteKey: () => container.remove(key),
-        redactFull: () => this.services.setPrimitiveFromValue(container, key, fieldValue),
-        redactDeep: () => this.setRedactedObject(container, key, fieldValue, true),
-        redactShallowOrPass: () => this.setRedactedObject(container, key, fieldValue, false),
-        ignore: () => undefined
-      }),
-      this.services.asyncMode
-    );
-  }
-
   private setRedactedObject(
     container: ContainerMutation<JsonObject>,
     key: string,
@@ -234,60 +238,6 @@ export class CustomObjectFieldHandler {
         container.set(key, child.result());
       },
       this.services.asyncMode
-    );
-  }
-
-  private handleCustomObjectValueIfPrimitive(
-    container: ContainerMutation<JsonObject>,
-    customObject: CustomObject,
-    key: string
-  ): MaybeAsync<void> {
-    if (typeof customObject[key] === 'number') {
-      return this.handleCustomObjectPrimitiveValueIfMatchTypeSpecified(container, key, customObject[key]);
-    }
-
-    const secretKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(container.source, customObject, key);
-    if (secretKey === undefined) {
-      return;
-    }
-
-    return this.handleCustomObjectPrimitiveValueIfStringKeySpecified(container, secretKey, key);
-  }
-
-  private handleCustomObjectPrimitiveValueIfMatchTypeSpecified(
-    container: ContainerMutation<JsonObject>,
-    key: string,
-    matchValue: CustomObjectMatchType
-  ): MaybeAsync<void> {
-    return resolveMaybeAsync(
-      applyCustomObjectPrimitiveMatchType(matchValue, {
-        deleteKey: () => container.remove(key),
-        redactFull: () => this.services.setPrimitiveFromValue(container, key, container.source[key]),
-        redactScalar: () => this.services.setPrimitive(container, key, container.source[key] as RedactablePrimitive),
-        passThrough: () => undefined
-      }),
-      this.services.asyncMode
-    );
-  }
-
-  private handleCustomObjectPrimitiveValueIfStringKeySpecified(
-    container: ContainerMutation<JsonObject>,
-    secretKey: SecretSpecifierValue,
-    key: string
-  ): MaybeAsync<void> {
-    const action = resolveCustomObjectStringKeyAction(this.services.secretManager, secretKey);
-    if (action.type === 'remove') {
-      container.remove(key);
-      return;
-    }
-
-    // Opaque/shallow/deep scalar handling stays in setPrimitiveValueIfSecret for value-pattern fallthrough.
-    return this.services.setPrimitiveValueIfSecret(
-      container,
-      key,
-      secretKey,
-      container.source[key] as RedactablePrimitive,
-      false
     );
   }
 }

@@ -47,13 +47,13 @@ export const normalizeFieldRedactorConfig = (config?: FieldRedactorConfig): Fiel
 };
 
 /**
- * When only value patterns are configured, shallow key matching must be disabled (`secretKeys: []`)
- * so the legacy default does not redact every field.
+ * When only value patterns / path rules are configured, shallow key matching must be disabled
+ * (`secretKeys: []`) so the legacy default does not redact every field.
+ * Expects an already-normalized config (aliases merged).
  */
-export const resolveSecretKeys = (config?: FieldRedactorConfig): RegExp[] | undefined => {
-  const normalized = normalizeFieldRedactorConfig(config) ?? {};
+export const resolveSecretKeys = (config: FieldRedactorConfig = {}): RegExp[] | undefined => {
   const { secretKeys, deepSecretKeys, fullSecretKeys, deleteSecretKeys, customObjects, valuePatterns, pathRules } =
-    normalized;
+    config;
 
   if (secretKeys !== undefined) {
     return secretKeys;

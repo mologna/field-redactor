@@ -321,7 +321,7 @@ export class ObjectRedactorTraversal {
       ? this.handleCustomObject(child, customObject)
       : this.redactSecretFields(
           child,
-          this.ruleResolver.nestedObjectForceDeepRedaction(key, forceDeepRedaction),
+          this.ruleResolver.forceDeepForKey(key, forceDeepRedaction),
           pathSegments
         );
 

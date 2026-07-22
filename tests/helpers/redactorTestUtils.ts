@@ -66,6 +66,3 @@ export const createTraversal = (options: ObjectRedactorTestOptions = {}): Object
   const deps = buildTestDeps(options);
   return buildTraversal(options, deps);
 };
-
-/** @deprecated Use {@link createTraversal}. */
-export const createSyncTraversal = createTraversal;

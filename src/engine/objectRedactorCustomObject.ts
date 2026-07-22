@@ -1,84 +1,31 @@
 import { CustomObjectMatchType } from '../types';
 import { MaybeAsync } from '../util/maybeAsync';
 
-const run = <T>(handler: () => MaybeAsync<T>): MaybeAsync<T> => handler();
-
-type CustomObjectArrayHandlers = {
-  deleteKey(): MaybeAsync<void>;
-  redactFull(): MaybeAsync<void>;
-  redactDeep(): MaybeAsync<void>;
-  redactShallow(): MaybeAsync<void>;
-  passThrough(): MaybeAsync<void>;
+/** Shape-agnostic match-type handlers; callers map Pass/Deep/Shallow to the right effect. */
+export type CustomObjectMatchHandlers = {
+  remove(): MaybeAsync<void>;
+  opaque(): MaybeAsync<void>;
+  deep(): MaybeAsync<void>;
+  shallow(): MaybeAsync<void>;
+  pass(): MaybeAsync<void>;
 };
 
-type CustomObjectObjectHandlers = {
-  deleteKey(): MaybeAsync<void>;
-  redactFull(): MaybeAsync<void>;
-  redactDeep(): MaybeAsync<void>;
-  redactShallowOrPass(): MaybeAsync<void>;
-  ignore(): MaybeAsync<void>;
-};
-
-type CustomObjectPrimitiveHandlers = {
-  deleteKey(): MaybeAsync<void>;
-  redactFull(): MaybeAsync<void>;
-  redactScalar(): MaybeAsync<void>;
-  passThrough(): MaybeAsync<void>;
-};
-
-export const applyCustomObjectArrayMatchType = (
+export const applyCustomObjectMatchType = (
   matchType: CustomObjectMatchType,
-  handlers: CustomObjectArrayHandlers
+  handlers: CustomObjectMatchHandlers
 ): MaybeAsync<void> => {
   switch (matchType) {
     case CustomObjectMatchType.Remove:
-      return run(handlers.deleteKey);
+      return handlers.remove();
     case CustomObjectMatchType.Opaque:
-      return run(handlers.redactFull);
+      return handlers.opaque();
     case CustomObjectMatchType.Deep:
-      return run(handlers.redactDeep);
+      return handlers.deep();
     case CustomObjectMatchType.Shallow:
-      return run(handlers.redactShallow);
+      return handlers.shallow();
     case CustomObjectMatchType.Pass:
-      return run(handlers.passThrough);
+      return handlers.pass();
     default:
       return undefined;
-  }
-};
-
-export const applyCustomObjectObjectMatchType = (
-  matchType: CustomObjectMatchType,
-  handlers: CustomObjectObjectHandlers
-): MaybeAsync<void> => {
-  switch (matchType) {
-    case CustomObjectMatchType.Remove:
-      return run(handlers.deleteKey);
-    case CustomObjectMatchType.Opaque:
-      return run(handlers.redactFull);
-    case CustomObjectMatchType.Deep:
-      return run(handlers.redactDeep);
-    case CustomObjectMatchType.Shallow:
-    case CustomObjectMatchType.Pass:
-      return run(handlers.redactShallowOrPass);
-    case CustomObjectMatchType.Ignore:
-      return run(handlers.ignore);
-  }
-};
-
-export const applyCustomObjectPrimitiveMatchType = (
-  matchType: CustomObjectMatchType,
-  handlers: CustomObjectPrimitiveHandlers
-): MaybeAsync<void> => {
-  switch (matchType) {
-    case CustomObjectMatchType.Remove:
-      return run(handlers.deleteKey);
-    case CustomObjectMatchType.Opaque:
-      return run(handlers.redactFull);
-    case CustomObjectMatchType.Deep:
-    case CustomObjectMatchType.Shallow:
-      return run(handlers.redactScalar);
-    case CustomObjectMatchType.Pass:
-    default:
-      return run(handlers.passThrough);
   }
 };

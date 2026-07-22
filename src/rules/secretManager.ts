@@ -1,7 +1,7 @@
 import { formatRegExp } from '../util/regexUtils';
 import { SecretManagerConfig, SecretSpecifierValue } from '../types';
 
-type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
+export type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
 
 const KEY_RULE_PRECEDENCE: KeyRule[] = ['remove', 'opaque', 'deep', 'shallow'];
 

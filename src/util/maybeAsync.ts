@@ -1,7 +1,5 @@
 export type MaybeAsync<T> = T | Promise<T>;
 
-export const awaitMaybe = async <T>(value: MaybeAsync<T>): Promise<T> => value;
-
 /** Normalizes sync results for async traversal without forcing Promises on the sync path. */
 export const resolveMaybeAsync = <T>(value: MaybeAsync<T>, asyncMode: boolean): MaybeAsync<T> => {
   if (!asyncMode) {

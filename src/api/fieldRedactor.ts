@@ -52,11 +52,6 @@ export class FieldRedactor {
     return new FieldRedactor(config);
   }
 
-  /** Convenience alias for `new FieldRedactor(config)`. */
-  public static fromConfig(config?: FieldRedactorConfig): FieldRedactor {
-    return new FieldRedactor(config);
-  }
-
   /** Redacts a copy of the input and returns an audit report of affected paths without mutating the original. */
   public async dryRun<T extends RedactableInput>(value: T): Promise<DryRunResult<T>> {
     return this.runDryRun(value, (input) => this.redact(input));

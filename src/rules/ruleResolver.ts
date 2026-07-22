@@ -1,9 +1,10 @@
 import { CustomObjectManager } from './customObjectManager';
-import { getStringSpecifiedCustomObjectSecretKeyValueIfExists, toRedactablePrimitive } from '../engine/objectRedactorHelpers';
+import { getStringSpecifiedCustomObjectSecretKeyValueIfExists } from './schemaSiblingKey';
 import { getJsonValueAtPath, getParentContext } from '../util/jsonWalk';
 import { parseJsonPath } from '../util/pathParsing';
+import { toRedactablePrimitive } from '../util/primitiveCoercion';
 import { PathRuleMatcher } from './pathRuleMatcher';
-import { SecretManager } from './secretManager';
+import { KeyRule, SecretManager } from './secretManager';
 import { ValuePatternMatcher } from './valuePatternMatcher';
 import {
   CustomObject,
@@ -12,13 +13,12 @@ import {
   JsonLeafValue,
   JsonValue,
   PathRule,
+  PathRuleMode,
   RedactionRuleLabel,
   SecretSpecifierValue
 } from '../types';
 
-export type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
-
-export type KeyRuleLabel = KeyRule | 'default';
+export type { KeyRule } from './secretManager';
 
 export type FieldDisposition =
   | { action: 'default' }
@@ -34,6 +34,14 @@ type AttributionContext = {
   path: string;
   segments: Array<string | number>;
   objectKeys: string[];
+};
+
+const PATH_MODE_TO_DISPOSITION: Record<PathRuleMode, FieldDisposition> = {
+  pass: { action: 'skip' },
+  remove: { action: 'remove' },
+  opaque: { action: 'opaque' },
+  deep: { action: 'deep' },
+  shallow: { action: 'shallow' }
 };
 
 const objectKeysFromPath = (segments: Array<string | number>): string[] =>
@@ -58,25 +66,8 @@ export const resolvePathDisposition = (
   forceDeepRedaction: boolean
 ): FieldDisposition => {
   const pathRule = pathRuleMatcher.getMatchingRule([...pathSegments, key]);
-
-  if (pathRule?.mode === 'pass') {
-    return { action: 'skip' };
-  }
-
-  if (pathRule?.mode === 'remove') {
-    return { action: 'remove' };
-  }
-
-  if (pathRule?.mode === 'opaque') {
-    return { action: 'opaque' };
-  }
-
-  if (pathRule?.mode === 'deep') {
-    return { action: 'deep' };
-  }
-
-  if (pathRule?.mode === 'shallow') {
-    return { action: 'shallow' };
+  if (pathRule) {
+    return PATH_MODE_TO_DISPOSITION[pathRule.mode];
   }
 
   if (forceDeepRedaction && secretManager.isPassKey(key)) {
@@ -127,11 +118,8 @@ export class RuleResolver {
     );
   }
 
-  containerForceDeepRedaction(key: SecretSpecifierValue, forceDeepRedaction: boolean): boolean {
-    return forceDeepRedaction || this.secretManager.isDeepSecretKey(key);
-  }
-
-  nestedObjectForceDeepRedaction(key: SecretSpecifierValue, forceDeepRedaction: boolean): boolean {
+  /** True when the key itself is deep, or an ancestor already forced deep redaction. */
+  forceDeepForKey(key: SecretSpecifierValue, forceDeepRedaction: boolean): boolean {
     return forceDeepRedaction || this.secretManager.isDeepSecretKey(key);
   }
 

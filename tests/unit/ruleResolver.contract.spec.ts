@@ -122,6 +122,7 @@ describe('RuleResolver contract', () => {
       pathRules: [
         { path: 'user.email', mode: 'shallow' },
         { path: 'user.token', mode: 'opaque' },
+        { path: 'user.profile', mode: 'deep' },
         { path: 'user.removed', mode: 'remove' },
         { path: 'user.publicField', mode: 'pass' }
       ]
@@ -129,8 +130,10 @@ describe('RuleResolver contract', () => {
 
     expect(resolver.resolvePathDisposition(['user'], 'email', false)).toEqual({ action: 'shallow' });
     expect(resolver.resolvePathDisposition(['user'], 'token', false)).toEqual({ action: 'opaque' });
+    expect(resolver.resolvePathDisposition(['user'], 'profile', false)).toEqual({ action: 'deep' });
     expect(resolver.resolvePathDisposition(['user'], 'removed', false)).toEqual({ action: 'remove' });
     expect(resolver.resolvePathDisposition(['user'], 'publicField', false)).toEqual({ action: 'skip' });
     expect(resolver.resolvePathDisposition(['nested'], 'public', true)).toEqual({ action: 'pass-key-recurse' });
+    expect(resolver.resolvePathDisposition(['nested'], 'secret', true)).toEqual({ action: 'default' });
   });
 });

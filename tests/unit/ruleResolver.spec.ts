@@ -117,7 +117,7 @@ describe('RuleResolver', () => {
     expect(resolver.shouldOpaqueByKey('opaque')).toBe(true);
     expect(resolver.shouldTraverseContainerByKey('shallow', false)).toBe(true);
     expect(resolver.shouldTraverseContainerByKey('safe', false)).toBe(false);
-    expect(resolver.containerForceDeepRedaction('deep', false)).toBe(true);
-    expect(resolver.nestedObjectForceDeepRedaction('safe', true)).toBe(true);
+    expect(resolver.forceDeepForKey('deep', false)).toBe(true);
+    expect(resolver.forceDeepForKey('safe', true)).toBe(true);
   });
 });

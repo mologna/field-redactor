@@ -17,7 +17,7 @@ export class ArrayRedactor {
     const redacted = this.services.ruleResolver.shouldTraverseContainerByKey(key, forceDeepRedaction)
       ? this.redactAllArrayValues(
           array,
-          this.services.ruleResolver.containerForceDeepRedaction(key, forceDeepRedaction),
+          this.services.ruleResolver.forceDeepForKey(key, forceDeepRedaction),
           parent.copyOnWrite,
           pathSegments
         )

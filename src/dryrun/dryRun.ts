@@ -1,5 +1,5 @@
 import { CustomObjectManager } from '../rules/customObjectManager';
-import { buildPathRules } from './dryRunAttribution';
+import { RuleResolver, buildPathRules } from '../rules/ruleResolver';
 import { isTraversableJson, joinPath, walkTraversableJson } from '../util/jsonWalk';
 import { SecretManager } from '../rules/secretManager';
 import { ValuePatternMatcher } from '../rules/valuePatternMatcher';
@@ -104,10 +104,7 @@ export const buildDryRunReport = (
       before,
       report.redactedPaths,
       report.deletedPaths,
-      secretManager,
-      manager,
-      valuePatternMatcher,
-      pathRuleMatcher
+      new RuleResolver(secretManager, pathRuleMatcher, valuePatternMatcher, manager)
     );
   }
 
