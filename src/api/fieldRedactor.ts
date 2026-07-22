@@ -140,7 +140,7 @@ export class FieldRedactor {
       return value;
     }
 
-    return this.deps.objectRedactor.redactCopyOnWrite(value as TraversableJson) as T;
+    return this.deps.traversal.redactCopyOnWrite(value as TraversableJson) as T;
   }
 
   /** Conditionally redacts fields in the JSON object in place based on the configuration provided in the constructor. */
@@ -150,7 +150,7 @@ export class FieldRedactor {
       return;
     }
 
-    await this.runTraversableRedaction(value, () => this.deps.objectRedactor.redactInPlace(value as TraversableJson));
+    await this.runTraversableRedaction(value, () => this.deps.traversal.redactInPlaceAsync(value as TraversableJson));
   }
 
   /**
@@ -162,7 +162,7 @@ export class FieldRedactor {
       throw new FieldRedactorError('redactInPlaceSync requires syncRedactor configuration or the default redactor');
     }
 
-    this.runTraversableRedaction(value, () => this.deps.objectRedactor.redactInPlaceSync(value as TraversableJson));
+    this.runTraversableRedaction(value, () => this.deps.traversal.redactInPlace(value as TraversableJson));
   }
 
   private runTraversableRedaction<T extends RedactableInput>(

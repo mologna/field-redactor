@@ -1,10 +1,10 @@
 import rfdc from 'rfdc';
 import { SecretManager } from '../../src/rules/secretManager';
 import { SecretManagerConfig, TraversableJson } from '../../src/types';
-import { ObjectRedactor } from '../../src/engine/objectRedactor';
+import { ObjectRedactorTraversal } from '../../src/engine/objectRedactorTraversal';
 import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
 import { CustomObjectManager } from '../../src/rules/customObjectManager';
-import { createObjectRedactor, EMPTY_PATH_RULE_MATCHER, EMPTY_VALUE_PATTERN_MATCHER } from './redactorTestUtils';
+import { createTraversal, EMPTY_PATH_RULE_MATCHER, EMPTY_VALUE_PATTERN_MATCHER } from './redactorTestUtils';
 
 export { EMPTY_PATH_RULE_MATCHER, EMPTY_VALUE_PATTERN_MATCHER };
 
@@ -12,7 +12,7 @@ export const DEFAULT_REDACTED_TEXT = 'REDACTED';
 
 export const deepCopy = rfdc({ proto: true, circles: true });
 
-export const redactCopy = (redactor: ObjectRedactor, value: TraversableJson) =>
+export const redactCopy = (redactor: ObjectRedactorTraversal, value: TraversableJson) =>
   redactor.redactCopyOnWrite(deepCopy(value));
 
 export const validateRedactorOutput = (
@@ -42,8 +42,8 @@ export type ObjectRedactorFixture = {
   primitiveRedactor: PrimitiveRedactor;
   secretManager: SecretManager;
   customObjectManager: CustomObjectManager;
-  basicObjectRedactor: ObjectRedactor;
-  makeRedactor: (secretManagerConfig?: SecretManagerConfig) => ObjectRedactor;
+  basicObjectRedactor: ObjectRedactorTraversal;
+  makeRedactor: (secretManagerConfig?: SecretManagerConfig) => ObjectRedactorTraversal;
 };
 
 export const makeObjectRedactorFixture = (): ObjectRedactorFixture => {
@@ -51,7 +51,7 @@ export const makeObjectRedactorFixture = (): ObjectRedactorFixture => {
   const secretManager = new SecretManager({});
   const customObjectManager = new CustomObjectManager();
   const makeRedactor = (secretManagerConfig: SecretManagerConfig = {}) =>
-    createObjectRedactor({ secretManagerConfig, primitiveRedactor, customObjectManager });
+    createTraversal({ secretManagerConfig, primitiveRedactor, customObjectManager });
 
   return {
     primitiveRedactor,

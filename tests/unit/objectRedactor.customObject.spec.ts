@@ -1,5 +1,5 @@
 import { CustomObject, CustomObjectMatchType } from '../../src/types';
-import { ObjectRedactor } from '../../src/engine/objectRedactor';
+import { ObjectRedactorTraversal } from '../../src/engine/objectRedactorTraversal';
 import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
 import { SecretManager } from '../../src/rules/secretManager';
 import { CustomObjectManager } from '../../src/rules/customObjectManager';
@@ -10,7 +10,7 @@ import {
   ObjectRedactorFixture
 } from '../helpers/objectRedactorSpecUtils';
 
-describe('ObjectRedactor custom objects', () => {
+describe('ObjectRedactorTraversal custom objects', () => {
   let fixture: ObjectRedactorFixture;
 
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe('Custom Object Redaction', () => {
     };
 
     fixture.customObjectManager = new CustomObjectManager([customObject]);
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     const obj = {
       full: 'bam',
       deep: 'bam',
@@ -56,7 +56,7 @@ describe('Custom Object Redaction', () => {
     const secretKeys: RegExp[] = [/email/];
     fixture.secretManager = new SecretManager({ secretKeys });
     fixture.customObjectManager = new CustomObjectManager([metadataCustomObject]);
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = {
       name: 'email',
@@ -85,7 +85,7 @@ describe('Custom Object Redaction', () => {
 
     fixture.customObjectManager = new CustomObjectManager([customObject]);
     fixture.secretManager = new SecretManager({ secretKeys: [/fizz/] });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     const obj = {
       full: ['foo', { foo: 'bar', fizz: 'buzz' }],
       deep: ['foo', { foo: 'bar', fizz: 'buzz' }],
@@ -116,7 +116,7 @@ describe('Custom Object Redaction', () => {
 
     fixture.customObjectManager = new CustomObjectManager([customObject]);
     fixture.secretManager = new SecretManager({ secretKeys: [/fizz/, /fazz/] });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     const obj = {
       full: {
         bim: 'bam',
@@ -177,7 +177,7 @@ describe('Custom Object Redaction', () => {
     };
 
     fixture.customObjectManager = new CustomObjectManager(specialObjects);
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const result = await redactor.redactInPlace(input);
     expect(result.mySpecial.foo).toBe(DEFAULT_REDACTED_TEXT);
@@ -192,7 +192,7 @@ describe('Custom Object Redaction', () => {
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     const deepSecretKeys: RegExp[] = [/email/];
     fixture.secretManager = new SecretManager({ deepSecretKeys });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     const obj = {
       email: {
         foo: 'Redact me',
@@ -212,7 +212,7 @@ describe('Custom Object Redaction', () => {
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     const deepSecretKeys: RegExp[] = [/email/];
     fixture.secretManager = new SecretManager({ deepSecretKeys });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     const obj = {
       email: [
         {
@@ -248,7 +248,7 @@ describe('Custom Object Redaction', () => {
     };
 
     fixture.customObjectManager = new CustomObjectManager(specialObjects);
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const result = await redactor.redactInPlace(input);
     result.me.forEach((value: any, index: number) => {
@@ -265,7 +265,7 @@ describe('Custom Object Redaction', () => {
 
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     fixture.secretManager = new SecretManager({ secretKeys: [] });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     const obj = { foo: null, bar: undefined };
     await redactor.redactInPlace(obj);
     expect(obj).toEqual({ foo: null, bar: undefined });
@@ -279,7 +279,7 @@ describe('Custom Object Redaction', () => {
     fixture.secretManager = new SecretManager({ secretKeys: [] });
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     fixture.primitiveRedactor = new PrimitiveRedactor({ ignoreNullOrUndefined: false, ignoreBooleans: false });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = { foo: null, bar: undefined };
     await redactor.redactInPlace(obj);
@@ -302,7 +302,7 @@ describe('Custom Object Redaction', () => {
     fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, opaqueSecretKeys });
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
 
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
     const obj = {
       a: 'email',
       b: 'name',
@@ -337,7 +337,7 @@ describe('Custom Object Redaction', () => {
     const opaqueSecretKeys: RegExp[] = [/address/];
     fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, opaqueSecretKeys });
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = {
       a: 'email',
@@ -388,7 +388,7 @@ describe('Custom Object Redaction', () => {
     const opaqueSecretKeys: RegExp[] = [/address/];
     fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, opaqueSecretKeys });
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = {
       a: 'email',
@@ -418,7 +418,7 @@ describe('Custom Object Redaction', () => {
     const secretKeys: RegExp[] = [/email/];
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     fixture.secretManager = new SecretManager({ secretKeys });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = {
       name: 'notredacted',
@@ -443,7 +443,7 @@ describe('Custom Object Redaction', () => {
     const secretKeys: RegExp[] = [/email/];
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     fixture.secretManager = new SecretManager({ secretKeys });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = { name: 'email', kind: 'String', value: 'foo.bar@gmail.com' };
     await redactor.redactInPlace(obj);
@@ -463,7 +463,7 @@ describe('Custom Object Redaction', () => {
     const secretKeys: RegExp[] = [/^$/];
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     fixture.secretManager = new SecretManager({ secretKeys });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = { name: '', kind: 'String', value: 'foo.bar@gmail.com' };
     await redactor.redactInPlace(obj);
@@ -483,7 +483,7 @@ describe('Custom Object Redaction', () => {
     const secretKeys: RegExp[] = [/^false$/];
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     fixture.secretManager = new SecretManager({ secretKeys });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = { name: false, kind: 'Boolean', value: true };
     await redactor.redactInPlace(obj);
@@ -503,7 +503,7 @@ describe('Custom Object Redaction', () => {
     const secretKeys: RegExp[] = [/^0$/];
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     fixture.secretManager = new SecretManager({ secretKeys });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = { name: 0, kind: 'Number', value: 12345 };
     await redactor.redactInPlace(obj);
@@ -526,7 +526,7 @@ describe('Custom Object Redaction', () => {
     const opaqueSecretKeys = [/account/, /customObject/];
     fixture.customObjectManager = new CustomObjectManager([specialObject]);
     fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys, opaqueSecretKeys });
-    const redactor: ObjectRedactor = new ObjectRedactor(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
 
     const obj = {
       account: {

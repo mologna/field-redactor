@@ -1,5 +1,4 @@
 import { ObjectRedactorTraversal } from '../../src/engine/objectRedactorTraversal';
-import { ObjectRedactor } from '../../src/engine/objectRedactor';
 import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
 import { SecretManager } from '../../src/rules/secretManager';
 import { CustomObjectManager } from '../../src/rules/customObjectManager';
@@ -43,7 +42,7 @@ const buildTraversal = (
     options.pathRuleMatcher ?? deps.pathRuleMatcher
   );
 
-export const createObjectRedactor = (options: ObjectRedactorTestOptions = {}): ObjectRedactor => {
+export const createTraversal = (options: ObjectRedactorTestOptions = {}): ObjectRedactorTraversal => {
   const deps = buildTestDeps(options);
   if (
     !options.primitiveRedactor &&
@@ -52,19 +51,8 @@ export const createObjectRedactor = (options: ObjectRedactorTestOptions = {}): O
     !options.valuePatternMatcher &&
     !options.pathRuleMatcher
   ) {
-    return deps.objectRedactor;
+    return deps.traversal;
   }
 
-  return new ObjectRedactor(
-    options.primitiveRedactor ?? deps.primitiveRedactor,
-    options.secretManagerConfig ? new SecretManager(options.secretManagerConfig) : deps.secretManager,
-    options.customObjectManager ?? deps.customObjectManager,
-    options.valuePatternMatcher ?? deps.valuePatternMatcher,
-    options.pathRuleMatcher ?? deps.pathRuleMatcher
-  );
-};
-
-export const createTraversal = (options: ObjectRedactorTestOptions = {}): ObjectRedactorTraversal => {
-  const deps = buildTestDeps(options);
   return buildTraversal(options, deps);
 };

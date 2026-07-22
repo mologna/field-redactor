@@ -16,7 +16,7 @@ Prefer npm version numbers in user-facing docs. Internal release notes under `do
 ```
 src/
   api/       Public facade: FieldRedactor, ConfigBuilder, DI wiring
-  engine/    Traversal, array/custom-object handlers, PrimitiveRedactor
+  engine/    Traversal (`ObjectRedactorTraversal`), array/custom-object handlers, PrimitiveRedactor
   rules/     SecretManager, matchers, RuleResolver, CustomObjectManager
   dryrun/    Structural diff + rule attribution
   config/    Validation, presets, redactionRules, schema helpers

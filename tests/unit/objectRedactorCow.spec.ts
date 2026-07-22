@@ -1,6 +1,6 @@
 import rfdc from 'rfdc';
 import { validNestedInputWithAllTypes } from '../mocks/inputMocks';
-import { createObjectRedactor, createTraversal } from '../helpers/redactorTestUtils';
+import { createTraversal } from '../helpers/redactorTestUtils';
 
 describe('ObjectRedactorTraversal copy-on-write', () => {
   const deepCopy = rfdc({ proto: true, circles: true });
@@ -31,13 +31,13 @@ describe('ObjectRedactorTraversal copy-on-write', () => {
   });
 
   it('matches redactInPlaceSync output for complex nested input', () => {
-    const fullRedactor = createObjectRedactor();
+    const fullRedactor = createTraversal();
 
     const cowInput = deepCopy(validNestedInputWithAllTypes);
     const syncInput = deepCopy(validNestedInputWithAllTypes);
 
     const cowResult = fullRedactor.redactCopyOnWrite(cowInput);
-    fullRedactor.redactInPlaceSync(syncInput);
+    fullRedactor.redactInPlace(syncInput);
 
     expect(cowResult).toEqual(syncInput);
   });

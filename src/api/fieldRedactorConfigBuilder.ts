@@ -1,4 +1,4 @@
-import type { FieldRedactor } from './fieldRedactor';
+import { FieldRedactor } from './fieldRedactor';
 import {
   appendRegExpArray,
   finalizeRegisteredSchemas,
@@ -121,15 +121,12 @@ export class FieldRedactorConfigBuilder {
 
   /** Constructs a {@link FieldRedactor} from the built config. */
   buildRedactor(): FieldRedactor {
-    // Lazy require avoids a module cycle: builder → FieldRedactor → deps → …
-    const { FieldRedactor: Redactor } = require('./fieldRedactor') as typeof import('./fieldRedactor');
-    return new Redactor(this.build());
+    return new FieldRedactor(this.build());
   }
 
   /** Like {@link FieldRedactor.createSafe} using the built config. */
   buildSafeRedactor(): FieldRedactor {
-    const { FieldRedactor: Redactor } = require('./fieldRedactor') as typeof import('./fieldRedactor');
-    return Redactor.createSafe(this.build());
+    return FieldRedactor.createSafe(this.build());
   }
 
   private appendRegex(field: SecretRegexField, patterns: RegExp[]): this {

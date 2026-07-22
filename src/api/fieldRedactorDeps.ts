@@ -1,5 +1,5 @@
 import { CustomObjectManager } from '../rules/customObjectManager';
-import { ObjectRedactor } from '../engine/objectRedactor';
+import { ObjectRedactorTraversal } from '../engine/objectRedactorTraversal';
 import { PrimitiveRedactor } from '../engine/primitiveRedactor';
 import { normalizeFieldRedactorConfig, resolveSecretKeys } from '../config/redactionRules';
 import { SecretManager } from '../rules/secretManager';
@@ -13,7 +13,7 @@ export type FieldRedactorDeps = {
   valuePatternMatcher: ValuePatternMatcher;
   pathRuleMatcher: PathRuleMatcher;
   customObjectManager: CustomObjectManager;
-  objectRedactor: ObjectRedactor;
+  traversal: ObjectRedactorTraversal;
   usesAsyncRedactor: boolean;
   cloneInput: boolean;
 };
@@ -52,7 +52,7 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
   const valuePatternMatcher = valuePatterns?.length ? new ValuePatternMatcher(valuePatterns) : EMPTY_VALUE_PATTERN_MATCHER;
   const pathRuleMatcher = pathRules?.length ? new PathRuleMatcher(pathRules) : EMPTY_PATH_RULE_MATCHER;
   const customObjectManager = new CustomObjectManager(customObjects, normalized.schemaNames);
-  const objectRedactor = new ObjectRedactor(
+  const traversal = new ObjectRedactorTraversal(
     primitiveRedactor,
     secretManager,
     customObjectManager,
@@ -66,7 +66,7 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     valuePatternMatcher,
     pathRuleMatcher,
     customObjectManager,
-    objectRedactor,
+    traversal,
     usesAsyncRedactor: primitiveRedactor.usesAsyncRedactor(),
     cloneInput: normalized.cloneInput !== false
   };

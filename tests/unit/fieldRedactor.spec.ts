@@ -2,11 +2,11 @@ import { FieldRedactor, FieldRedactorError } from '../../src';
 import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
 import { SecretManager } from '../../src/rules/secretManager';
 import { CustomObjectManager } from '../../src/rules/customObjectManager';
-import { ObjectRedactor } from '../../src/engine/objectRedactor';
+import { ObjectRedactorTraversal } from '../../src/engine/objectRedactorTraversal';
 jest.mock('../../src/engine/primitiveRedactor');
 jest.mock('../../src/rules/secretManager');
 jest.mock('../../src/rules/customObjectManager');
-jest.mock('../../src/engine/objectRedactor');
+jest.mock('../../src/engine/objectRedactorTraversal');
 
 describe('FieldRedactor', () => {
   beforeEach(() => {
@@ -69,14 +69,14 @@ describe('FieldRedactor', () => {
       expect(CustomObjectManager).toHaveBeenCalledWith(config.customObjects, undefined);
     });
 
-    it('Should create the ObjectRedactor with the correct dependency-injected inputs', () => {
+    it('Should create the ObjectRedactorTraversal with the correct dependency-injected inputs', () => {
       const config = {};
       new FieldRedactor(config);
-      expect(ObjectRedactor).toHaveBeenCalledTimes(1);
+      expect(ObjectRedactorTraversal).toHaveBeenCalledTimes(1);
       const mockPrimitiveRedactor = (PrimitiveRedactor as any).mock.instances[0];
       const mockSecretManager = (SecretManager as any).mock.instances[0];
       const mockCustomObjectManager = (CustomObjectManager as any).mock.instances[0];
-      const arg = (ObjectRedactor as any).mock.calls[0];
+      const arg = (ObjectRedactorTraversal as any).mock.calls[0];
       expect(arg[0]).toEqual(mockPrimitiveRedactor);
       expect(arg[1]).toEqual(mockSecretManager);
       expect(arg[2]).toEqual(mockCustomObjectManager);
@@ -84,12 +84,12 @@ describe('FieldRedactor', () => {
   });
 
   describe('redact', () => {
-    it('Should call objectRedactor redactInPlace with a copy of the input', async () => {
+    it('Should call traversal redactInPlaceAsync with a copy of the input', async () => {
       const fieldRedactor = new FieldRedactor();
       const input = { foo: 'bar' };
       await fieldRedactor.redact(input);
-      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
-      const argument = mockObjectRedactor.redactInPlace.mock.calls[0][0];
+      const mockTraversal = (ObjectRedactorTraversal as any).mock.instances[0];
+      const argument = mockTraversal.redactInPlaceAsync.mock.calls[0][0];
       expect(argument).not.toBe(input);
       expect(argument).toEqual(input);
     });
@@ -111,21 +111,21 @@ describe('FieldRedactor', () => {
     it('Should wrap any thrown exceptions in a FieldRedactorError', async () => {
       const errorText = 'foobar';
       const fieldRedactor = new FieldRedactor();
-      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
-      mockObjectRedactor.redactInPlace.mockImplementation(async () => {
+      const mockTraversal = (ObjectRedactorTraversal as any).mock.instances[0];
+      mockTraversal.redactInPlaceAsync.mockImplementation(async () => {
         throw new Error(errorText);
       });
-      expect(() => fieldRedactor.redactInPlace({ foo: 'bar' })).rejects.toThrow(new FieldRedactorError(errorText));
+      await expect(fieldRedactor.redactInPlace({ foo: 'bar' })).rejects.toThrow(new FieldRedactorError(errorText));
     });
   });
 
   describe('redactInPlace', () => {
-    it('Should call objectRedactor redactInPlace with a copy of the input', async () => {
+    it('Should call traversal redactInPlaceAsync with the input', async () => {
       const fieldRedactor = new FieldRedactor();
       const input = { foo: 'bar' };
       await fieldRedactor.redactInPlace(input);
-      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
-      const argument = mockObjectRedactor.redactInPlace.mock.calls[0][0];
+      const mockTraversal = (ObjectRedactorTraversal as any).mock.instances[0];
+      const argument = mockTraversal.redactInPlaceAsync.mock.calls[0][0];
       expect(argument).toBe(input);
     });
 
@@ -162,11 +162,11 @@ describe('FieldRedactor', () => {
     it('Should wrap any thrown exceptions in a FieldRedactorError', async () => {
       const errorText = 'foobar';
       const fieldRedactor = new FieldRedactor();
-      const mockObjectRedactor = (ObjectRedactor as any).mock.instances[0];
-      mockObjectRedactor.redactInPlace.mockImplementation(async () => {
+      const mockTraversal = (ObjectRedactorTraversal as any).mock.instances[0];
+      mockTraversal.redactInPlaceAsync.mockImplementation(async () => {
         throw new Error(errorText);
       });
-      expect(() => fieldRedactor.redactInPlace({ foo: 'bar' })).rejects.toThrow(new FieldRedactorError(errorText));
+      await expect(fieldRedactor.redactInPlace({ foo: 'bar' })).rejects.toThrow(new FieldRedactorError(errorText));
     });
   });
 });

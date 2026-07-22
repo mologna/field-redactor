@@ -30,6 +30,7 @@ import { TraversalServices } from './traversalServices';
 /**
  * Unified JSON traversal for in-place and copy-on-write redaction.
  * Sync and async paths share one implementation; async mode propagates Promises only when configured.
+ * CustomObjects take highest precedence, followed by opaque (`opaqueSecretKeys`), then deep, then shallow.
  */
 export class ObjectRedactorTraversal {
   private readonly ruleResolver: RuleResolver;

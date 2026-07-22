@@ -5,7 +5,7 @@ import {
   ObjectRedactorFixture
 } from '../helpers/objectRedactorSpecUtils';
 
-describe('ObjectRedactor sync traversal', () => {
+describe('ObjectRedactorTraversal sync traversal', () => {
   let fixture: ObjectRedactorFixture;
 
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe('ObjectRedactor sync traversal', () => {
     const syncInput = deepCopy(validNestedInputWithAllTypes);
 
     await fixture.basicObjectRedactor.redactInPlace(asyncInput);
-    fixture.basicObjectRedactor.redactInPlaceSync(syncInput);
+    fixture.basicObjectRedactor.redactInPlace(syncInput);
 
     expect(syncInput).toEqual(asyncInput);
   });
@@ -27,7 +27,7 @@ describe('ObjectRedactor sync traversal', () => {
     const syncInput = deepCopy(validNestedInputWithAllTypes);
 
     const cowResult = fixture.basicObjectRedactor.redactCopyOnWrite(cowInput);
-    fixture.basicObjectRedactor.redactInPlaceSync(syncInput);
+    fixture.basicObjectRedactor.redactInPlace(syncInput);
 
     expect(cowResult).toEqual(syncInput);
   });
