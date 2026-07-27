@@ -4,14 +4,14 @@ import { validInputWithAllTypes, validNestedInputWithAllTypes } from '../mocks/i
 import { Redactor } from '../../src/types';
 import { ObjectRedactorTraversal } from '../../src/engine/objectRedactorTraversal';
 import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
-import { EMPTY_PATH_RULE_MATCHER, EMPTY_VALUE_PATTERN_MATCHER } from '../helpers/redactorTestUtils';
 import {
   DEFAULT_REDACTED_TEXT,
   deepCopy,
   makeObjectRedactorFixture,
   ObjectRedactorFixture,
   redactCopy,
-  validateRedactorOutput
+  validateRedactorOutput,
+  createTraversalFromFixture
 } from '../helpers/objectRedactorSpecUtils';
 
 describe('ObjectRedactorTraversal keys', () => {
@@ -56,7 +56,7 @@ describe('Basic/Primitive Secret Redaction', () => {
   it('Redacts only keys specified as secrets when secrets passed', async () => {
     const secretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
     fixture.secretManager = new SecretManager({ secretKeys });
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
     const copy = redactCopy(redactor, validInputWithAllTypes);
     expect(copy).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT, false, secretKeys);
@@ -65,7 +65,7 @@ describe('Basic/Primitive Secret Redaction', () => {
   it('Can delete keys when specified as removeSecretKeys', async () => {
     const removeSecretKeys: RegExp[] = [/userId/, /password/, /acctBalance/];
     fixture.secretManager = new SecretManager({ removeSecretKeys });
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
     const copy = deepCopy(validInputWithAllTypes);
     await redactor.redactInPlace(copy);
     expect(copy).not.toBe(validInputWithAllTypes);
@@ -78,7 +78,7 @@ describe('Basic/Primitive Secret Redaction', () => {
     const secretKeys: RegExp[] = [/password/, /acctBalance/, /parentAccount/];
     const deepSecretKeys: RegExp[] = [/parentAccount/];
     fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys });
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
     const simpleNestedInputWithDeepSecret = {
       password: 'password123',
       username: 'child',
@@ -108,7 +108,7 @@ describe('Basic/Primitive Secret Redaction', () => {
       opaqueSecretKeys: [/foo/, /bar/, /undefinedValue/, /nullValue/],
       secretKeys: []
     });
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
 
     const input = {
       foo: {
@@ -147,7 +147,7 @@ describe('Basic/Primitive Secret Redaction', () => {
       foo
     };
 
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
 
     const result = await redactor.redactInPlaceAsync(simpleObject);
     expect(result.foo).toBe(hashedFoo);

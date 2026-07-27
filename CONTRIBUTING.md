@@ -42,8 +42,8 @@ Traversal and dry-run attribution both use this module. When adding a rule type,
 |------|-------------------------|----------------|
 | Shallow | `secretKeys`, `CustomObjectMatchType.Shallow` | — |
 | Deep | `deepSecretKeys` | — |
-| Opaque | `opaqueSecretKeys`, `CustomObjectMatchType.Opaque`, `isOpaqueSecretKey` | `fullSecretKeys`, `Full` |
-| Remove | `removeSecretKeys`, `CustomObjectMatchType.Remove`, `isRemoveSecretKey` | `deleteSecretKeys`, `Delete` |
+| Opaque | `opaqueSecretKeys`, `CustomObjectMatchType.Opaque`, `isOpaqueSecretKey` | `fullSecretKeys`, `Full` (deprecated; config fields warn at construct) |
+| Remove | `removeSecretKeys`, `CustomObjectMatchType.Remove`, `isRemoveSecretKey` | `deleteSecretKeys`, `Delete` (deprecated; config fields warn at construct) |
 
 Internally, normalize + `SecretManager` store and match on the preferred field names. Legacy config keys are input-only aliases.
 
@@ -58,6 +58,18 @@ yarn test
 - Unit tests: `tests/unit/`
 - Integration / end-to-end: `tests/integration/` (keep these few and scenario-focused; prefer unit tests for rule edge cases)
 - Shared test helpers: `tests/helpers/`
+- Copy-paste recipes: `examples/`
+
+## Publishing
+
+CI runs on push/PR to `master` (`.github/workflows/ci.yml`).
+
+Pushing a version tag (`v*.*.*`) runs `.github/workflows/publish.yml`: build, test, then `npm publish`. Configure repository secret **`NPM_TOKEN`** (npm granular access token with publish rights; enable bypass 2FA if your account requires OTP on publish).
+
+```bash
+git tag -a v1.6.3 -m "v1.6.3"
+git push origin v1.6.3
+```
 
 ## Pull requests
 

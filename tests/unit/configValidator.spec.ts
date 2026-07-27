@@ -48,9 +48,26 @@ describe('validateFieldRedactorConfig', () => {
   it('still throws for identical schema key sets', () => {
     expect(() =>
       validateFieldRedactorConfig({
-        customObjects: [{ foo: CustomObjectMatchType.Ignore, bar: CustomObjectMatchType.Ignore }, { foo: CustomObjectMatchType.Pass, bar: CustomObjectMatchType.Pass }]
+        customObjects: [
+          { foo: CustomObjectMatchType.Ignore, bar: CustomObjectMatchType.Ignore },
+          { foo: CustomObjectMatchType.Pass, bar: CustomObjectMatchType.Pass }
+        ]
       })
     ).toThrow(FieldRedactorConfigurationError);
+  });
+
+  it('warns when legacy fullSecretKeys or deleteSecretKeys are used', () => {
+    const warnings = validateFieldRedactorConfig({
+      fullSecretKeys: [/payload/],
+      deleteSecretKeys: [/authKey/]
+    });
+
+    expect(warnings.some((warning) => warning.includes('fullSecretKeys') && warning.includes('deprecated'))).toBe(
+      true
+    );
+    expect(warnings.some((warning) => warning.includes('deleteSecretKeys') && warning.includes('deprecated'))).toBe(
+      true
+    );
   });
 });
 

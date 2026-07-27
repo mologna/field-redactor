@@ -1,6 +1,8 @@
 # Release notes index
 
-Per-version release notes for published **field-redactor** git tags. npm releases use the same `v1.x.x` tag names.
+## Publishing
+
+npm versions use the same `v1.x.x` git tags. Pushing a version tag runs [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml) (build, test, `npm publish`) when `NPM_TOKEN` is configured.
 
 | Version | npm | Notes |
 | --- | --- | --- |

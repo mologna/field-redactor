@@ -1,117 +1,29 @@
 import { CustomObjectMatchType, FieldRedactor, FieldRedactorConfigBuilder } from '../../src';
 
+/**
+ * Golden dry-run attribution shapes + legacy naming coverage.
+ * Dry-run ↔ RuleResolver lockstep lives in `ruleResolver.contract.spec.ts`.
+ */
 describe('dryRunAttribution', () => {
-  it('attributes delete paths without value-pattern matching', () => {
-    const redactor = FieldRedactor.createSafe({ removeSecretKeys: [/authKey/] });
-    const { report } = redactor.dryRunSync({ authKey: 'token', body: 'alice@example.com' });
-
-    expect(report.deletedPaths).toEqual(['authKey']);
-    expect(report.pathRules).toEqual([
-      { path: 'authKey', action: 'delete', rule: 'remove', pattern: '/authKey/' }
-    ]);
-  });
-
-  it('attributes path-rule deletes and redactions', () => {
+  it('attributes remove and path-rule deletes with expected report shapes', () => {
     const redactor = FieldRedactor.createSafe({
-      pathRules: [
-        { path: 'session.token', mode: 'remove' },
-        { path: 'logs.*.message', mode: 'deep' }
-      ]
+      removeSecretKeys: [/authKey/],
+      pathRules: [{ path: 'session.token', mode: 'remove' }]
     });
 
     const { report } = redactor.dryRunSync({
+      authKey: 'token',
       session: { token: 'abc', id: '1' },
-      logs: [{ message: 'secret', meta: { note: 'nested' } }]
+      body: 'alice@example.com'
     });
 
+    expect(report.deletedPaths).toEqual(expect.arrayContaining(['authKey', 'session.token']));
     expect(report.pathRules).toEqual(
       expect.arrayContaining([
-        { path: 'session.token', action: 'delete', rule: 'remove', pattern: 'session.token' },
-        { path: 'logs[0].message', action: 'redact', rule: 'deep', pattern: 'logs.*.message' }
+        { path: 'authKey', action: 'delete', rule: 'remove', pattern: '/authKey/' },
+        { path: 'session.token', action: 'delete', rule: 'remove', pattern: 'session.token' }
       ])
     );
-  });
-
-  it.each([
-    {
-      name: 'schema sibling key',
-      config: {
-        secretKeys: [/email/],
-        customObjects: [
-          {
-            name: CustomObjectMatchType.Ignore,
-            type: CustomObjectMatchType.Ignore,
-            value: 'name'
-          }
-        ]
-      },
-      input: { metadata: [{ name: 'email', type: 'String', value: 'alice@example.com' }] },
-      expected: {
-        path: 'metadata[0].value',
-        action: 'redact',
-        rule: 'schema',
-        schemaIndex: 0,
-        pattern: '/email/'
-      }
-    },
-    {
-      name: 'enclosing deep key',
-      config: { deepSecretKeys: [/contactInfo/] },
-      input: { contactInfo: { email: 'alice@example.com' } },
-      expected: {
-        path: 'contactInfo.email',
-        action: 'redact',
-        rule: 'deep',
-        pattern: '/contactInfo/'
-      }
-    },
-    {
-      name: 'enclosing opaque key',
-      config: { opaqueSecretKeys: [/rawPayload/] },
-      input: { rawPayload: { token: 'secret' } },
-      expected: {
-        path: 'rawPayload',
-        action: 'redact',
-        rule: 'opaque',
-        pattern: '/rawPayload/'
-      }
-    },
-    {
-      name: 'leaf shallow key',
-      config: { secretKeys: [/password/] },
-      input: { password: 'secret', note: 'ok' },
-      expected: {
-        path: 'password',
-        action: 'redact',
-        rule: 'shallow',
-        pattern: '/password/'
-      }
-    },
-    {
-      name: 'value pattern',
-      config: { secretKeys: [], valuePatterns: [/\d{3}-\d{2}-\d{4}/] },
-      input: { note: '111-22-3333', label: 'safe' },
-      expected: {
-        path: 'note',
-        action: 'redact',
-        rule: 'value',
-        pattern: '/\\d{3}-\\d{2}-\\d{4}/'
-      }
-    },
-    {
-      name: 'default shallow redaction',
-      config: {},
-      input: { username: 'alice' },
-      expected: { path: 'username', action: 'redact', rule: 'default' },
-      useUnsafeConstructor: true
-    }
-  ])('attributes $name in pathRules', ({ config, input, expected, useUnsafeConstructor }) => {
-    const redactor = useUnsafeConstructor
-      ? new FieldRedactor(config)
-      : FieldRedactor.createSafe(config);
-    const { report } = redactor.dryRunSync(input);
-
-    expect(report.pathRules).toEqual(expect.arrayContaining([expected]));
   });
 
   it('prefers schema attribution over leaf key rules for matching fields', () => {
@@ -144,7 +56,9 @@ describe('dryRunAttribution', () => {
       ])
     );
   });
+});
 
+describe('naming vocabulary aliases', () => {
   it('attributes removeSecretKeys the same as legacy deleteSecretKeys', () => {
     const viaPreferred = FieldRedactor.createSafe({ removeSecretKeys: [/authKey/] });
     const viaLegacy = FieldRedactor.createSafe({ deleteSecretKeys: [/authKey/] });
@@ -154,15 +68,16 @@ describe('dryRunAttribution', () => {
       viaLegacy.dryRunSync(input).report.pathRules
     );
   });
-});
 
-describe('naming vocabulary aliases', () => {
-  it('treats legacy fullSecretKeys as opaqueSecretKeys', () => {
+  it('treats legacy fullSecretKeys as opaqueSecretKeys and warns', () => {
     const redactor = FieldRedactor.createSafe({ fullSecretKeys: [/payload/] });
     const result = redactor.redactSync({ payload: { token: 'secret' }, note: 'ok' });
 
     expect(result.payload).toBe('REDACTED');
     expect(result.note).toBe('ok');
+    expect(redactor.configWarnings.some((w) => w.includes('fullSecretKeys') && w.includes('deprecated'))).toBe(
+      true
+    );
   });
 
   it('treats CustomObjectMatchType.Full/Delete as Opaque/Remove', () => {

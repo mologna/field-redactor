@@ -74,10 +74,12 @@ const collectSchemaWarnings = (customObjects: CustomObject[]): string[] => {
  * invalid custom object duplicates and when `strict` is true on any warning.
  */
 export const validateFieldRedactorConfig = (config?: FieldRedactorConfig): string[] => {
+  const legacyNamingWarnings = collectLegacyNamingWarnings(config);
   const resolved = normalizeFieldRedactorConfig(config) ?? {};
   assertNoIdenticalCustomObjectSchemas(resolved.customObjects);
 
   const warnings = [
+    ...legacyNamingWarnings,
     ...(!hasExplicitRedactionRules(resolved)
       ? ['All values will be redacted. Did you mean to set `secretKeys` or use `FieldRedactor.createSafe()`?']
       : []),
@@ -89,5 +91,24 @@ export const validateFieldRedactorConfig = (config?: FieldRedactorConfig): strin
     throw new FieldRedactorConfigurationError(warnings[0]);
   }
 
+  return warnings;
+};
+
+const collectLegacyNamingWarnings = (config?: FieldRedactorConfig): string[] => {
+  if (!config) {
+    return [];
+  }
+
+  const warnings: string[] = [];
+  if (config.fullSecretKeys?.length) {
+    warnings.push(
+      '`fullSecretKeys` is deprecated; prefer `opaqueSecretKeys` (same behavior). Legacy input remains supported in 1.x.'
+    );
+  }
+  if (config.deleteSecretKeys?.length) {
+    warnings.push(
+      '`deleteSecretKeys` is deprecated; prefer `removeSecretKeys` (same behavior). Legacy input remains supported in 1.x.'
+    );
+  }
   return warnings;
 };

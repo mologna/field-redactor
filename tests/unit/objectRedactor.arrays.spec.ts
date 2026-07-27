@@ -1,11 +1,11 @@
 import { JsonObject } from '../../src/types';
 import { ObjectRedactorTraversal } from '../../src/engine/objectRedactorTraversal';
 import { SecretManager } from '../../src/rules/secretManager';
-import { EMPTY_PATH_RULE_MATCHER, EMPTY_VALUE_PATTERN_MATCHER } from '../helpers/redactorTestUtils';
 import {
   DEFAULT_REDACTED_TEXT,
   makeObjectRedactorFixture,
-  ObjectRedactorFixture
+  ObjectRedactorFixture,
+  createTraversalFromFixture
 } from '../helpers/objectRedactorSpecUtils';
 
 describe('ObjectRedactorTraversal arrays', () => {
@@ -81,7 +81,7 @@ describe('Complex Object Redaction', () => {
   it('Assesses arrays even when they are not secret values to determine if they contain objects which should be assessed', async () => {
     const secretKeys = [/email/];
     fixture.secretManager = new SecretManager({ secretKeys });
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
 
     const obj = {
       foo: ['bar', { email: 'foo.bar@gmail.com' }]
@@ -96,7 +96,7 @@ describe('Complex Object Redaction', () => {
     const secretKeys: RegExp[] = [];
     const deepSecretKeys: RegExp[] = [/emails/];
     fixture.secretManager = new SecretManager({ secretKeys, deepSecretKeys });
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
     const input = {
       emails: ['foo.bar@example.com', ['nested', 'array']]
     };
@@ -116,7 +116,7 @@ describe('Complex Object Redaction', () => {
     };
     const removeSecretKeys: RegExp[] = [/bar/];
     fixture.secretManager = new SecretManager({ removeSecretKeys });
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
     await redactor.redactInPlace(obj);
     expect(obj.foo.bar).toBeUndefined();
   });
@@ -133,7 +133,7 @@ describe('Complex Object Redaction', () => {
     };
     const removeSecretKeys: RegExp[] = [/bar/];
     fixture.secretManager = new SecretManager({ removeSecretKeys });
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
     await redactor.redactInPlace(obj);
     expect(obj.bar).toBeUndefined();
     expect(obj.fizz[0].bar).toBeUndefined();
@@ -149,7 +149,7 @@ describe('Complex Object Redaction', () => {
     };
     const removeSecretKeys: RegExp[] = [/bar/];
     fixture.secretManager = new SecretManager({ removeSecretKeys });
-    const redactor: ObjectRedactorTraversal = new ObjectRedactorTraversal(fixture.primitiveRedactor, fixture.secretManager, fixture.customObjectManager, EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER);
+    const redactor: ObjectRedactorTraversal = createTraversalFromFixture(fixture);
     await redactor.redactInPlace(obj);
     expect(obj.foo.bar).toBeUndefined();
   });

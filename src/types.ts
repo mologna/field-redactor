@@ -1,19 +1,25 @@
-/** JSON-compatible primitive. */
+/** JSON-compatible primitive. Useful when typing redactor inputs and report values. */
 export type JsonPrimitive = string | number | boolean | null;
 
-/** Function values encountered during traversal are left unchanged. */
+/**
+ * Function values encountered during traversal are left unchanged.
+ * @internal Primarily for engine typing; consumers rarely need this directly.
+ */
 export type JsonFunction = (...args: never[]) => unknown;
 
-/** Scalar values that may appear in JSON-like structures during redaction. */
+/**
+ * Scalar values that may appear in JSON-like structures during redaction.
+ * @internal Prefer {@link JsonPrimitive} or {@link JsonValue} in application code.
+ */
 export type JsonLeafValue = JsonPrimitive | Date | JsonFunction;
 
-/** JSON-compatible object. */
+/** JSON-compatible object. Useful when typing nested payloads. */
 export type JsonObject = { [key: string]: JsonValue | undefined };
 
 /** JSON-compatible array. */
 export type JsonArray = Array<JsonValue | undefined>;
 
-/** JSON-compatible value. */
+/** JSON-compatible value. Useful when typing redactor inputs. */
 export type JsonValue = JsonLeafValue | JsonObject | JsonArray;
 
 /**
@@ -25,15 +31,22 @@ export type RedactableInput = JsonValue | undefined;
 /** Primitive values that may be passed to a custom {@link Redactor} function. */
 export type RedactorInput = JsonPrimitive | undefined;
 
-/** Primitive values processed by {@link PrimitiveRedactor}. */
+/**
+ * Primitive values processed by {@link PrimitiveRedactor}.
+ * @internal Alias of {@link RedactorInput}; prefer RedactorInput in application code.
+ */
 export type RedactablePrimitive = RedactorInput;
 
-/** Result of redacting a primitive value. */
+/**
+ * Result of redacting a primitive value.
+ * @internal Engine typing detail; prefer `string` for custom redactor return types.
+ */
 export type RedactedPrimitive = string | boolean | null | undefined | 0;
 
 /**
  * Sibling field value used to resolve secret specifiers in custom object schemas
  * (for example, the string `"email"` in a `{ name, value }` metadata entry).
+ * @internal Prefer string | number | boolean in application schemas.
  */
 export type SecretSpecifierValue = string | number | boolean;
 
@@ -186,10 +199,15 @@ export type DryRunResult<T> = {
   report: DryRunReport;
 };
 
-/** JSON object or array traversed during in-place redaction. */
+/** JSON object or array traversed during in-place redaction.
+ * @internal Engine typing; prefer {@link JsonObject} / {@link JsonArray} / {@link RedactableInput}.
+ */
 export type TraversableJson = JsonObject | JsonArray;
 
-/** Mutable key/value map used while traversing JSON object or array keys in place. */
+/**
+ * Mutable key/value map used while traversing JSON object or array keys in place.
+ * @internal Not part of the supported public API.
+ */
 export type JsonRecord = Record<string, JsonValue | undefined>;
 
 export const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>

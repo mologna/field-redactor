@@ -37,15 +37,15 @@ export class FieldRedactor {
   }
 
   /**
-   * Creates a FieldRedactor that requires at least one explicit redaction rule: Shallow (`secretKeys`),
-   * Deep (`deepSecretKeys`), Opaque (`opaqueSecretKeys` / legacy `fullSecretKeys`), Remove (`removeSecretKeys` /
-   * legacy `deleteSecretKeys`), Schema (`customObjects`), Value-pattern (`valuePatterns`), or Path (`pathRules`).
+   * Creates a FieldRedactor that requires at least one explicit redaction rule:
+   * `secretKeys`, `deepSecretKeys`, `opaqueSecretKeys`, `removeSecretKeys`, `customObjects`,
+   * `valuePatterns`, or `pathRules`.
    * Unlike `new FieldRedactor()`, omitting all rules does not default to redacting every value.
    */
   public static createSafe(config: FieldRedactorConfig): FieldRedactor {
     if (!hasExplicitRedactionRules(config)) {
       throw new FieldRedactorConfigurationError(
-        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, opaqueSecretKeys, removeSecretKeys, customObjects, valuePatterns, or pathRules entry (legacy fullSecretKeys / deleteSecretKeys also count). Without explicit rules, new FieldRedactor() redacts all values by default.'
+        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, opaqueSecretKeys, removeSecretKeys, customObjects, valuePatterns, or pathRules entry. Without explicit rules, new FieldRedactor() redacts all values by default.'
       );
     }
 
