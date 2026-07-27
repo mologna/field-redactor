@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2026-07-27
+
+DX and release-hygiene patch: examples, legacy naming warnings, OIDC publish workflow, and test cleanup. See [docs/release-notes/v1.6.3.md](docs/release-notes/v1.6.3.md).
+
+### Added
+
+- **Examples** — [examples/](examples/) recipes for logging metadata, path rules, value patterns, and dry-run.
+- **Publish workflow** — tag-triggered `.github/workflows/publish.yml` using npm Trusted Publishing (OIDC).
+- **Legacy naming warnings** — constructing with `fullSecretKeys` / `deleteSecretKeys` emits deprecation warnings (behavior unchanged).
+
+### Changed
+
+- `createSafe` error text prefers Opaque/Remove field names.
+- Incidental JSON/engine types marked `@internal` in JSDoc (still exported).
+- Slimmed overlapping dry-run attribution tests; contract suite remains the SSOT.
+
 ## [1.6.2] - 2026-07-22
 
 Canonical Opaque/Remove naming internally and removal of the thin `ObjectRedactor` orchestrator. See [docs/release-notes/v1.6.2.md](docs/release-notes/v1.6.2.md).
@@ -197,6 +213,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[1.6.3]: https://github.com/mologna/field-redactor/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/mologna/field-redactor/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/mologna/field-redactor/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/mologna/field-redactor/compare/v1.5.0...v1.6.0

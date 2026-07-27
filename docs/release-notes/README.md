@@ -6,6 +6,7 @@ npm versions use the same `v1.x.x` git tags. Pushing a version tag runs [`.githu
 
 | Version | npm | Notes |
 | --- | --- | --- |
+| **v1.6.3** | Yes | [v1.6.3.md](v1.6.3.md) — examples, OIDC publish, legacy naming warnings |
 | **v1.6.2** | Yes | [v1.6.2.md](v1.6.2.md) — canonical opaque/remove naming; drop ObjectRedactor façade |
 | **v1.6.1** | Yes | [v1.6.1.md](v1.6.1.md) — internal simplification / layering cleanup |
 | **v1.6.0** | Yes | [v1.6.0.md](v1.6.0.md) — path rules, passKeys, naming aliases, architecture |
