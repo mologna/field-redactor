@@ -2,7 +2,7 @@
 
 ## Publishing
 
-npm versions use the same `v1.x.x` git tags. Pushing a version tag runs [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml) (build, test, `npm publish`) when `NPM_TOKEN` is configured.
+npm versions use the same `v1.x.x` git tags. Pushing a version tag runs [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml) (build, test, `npm publish` via OIDC trusted publishing). Configure a Trusted Publisher on npm for `mologna/field-redactor` with workflow filename `publish.yml` — see [CONTRIBUTING.md](../../CONTRIBUTING.md#publishing).
 
 | Version | npm | Notes |
 | --- | --- | --- |

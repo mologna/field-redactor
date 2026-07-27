@@ -64,7 +64,16 @@ yarn test
 
 CI runs on push/PR to `master` (`.github/workflows/ci.yml`).
 
-Pushing a version tag (`v*.*.*`) runs `.github/workflows/publish.yml`: build, test, then `npm publish`. Configure repository secret **`NPM_TOKEN`** (npm granular access token with publish rights; enable bypass 2FA if your account requires OTP on publish).
+Pushing a version tag (`v*.*.*`) runs `.github/workflows/publish.yml`: build, test, then `npm publish` via **npm Trusted Publishing (OIDC)**. No `NPM_TOKEN` secret is required.
+
+### One-time npm setup
+
+1. Open [field-redactor](https://www.npmjs.com/package/field-redactor) → **Settings → Trusted Publisher**
+2. Choose **GitHub Actions**
+3. Set:
+   - **Owner / repository:** `mologna/field-redactor`
+   - **Workflow filename:** `publish.yml` (filename only — must match exactly, including `.yml`)
+4. Save. After a successful OIDC publish, you can optionally restrict token-based publishing in **Publishing access**.
 
 ```bash
 git tag -a v1.6.3 -m "v1.6.3"

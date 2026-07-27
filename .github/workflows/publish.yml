@@ -1,5 +1,12 @@
 # Publish to npm when a version tag is pushed (e.g. v1.6.3).
-# Requires repository secret NPM_TOKEN (granular token with publish + bypass 2FA if enabled).
+# Uses npm Trusted Publishing (OIDC) — no NPM_TOKEN secret.
+#
+# One-time setup on npmjs.com → package Settings → Trusted Publisher:
+#   Provider: GitHub Actions
+#   Repository: mologna/field-redactor
+#   Workflow filename: publish.yml  (filename only, must match exactly)
+#
+# Requires npm CLI ≥ 11.5.1 and Node ≥ 22.14 (ensured in this job).
 name: Publish
 
 on:
@@ -9,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write # Required for OIDC trusted publishing
 
 jobs:
   publish:
@@ -21,9 +29,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version-file: .nvmrc
+          # Trusted publishing needs Node ≥ 22.14 and npm ≥ 11.5.1
+          node-version: '22.14'
           cache: yarn
           registry-url: https://registry.npmjs.org
+
+      - name: Ensure npm supports OIDC trusted publishing
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile --non-interactive
@@ -34,7 +46,6 @@ jobs:
       - name: Test
         run: yarn test
 
+      # Do not set NODE_AUTH_TOKEN — the CLI uses OIDC when id-token permission is present.
       - name: Publish
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
