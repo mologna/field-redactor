@@ -7,6 +7,7 @@
 #   Workflow filename: publish.yml  (filename only, must match exactly)
 #
 # Requires npm CLI ≥ 11.5.1 and Node ≥ 22.14 (ensured in this job).
+# Pin npm to the 11.x line — npm@latest (12+) needs newer Node than the OIDC minimum.
 name: Publish
 
 on:
@@ -29,13 +30,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          # Trusted publishing needs Node ≥ 22.14 and npm ≥ 11.5.1
-          node-version: '22.14'
+          # npm docs recommend Node 24 for trusted publishing; includes a recent npm.
+          node-version: '24'
           cache: yarn
           registry-url: https://registry.npmjs.org
 
       - name: Ensure npm supports OIDC trusted publishing
-        run: npm install -g npm@latest
+        run: npm install -g npm@11
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile --non-interactive
@@ -47,5 +48,8 @@ jobs:
         run: yarn test
 
       # Do not set NODE_AUTH_TOKEN — the CLI uses OIDC when id-token permission is present.
+      # setup-node may inject a placeholder; clear it so publish prefers OIDC.
       - name: Publish
         run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ''
