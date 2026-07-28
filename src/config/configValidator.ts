@@ -71,15 +71,14 @@ const collectSchemaWarnings = (customObjects: CustomObject[]): string[] => {
 
 /**
  * Returns non-fatal configuration warnings. Throws {@link FieldRedactorConfigurationError} for
- * invalid custom object duplicates and when `strict` is true on any warning.
+ * invalid custom object duplicates, removed legacy naming keys, and when `strict` is true on any warning.
  */
 export const validateFieldRedactorConfig = (config?: FieldRedactorConfig): string[] => {
-  const legacyNamingWarnings = collectLegacyNamingWarnings(config);
+  assertNoRemovedLegacyNamingKeys(config);
   const resolved = normalizeFieldRedactorConfig(config) ?? {};
   assertNoIdenticalCustomObjectSchemas(resolved.customObjects);
 
   const warnings = [
-    ...legacyNamingWarnings,
     ...(!hasExplicitRedactionRules(resolved)
       ? ['All values will be redacted. Did you mean to set `secretKeys` or use `FieldRedactor.createSafe()`?']
       : []),
@@ -94,21 +93,24 @@ export const validateFieldRedactorConfig = (config?: FieldRedactorConfig): strin
   return warnings;
 };
 
-const collectLegacyNamingWarnings = (config?: FieldRedactorConfig): string[] => {
+const assertNoRemovedLegacyNamingKeys = (config?: FieldRedactorConfig): void => {
   if (!config) {
-    return [];
+    return;
   }
 
-  const warnings: string[] = [];
-  if (config.fullSecretKeys?.length) {
-    warnings.push(
-      '`fullSecretKeys` is deprecated; prefer `opaqueSecretKeys` (same behavior). Legacy input remains supported in 1.x.'
+  const legacy = config as FieldRedactorConfig & {
+    fullSecretKeys?: unknown;
+    deleteSecretKeys?: unknown;
+  };
+
+  if (Object.prototype.hasOwnProperty.call(legacy, 'fullSecretKeys')) {
+    throw new FieldRedactorConfigurationError(
+      '`fullSecretKeys` was removed in 2.0; use `opaqueSecretKeys` instead.'
     );
   }
-  if (config.deleteSecretKeys?.length) {
-    warnings.push(
-      '`deleteSecretKeys` is deprecated; prefer `removeSecretKeys` (same behavior). Legacy input remains supported in 1.x.'
+  if (Object.prototype.hasOwnProperty.call(legacy, 'deleteSecretKeys')) {
+    throw new FieldRedactorConfigurationError(
+      '`deleteSecretKeys` was removed in 2.0; use `removeSecretKeys` instead.'
     );
   }
-  return warnings;
 };

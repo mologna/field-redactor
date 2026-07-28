@@ -38,14 +38,14 @@ Traversal and dry-run attribution both use this module. When adding a rule type,
 
 ### Naming vocabulary
 
-| Mode | Preferred config / enum | Legacy aliases |
-|------|-------------------------|----------------|
+| Mode | Preferred config / enum | Notes |
+|------|-------------------------|-------|
 | Shallow | `secretKeys`, `CustomObjectMatchType.Shallow` | — |
 | Deep | `deepSecretKeys` | — |
-| Opaque | `opaqueSecretKeys`, `CustomObjectMatchType.Opaque`, `isOpaqueSecretKey` | `fullSecretKeys`, `Full` (deprecated; config fields warn at construct) |
-| Remove | `removeSecretKeys`, `CustomObjectMatchType.Remove`, `isRemoveSecretKey` | `deleteSecretKeys`, `Delete` (deprecated; config fields warn at construct) |
+| Opaque | `opaqueSecretKeys`, `CustomObjectMatchType.Opaque`, `isOpaqueSecretKey` | `fullSecretKeys` / `Full` removed in 2.0 |
+| Remove | `removeSecretKeys`, `CustomObjectMatchType.Remove`, `isRemoveSecretKey` | `deleteSecretKeys` / `Delete` removed in 2.0 |
 
-Internally, normalize + `SecretManager` store and match on the preferred field names. Legacy config keys are input-only aliases.
+Internally, `SecretManager` stores and matches on these field names only.
 
 ## Development
 
@@ -64,7 +64,9 @@ yarn test
 
 CI runs on push/PR to `master` (`.github/workflows/ci.yml`).
 
-Pushing a version tag (`v*.*.*`) runs `.github/workflows/publish.yml`: build, test, then `npm publish` via **npm Trusted Publishing (OIDC)**. No `NPM_TOKEN` secret is required.
+Pushing a **release** tag matching `^v[0-9]+\.[0-9]+\.[0-9]+$` (for example `v1.6.3`) runs `.github/workflows/publish.yml`: build, test, then `npm publish` via **npm Trusted Publishing (OIDC)**. No `NPM_TOKEN` secret is required.
+
+Prerelease-style tags such as `v2.0.0-alpha.1` still match the workflow’s broad `v*.*.*` filter but are **skipped** before publish, so they can be pushed without releasing to npm.
 
 ### One-time npm setup
 

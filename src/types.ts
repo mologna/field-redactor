@@ -57,18 +57,13 @@ export type SyncRedactor = (value: RedactorInput) => string;
 
 /**
  * Per-field redaction mode inside a {@link CustomObject} schema.
- * Prefer {@link CustomObjectMatchType.Opaque} / {@link CustomObjectMatchType.Remove}
- * over the legacy Full / Delete names (same numeric values).
+ * Opaque stringifies then redacts; Remove deletes the field from output.
  */
 export enum CustomObjectMatchType {
   /** Remove — delete the field from output. */
   Remove = 0,
-  /** @deprecated Prefer {@link CustomObjectMatchType.Remove}. */
-  Delete = 0,
   /** Opaque — stringify the entire value, then redact. */
   Opaque = 1,
-  /** @deprecated Prefer {@link CustomObjectMatchType.Opaque}. */
-  Full = 1,
   Deep = 2,
   Shallow = 3,
   Pass = 4,
@@ -97,18 +92,8 @@ export type SecretManagerConfig = {
   deepSecretKeys?: RegExp[];
   /** Opaque — stringify entire value at matching keys, then redact. */
   opaqueSecretKeys?: RegExp[];
-  /**
-   * @deprecated Prefer {@link SecretManagerConfig.opaqueSecretKeys}.
-   * Still accepted and merged into opaqueSecretKeys during construction / normalize.
-   */
-  fullSecretKeys?: RegExp[];
   /** Remove — delete matching keys from output. */
   removeSecretKeys?: RegExp[];
-  /**
-   * @deprecated Prefer {@link SecretManagerConfig.removeSecretKeys}.
-   * Still accepted and merged into removeSecretKeys during construction / normalize.
-   */
-  deleteSecretKeys?: RegExp[];
   /**
    * Allowlist — matching key names are never redacted, even under deep or opaque parents (`passKeys`).
    */
@@ -179,7 +164,7 @@ export type RedactionRuleLabel = 'schema' | RedactionMode | 'value' | 'default';
 
 export type DryRunPathRule = {
   path: string;
-  action: 'redact' | 'delete';
+  action: 'redact' | 'remove';
   rule: RedactionRuleLabel;
   pattern?: string;
   schemaIndex?: number;
@@ -188,9 +173,9 @@ export type DryRunPathRule = {
 
 export type DryRunReport = {
   redactedPaths: string[];
-  deletedPaths: string[];
+  removedPaths: string[];
   matchedSchemas: MatchedSchemaReport[];
-  /** Per-path rule attribution for redacted and deleted paths. */
+  /** Per-path rule attribution for redacted and removed paths. */
   pathRules: DryRunPathRule[];
 };
 

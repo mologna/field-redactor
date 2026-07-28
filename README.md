@@ -38,7 +38,7 @@ const result = redactor.redactSync({
 
 ```typescript
 const { result, report } = redactor.dryRunSync(payload);
-// report.redactedPaths, report.deletedPaths, report.matchedSchemas, report.pathRules
+// report.redactedPaths, report.removedPaths, report.matchedSchemas, report.pathRules
 ```
 
 ## Start here
@@ -55,8 +55,8 @@ Do you know which JSON keys are always sensitive?
 | --- | --- |
 | Shallow | `secretKeys` |
 | Deep | `deepSecretKeys` |
-| Opaque | `opaqueSecretKeys` (legacy: `fullSecretKeys`) |
-| Remove | `removeSecretKeys` (legacy: `deleteSecretKeys`) |
+| Opaque | `opaqueSecretKeys` |
+| Remove | `removeSecretKeys` |
 | Schema | `customObjects` |
 
 Use `FieldRedactor.createSafe({ ... })` or `FieldRedactorConfigBuilder` so you never accidentally redact every field. `new FieldRedactor()` without rules still redacts all values (legacy default).

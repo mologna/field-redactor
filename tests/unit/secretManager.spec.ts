@@ -171,15 +171,4 @@ describe('NewSecretManager', () => {
     const defaultManager = new SecretManager({});
     expect(defaultManager.classifyKeyRule('anything')).toBe('default');
   });
-
-  it('accepts legacy fullSecretKeys / deleteSecretKeys as opaque / remove', () => {
-    const manager = new SecretManager({
-      fullSecretKeys: [/payload/],
-      deleteSecretKeys: [/authKey/]
-    });
-
-    expect(manager.isOpaqueSecretKey('payload')).toBe(true);
-    expect(manager.isRemoveSecretKey('authKey')).toBe(true);
-    expect(manager.isSecretKey('other')).toBe(false);
-  });
 });

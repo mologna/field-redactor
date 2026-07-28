@@ -64,7 +64,7 @@ console.log(warnings);
 ```typescript
 const redactor = FieldRedactor.createSafe(yourConfig);
 const { result, report } = redactor.dryRunSync(samplePayload);
-// Review report.pathRules, report.matchedSchemas, report.deletedPaths
+// Review report.pathRules, report.matchedSchemas, report.removedPaths
 ```
 
 ### Step 3 — Switch hot paths to sync (optional)

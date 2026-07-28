@@ -83,7 +83,7 @@ See [Value-pattern redaction](value-pattern-redaction.md).
 
 **Problem:** Guessing which paths change on real log shapes.
 
-**Instead:** Run `dryRunSync()` on representative payloads and review `redactedPaths`, `deletedPaths`, `matchedSchemas`, and `pathRules`.
+**Instead:** Run `dryRunSync()` on representative payloads and review `redactedPaths`, `removedPaths`, `matchedSchemas`, and `pathRules`.
 
 ```typescript
 FieldRedactorConfigBuilder.create()

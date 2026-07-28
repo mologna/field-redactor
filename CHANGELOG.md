@@ -5,6 +5,26 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-alpha.1] - 2026-07-28
+
+First prerelease toward npm **2.0.0**: Opaque/Remove-only naming and dry-run Remove vocabulary. Not published to npm (prerelease tags are skipped by the publish workflow). See [docs/release-notes/v2.0.0-alpha.1.md](docs/release-notes/v2.0.0-alpha.1.md) and [docs/plans/2.0.md](docs/plans/2.0.md).
+
+### Removed
+
+- Config aliases `fullSecretKeys` / `deleteSecretKeys` (use `opaqueSecretKeys` / `removeSecretKeys`; legacy keys throw at validation).
+- `CustomObjectMatchType.Full` / `.Delete` (use `.Opaque` / `.Remove`).
+- Builder `.delete()` (use `.remove()`).
+
+### Changed
+
+- Dry-run: `deletedPaths` → `removedPaths`; `pathRules[].action` `'delete'` → `'remove'`.
+- Publish workflow only publishes tags matching `^v[0-9]+\.[0-9]+\.[0-9]+$` (prerelease tags such as `v2.0.0-alpha.1` are skipped).
+
+### Not yet in this alpha
+
+- Constructor requiring explicit rules (option A).
+- Dropping `@internal` root type exports.
+
 ## [1.6.3] - 2026-07-27
 
 DX and release-hygiene patch: examples, legacy naming warnings, OIDC publish workflow, and test cleanup. See [docs/release-notes/v1.6.3.md](docs/release-notes/v1.6.3.md).
@@ -213,6 +233,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[2.0.0-alpha.1]: https://github.com/mologna/field-redactor/compare/v1.6.3...v2.0.0-alpha.1
 [1.6.3]: https://github.com/mologna/field-redactor/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/mologna/field-redactor/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/mologna/field-redactor/compare/v1.6.0...v1.6.1

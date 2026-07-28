@@ -86,8 +86,8 @@ Inside a schema, use enum values instead of sibling strings:
 
 | Enum | Doc label | Effect |
 | --- | --- | --- |
-| `Delete` | Remove | Delete the field |
-| `Full` | Opaque | Stringify and redact |
+| `Remove` | Remove | Delete the field |
+| `Opaque` | Opaque | Stringify and redact |
 | `Deep` | Deep | Deep redaction |
 | `Shallow` | Shallow | Redact scalar / primitive arrays |
 | `Pass` | — | Revert to normal traversal for nested content |

@@ -27,12 +27,12 @@ describe('FieldRedactor dryRun', () => {
     expect(input.password).toBe('secret');
     expect(result.password).toBe('REDACTED');
     expect(result.authKey).toBeUndefined();
-    expect(report.deletedPaths).toContain('authKey');
+    expect(report.removedPaths).toContain('authKey');
     expect(report.redactedPaths).toEqual(expect.arrayContaining(['password', 'contactInfo.email', 'metadata[0].value']));
     expect(report.matchedSchemas).toEqual([{ path: 'metadata[0]', schemaIndex: 0 }]);
     expect(report.pathRules).toEqual(
       expect.arrayContaining([
-        { path: 'authKey', action: 'delete', rule: 'remove', pattern: '/authKey/' },
+        { path: 'authKey', action: 'remove', rule: 'remove', pattern: '/authKey/' },
         { path: 'password', action: 'redact', rule: 'shallow', pattern: '/password/' },
         { path: 'contactInfo.email', action: 'redact', rule: 'shallow', pattern: '/email/' },
         {

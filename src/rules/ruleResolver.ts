@@ -183,7 +183,7 @@ export class RuleResolver {
     }
 
     if (match.mode === 'remove') {
-      return toPathRule(context.path, 'delete', 'remove', { pattern: match.path });
+      return toPathRule(context.path, 'remove', 'remove', { pattern: match.path });
     }
 
     return toPathRule(context.path, 'redact', match.mode as 'shallow' | 'deep' | 'opaque', { pattern: match.path });
@@ -252,19 +252,19 @@ export class RuleResolver {
     return toPathRule(path, 'redact', 'default');
   }
 
-  attributeDeletePath(before: JsonValue | undefined, path: string): DryRunPathRule {
+  attributeRemovePath(before: JsonValue | undefined, path: string): DryRunPathRule {
     const segments = parseJsonPath(path);
     const pathRule = this.getMatchingPathRule(segments);
     if (pathRule?.mode === 'remove') {
-      return toPathRule(path, 'delete', 'remove', { pattern: pathRule.path });
+      return toPathRule(path, 'remove', 'remove', { pattern: pathRule.path });
     }
 
-    const deleteKey = objectKeysFromPath(segments).at(-1);
-    if (deleteKey) {
-      return this.attributeKeyRule(path, 'delete', deleteKey);
+    const removeKey = objectKeysFromPath(segments).at(-1);
+    if (removeKey) {
+      return this.attributeKeyRule(path, 'remove', removeKey);
     }
 
-    return toPathRule(path, 'delete', 'default');
+    return toPathRule(path, 'remove', 'default');
   }
 
   /** Returns the matching schema when a shaped object should be handled at this node. */
@@ -276,9 +276,9 @@ export class RuleResolver {
 export const buildPathRules = (
   before: JsonValue | undefined,
   redactedPaths: readonly string[],
-  deletedPaths: readonly string[],
+  removedPaths: readonly string[],
   resolver: RuleResolver
 ): DryRunPathRule[] => [
-  ...deletedPaths.map((path) => resolver.attributeDeletePath(before, path)),
+  ...removedPaths.map((path) => resolver.attributeRemovePath(before, path)),
   ...redactedPaths.map((path) => resolver.attributeRedactPath(before, path))
 ];

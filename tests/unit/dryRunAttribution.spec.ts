@@ -1,11 +1,11 @@
 import { CustomObjectMatchType, FieldRedactor, FieldRedactorConfigBuilder } from '../../src';
 
 /**
- * Golden dry-run attribution shapes + legacy naming coverage.
+ * Golden dry-run attribution shapes.
  * Dry-run ↔ RuleResolver lockstep lives in `ruleResolver.contract.spec.ts`.
  */
 describe('dryRunAttribution', () => {
-  it('attributes remove and path-rule deletes with expected report shapes', () => {
+  it('attributes remove and path-rule removes with expected report shapes', () => {
     const redactor = FieldRedactor.createSafe({
       removeSecretKeys: [/authKey/],
       pathRules: [{ path: 'session.token', mode: 'remove' }]
@@ -17,11 +17,11 @@ describe('dryRunAttribution', () => {
       body: 'alice@example.com'
     });
 
-    expect(report.deletedPaths).toEqual(expect.arrayContaining(['authKey', 'session.token']));
+    expect(report.removedPaths).toEqual(expect.arrayContaining(['authKey', 'session.token']));
     expect(report.pathRules).toEqual(
       expect.arrayContaining([
-        { path: 'authKey', action: 'delete', rule: 'remove', pattern: '/authKey/' },
-        { path: 'session.token', action: 'delete', rule: 'remove', pattern: 'session.token' }
+        { path: 'authKey', action: 'remove', rule: 'remove', pattern: '/authKey/' },
+        { path: 'session.token', action: 'remove', rule: 'remove', pattern: 'session.token' }
       ])
     );
   });
@@ -56,34 +56,8 @@ describe('dryRunAttribution', () => {
       ])
     );
   });
-});
 
-describe('naming vocabulary aliases', () => {
-  it('attributes removeSecretKeys the same as legacy deleteSecretKeys', () => {
-    const viaPreferred = FieldRedactor.createSafe({ removeSecretKeys: [/authKey/] });
-    const viaLegacy = FieldRedactor.createSafe({ deleteSecretKeys: [/authKey/] });
-    const input = { authKey: 'token' };
-
-    expect(viaPreferred.dryRunSync(input).report.pathRules).toEqual(
-      viaLegacy.dryRunSync(input).report.pathRules
-    );
-  });
-
-  it('treats legacy fullSecretKeys as opaqueSecretKeys and warns', () => {
-    const redactor = FieldRedactor.createSafe({ fullSecretKeys: [/payload/] });
-    const result = redactor.redactSync({ payload: { token: 'secret' }, note: 'ok' });
-
-    expect(result.payload).toBe('REDACTED');
-    expect(result.note).toBe('ok');
-    expect(redactor.configWarnings.some((w) => w.includes('fullSecretKeys') && w.includes('deprecated'))).toBe(
-      true
-    );
-  });
-
-  it('treats CustomObjectMatchType.Full/Delete as Opaque/Remove', () => {
-    expect(CustomObjectMatchType.Opaque).toBe(CustomObjectMatchType.Full);
-    expect(CustomObjectMatchType.Remove).toBe(CustomObjectMatchType.Delete);
-
+  it('applies Opaque and Remove custom object match types', () => {
     const redactor = FieldRedactorConfigBuilder.create()
       .schema({
         secret: CustomObjectMatchType.Opaque,

@@ -19,19 +19,19 @@ const createResolver = (options: {
   );
 
 describe('RuleResolver', () => {
-  it('attributes delete paths by key or path rule', () => {
+  it('attributes remove paths by key or path rule', () => {
     const byKey = createResolver({ secretManager: { removeSecretKeys: [/authKey/] } });
-    expect(byKey.attributeDeletePath({ authKey: 'token' }, 'authKey')).toEqual({
+    expect(byKey.attributeRemovePath({ authKey: 'token' }, 'authKey')).toEqual({
       path: 'authKey',
-      action: 'delete',
+      action: 'remove',
       rule: 'remove',
       pattern: '/authKey/'
     });
 
     const byPath = createResolver({ pathRules: [{ path: 'session.token', mode: 'remove' }] });
-    expect(byPath.attributeDeletePath({ session: { token: 'abc' } }, 'session.token')).toEqual({
+    expect(byPath.attributeRemovePath({ session: { token: 'abc' } }, 'session.token')).toEqual({
       path: 'session.token',
-      action: 'delete',
+      action: 'remove',
       rule: 'remove',
       pattern: 'session.token'
     });

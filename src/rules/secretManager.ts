@@ -5,11 +5,6 @@ export type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
 
 const KEY_RULE_PRECEDENCE: KeyRule[] = ['remove', 'opaque', 'deep', 'shallow'];
 
-const mergeRegexLists = (...lists: Array<RegExp[] | undefined>): RegExp[] | undefined => {
-  const merged = lists.flatMap((list) => list ?? []);
-  return merged.length ? merged : undefined;
-};
-
 /**
  * Utility class for managing secrets and determining if a given value is a secret of any type. If no secrets of
  * any type are provided in the configuration then all values are considered secrets (but not deep or opaque secrets).
@@ -23,8 +18,8 @@ export class SecretManager {
 
   constructor(config: SecretManagerConfig) {
     this.deepSecretKeys = config.deepSecretKeys;
-    this.opaqueSecretKeys = mergeRegexLists(config.opaqueSecretKeys, config.fullSecretKeys);
-    this.removeSecretKeys = mergeRegexLists(config.removeSecretKeys, config.deleteSecretKeys);
+    this.opaqueSecretKeys = config.opaqueSecretKeys;
+    this.removeSecretKeys = config.removeSecretKeys;
     this.passKeys = config.passKeys;
 
     const hasScopedKeyRules = !!(this.deepSecretKeys || this.opaqueSecretKeys || this.removeSecretKeys);

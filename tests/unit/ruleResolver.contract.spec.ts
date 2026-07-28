@@ -103,8 +103,8 @@ describe('RuleResolver contract', () => {
     const resolver = createResolver(config);
     const { report } = redactor.dryRunSync(input);
 
-    for (const path of report.deletedPaths) {
-      expect(resolver.attributeDeletePath(input, path)).toEqual(
+    for (const path of report.removedPaths) {
+      expect(resolver.attributeRemovePath(input, path)).toEqual(
         report.pathRules.find((rule: DryRunPathRule) => rule.path === path)
       );
     }

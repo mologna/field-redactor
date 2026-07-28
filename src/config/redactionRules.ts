@@ -1,10 +1,7 @@
 import { CustomObject, FieldRedactorConfig } from '../types';
 
-/** Canonical key-rule regex fields (preferred Opaque/Remove names). */
+/** Canonical key-rule regex fields. */
 export const SECRET_REGEX_FIELDS = ['secretKeys', 'deepSecretKeys', 'opaqueSecretKeys', 'removeSecretKeys'] as const;
-
-/** Legacy aliases accepted on input and merged into {@link SECRET_REGEX_FIELDS}. */
-export const SECRET_REGEX_ALIAS_FIELDS = ['fullSecretKeys', 'deleteSecretKeys'] as const;
 
 export const VALUE_PATTERN_FIELDS = ['valuePatterns'] as const;
 
@@ -12,7 +9,6 @@ export const PASS_KEY_FIELDS = ['passKeys'] as const;
 
 export const REGEX_ARRAY_CONFIG_FIELDS = [
   ...SECRET_REGEX_FIELDS,
-  ...SECRET_REGEX_ALIAS_FIELDS,
   ...VALUE_PATTERN_FIELDS,
   ...PASS_KEY_FIELDS
 ] as const;
@@ -28,33 +24,13 @@ export const hasExplicitRedactionRules = (config?: FieldRedactorConfig): boolean
   RULE_LIST_FIELDS.some((field) => hasNonEmptyArray(config?.[field] as unknown[] | undefined)) ||
   hasNonEmptyArray(config?.pathRules);
 
-/**
- * Merge legacy `fullSecretKeys` / `deleteSecretKeys` into canonical
- * `opaqueSecretKeys` / `removeSecretKeys` and drop the legacy keys.
- */
-export const normalizeFieldRedactorConfig = (config?: FieldRedactorConfig): FieldRedactorConfig | undefined => {
-  if (!config) {
-    return config;
-  }
-
-  const fullSecretKeys = config.fullSecretKeys;
-  const deleteSecretKeys = config.deleteSecretKeys;
-  if (!fullSecretKeys?.length && !deleteSecretKeys?.length) {
-    return config;
-  }
-
-  const { fullSecretKeys: _full, deleteSecretKeys: _delete, ...rest } = config;
-  return {
-    ...rest,
-    opaqueSecretKeys: [...(config.opaqueSecretKeys ?? []), ...(fullSecretKeys ?? [])],
-    removeSecretKeys: [...(config.removeSecretKeys ?? []), ...(deleteSecretKeys ?? [])]
-  };
-};
+/** Identity — returns config as-is (legacy alias merge removed in 2.0). */
+export const normalizeFieldRedactorConfig = (config?: FieldRedactorConfig): FieldRedactorConfig | undefined =>
+  config;
 
 /**
  * When only value patterns / path rules are configured, shallow key matching must be disabled
  * (`secretKeys: []`) so the legacy default does not redact every field.
- * Expects an already-normalized config (aliases merged).
  */
 export const resolveSecretKeys = (config: FieldRedactorConfig = {}): RegExp[] | undefined => {
   const { secretKeys, deepSecretKeys, opaqueSecretKeys, removeSecretKeys, customObjects, valuePatterns, pathRules } =

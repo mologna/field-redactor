@@ -1,6 +1,6 @@
 # Secret key modes
 
-FieldRedactor applies **Shallow**, **Deep**, **Opaque**, and **Remove** rules via regex key matching. Throughout the docs, these are the conceptual names; the config fields are `secretKeys`, `deepSecretKeys`, `opaqueSecretKeys`, and `removeSecretKeys` (legacy aliases `fullSecretKeys` / `deleteSecretKeys` still work).
+FieldRedactor applies **Shallow**, **Deep**, **Opaque**, and **Remove** rules via regex key matching. Throughout the docs, these are the conceptual names; the config fields are `secretKeys`, `deepSecretKeys`, `opaqueSecretKeys`, and `removeSecretKeys`.
 
 **Precedence** (highest wins): Schema (`customObjects`) → Opaque → Deep → Remove → Shallow → Value-pattern (`valuePatterns`)
 

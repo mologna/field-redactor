@@ -1,10 +1,13 @@
-# Publish to npm when a version tag is pushed (e.g. v1.6.3).
+# Publish to npm when a release tag is pushed (e.g. v1.6.3).
 # Uses npm Trusted Publishing (OIDC) — no NPM_TOKEN secret.
 #
 # One-time setup on npmjs.com → package Settings → Trusted Publisher:
 #   Provider: GitHub Actions
 #   Repository: mologna/field-redactor
 #   Workflow filename: publish.yml  (filename only, must match exactly)
+#
+# Trigger filter is a glob (`v*.*.*`); the job then requires an exact
+# release tag matching ^v[0-9]+\.[0-9]+\.[0-9]+$ (no -alpha / -beta / -rc).
 #
 # Requires npm CLI ≥ 11.5.1 and Node ≥ 22.14 (ensured in this job).
 # Pin npm to the 11.x line — npm@latest (12+) needs newer Node than the OIDC minimum.
@@ -20,7 +23,26 @@ permissions:
   id-token: write # Required for OIDC trusted publishing
 
 jobs:
+  check-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+    steps:
+      - name: Require vMAJOR.MINOR.PATCH
+        id: check
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "Release tag: $TAG"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping npm publish for non-release tag: $TAG (need ^v[0-9]+.[0-9]+.[0-9]+$)"
+          fi
+
   publish:
+    needs: check-tag
+    if: needs.check-tag.outputs.release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

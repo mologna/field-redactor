@@ -29,8 +29,8 @@ describe('FieldRedactorConfigBuilder', () => {
     expect(config.valuePatterns).toEqual([/email/i, /phone/i]);
   });
 
-  it('supports delete as an alias for remove', () => {
-    const config = FieldRedactorConfigBuilder.create().delete(/authKey/i).build();
+  it('maps remove to removeSecretKeys', () => {
+    const config = FieldRedactorConfigBuilder.create().remove(/authKey/i).build();
     expect(config.removeSecretKeys).toEqual([/authKey/i]);
   });
 
@@ -73,7 +73,7 @@ describe('FieldRedactorConfigBuilder', () => {
     expect(result.ssn).toBe('REDACTED');
     expect(report.pathRules).toEqual(
       expect.arrayContaining([
-        { path: 'authKey', action: 'delete', rule: 'remove', pattern: '/authKey/i' },
+        { path: 'authKey', action: 'remove', rule: 'remove', pattern: '/authKey/i' },
         { path: 'email', action: 'redact', rule: 'shallow', pattern: '/email/i' },
         { path: 'ssn', action: 'redact', rule: 'shallow', pattern: '/ssn/i' }
       ])

@@ -44,11 +44,6 @@ export class FieldRedactorConfigBuilder {
     return this.appendRegex('removeSecretKeys', patterns);
   }
 
-  /** Alias for {@link FieldRedactorConfigBuilder.remove}. */
-  delete(...patterns: RegExp[]): this {
-    return this.remove(...patterns);
-  }
-
   /** Register an object schema (`customObjects`). */
   schema(customObject: CustomObject, options?: SchemaOptions): this {
     this.schemas.push({ object: customObject, name: options?.name });

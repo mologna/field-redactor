@@ -56,18 +56,28 @@ describe('validateFieldRedactorConfig', () => {
     ).toThrow(FieldRedactorConfigurationError);
   });
 
-  it('warns when legacy fullSecretKeys or deleteSecretKeys are used', () => {
-    const warnings = validateFieldRedactorConfig({
-      fullSecretKeys: [/payload/],
-      deleteSecretKeys: [/authKey/]
-    });
+  it('throws when fullSecretKeys or deleteSecretKeys are present', () => {
+    expect(() =>
+      validateFieldRedactorConfig({
+        fullSecretKeys: [/payload/]
+      } as Parameters<typeof validateFieldRedactorConfig>[0])
+    ).toThrow(FieldRedactorConfigurationError);
+    expect(() =>
+      validateFieldRedactorConfig({
+        fullSecretKeys: [/payload/]
+      } as Parameters<typeof validateFieldRedactorConfig>[0])
+    ).toThrow(/fullSecretKeys.*removed in 2\.0.*opaqueSecretKeys/);
 
-    expect(warnings.some((warning) => warning.includes('fullSecretKeys') && warning.includes('deprecated'))).toBe(
-      true
-    );
-    expect(warnings.some((warning) => warning.includes('deleteSecretKeys') && warning.includes('deprecated'))).toBe(
-      true
-    );
+    expect(() =>
+      validateFieldRedactorConfig({
+        deleteSecretKeys: [/authKey/]
+      } as Parameters<typeof validateFieldRedactorConfig>[0])
+    ).toThrow(FieldRedactorConfigurationError);
+    expect(() =>
+      validateFieldRedactorConfig({
+        deleteSecretKeys: [/authKey/]
+      } as Parameters<typeof validateFieldRedactorConfig>[0])
+    ).toThrow(/deleteSecretKeys.*removed in 2\.0.*removeSecretKeys/);
   });
 });
 

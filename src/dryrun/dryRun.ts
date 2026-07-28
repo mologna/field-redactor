@@ -8,14 +8,14 @@ import { DryRunReport, isJsonObject, JsonValue } from '../types';
 
 export const createEmptyDryRunReport = (): DryRunReport => ({
   redactedPaths: [],
-  deletedPaths: [],
+  removedPaths: [],
   matchedSchemas: [],
   pathRules: []
 });
 
 export const EMPTY_DRY_RUN_REPORT: DryRunReport = createEmptyDryRunReport();
 
-const pushPath = (report: DryRunReport, path: string, list: 'redactedPaths' | 'deletedPaths'): void => {
+const pushPath = (report: DryRunReport, path: string, list: 'redactedPaths' | 'removedPaths'): void => {
   if (path) {
     report[list].push(path);
   }
@@ -32,7 +32,7 @@ const diffRedaction = (
   }
 
   if (!isTraversableJson(before) || !isTraversableJson(after)) {
-    pushPath(report, path, after === undefined && before !== undefined ? 'deletedPaths' : 'redactedPaths');
+    pushPath(report, path, after === undefined && before !== undefined ? 'removedPaths' : 'redactedPaths');
     return;
   }
 
@@ -44,7 +44,7 @@ const diffRedaction = (
 
     for (let index = 0; index < Math.max(before.length, after.length); index++) {
       if (!Object.prototype.hasOwnProperty.call(after, index) && Object.prototype.hasOwnProperty.call(before, index)) {
-        report.deletedPaths.push(joinPath(path, index));
+        report.removedPaths.push(joinPath(path, index));
         continue;
       }
 
@@ -61,7 +61,7 @@ const diffRedaction = (
   for (const key of Object.keys(before)) {
     const childPath = joinPath(path, key);
     if (!Object.prototype.hasOwnProperty.call(after, key)) {
-      report.deletedPaths.push(childPath);
+      report.removedPaths.push(childPath);
     } else {
       diffRedaction(before[key], after[key], childPath, report);
     }
@@ -103,7 +103,7 @@ export const buildDryRunReport = (
     report.pathRules = buildPathRules(
       before,
       report.redactedPaths,
-      report.deletedPaths,
+      report.removedPaths,
       new RuleResolver(secretManager, pathRuleMatcher, valuePatternMatcher, manager)
     );
   }

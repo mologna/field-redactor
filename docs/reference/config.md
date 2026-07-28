@@ -8,8 +8,8 @@
 | — | `syncRedactor` | `(val) => string` | `"REDACTED"` sync | Sync redactor; enables `redactSync()` without per-field Promises |
 | **Shallow** | `secretKeys` | `RegExp[]` | `null` | Redact matching scalar values; if no rules at all, everything matches |
 | **Deep** | `deepSecretKeys` | `RegExp[]` | `[]` | Deeply redact all primitives under matching keys |
-| **Opaque** | `opaqueSecretKeys` | `RegExp[]` | `[]` | Stringify and redact entire values (legacy alias: `fullSecretKeys`) |
-| **Remove** | `removeSecretKeys` | `RegExp[]` | `[]` | Delete matching keys (legacy alias: `deleteSecretKeys`) |
+| **Opaque** | `opaqueSecretKeys` | `RegExp[]` | `[]` | Stringify and redact entire values |
+| **Remove** | `removeSecretKeys` | `RegExp[]` | `[]` | Delete matching keys |
 | **Schema** | `customObjects` | `CustomObject[]` | `[]` | Per-shape rules; see [metadata guide](../guides/metadata-redaction.md) |
 | **Value-pattern** | `valuePatterns` | `RegExp[]` | `[]` | Opt-in: redact scalars whose string form matches a pattern |
 | **Path rule** | `pathRules` | `PathRule[]` | `[]` | Apply a mode at a JSON path (`metadata.*.value`) |
@@ -56,7 +56,7 @@ const redactor = FieldRedactorConfigBuilder.create()
   .buildSafeRedactor();
 ```
 
-Methods: `shallow`, `deep`, `opaque`, `remove` / `delete`, `schema`, `valuePattern`, `pathRule`, `passKey`, `usePreset`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
+Methods: `shallow`, `deep`, `opaque`, `remove`, `schema`, `valuePattern`, `pathRule`, `passKey`, `usePreset`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
 
 **Precedence:** Schema → path rule → opaque → deep → remove → shallow → value-pattern → default.
 
@@ -92,11 +92,11 @@ FieldRedactor.createSafe({
 ```typescript
 type DryRunReport = {
   redactedPaths: string[];
-  deletedPaths: string[];
+  removedPaths: string[];
   matchedSchemas: { path: string; schemaIndex: number; schemaName?: string }[];
   pathRules: {
     path: string;
-    action: 'redact' | 'delete';
+    action: 'redact' | 'remove';
     rule: 'schema' | 'opaque' | 'deep' | 'remove' | 'shallow' | 'value' | 'default';
     pattern?: string;
     schemaIndex?: number;
@@ -105,7 +105,7 @@ type DryRunReport = {
 };
 ```
 
-`pathRules` explains **why** each path changed (which rule matched). Use alongside `redactedPaths` / `deletedPaths` for iteration.
+`pathRules` explains **why** each path changed (which rule matched). Use alongside `redactedPaths` / `removedPaths` for iteration.
 
 ## Errors
 

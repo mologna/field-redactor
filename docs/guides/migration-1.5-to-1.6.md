@@ -25,14 +25,14 @@ See [Path rules & allowlists](path-rules.md).
 
 ### Preferred Opaque / Remove names
 
-| Prefer | Legacy (still works) |
+| Prefer | Alias in 1.6 (removed in 2.0) |
 | --- | --- |
 | `opaqueSecretKeys` | `fullSecretKeys` |
 | `removeSecretKeys` | `deleteSecretKeys` |
 | `CustomObjectMatchType.Opaque` | `CustomObjectMatchType.Full` |
 | `CustomObjectMatchType.Remove` | `CustomObjectMatchType.Delete` |
 
-Builder methods `.opaque()` / `.remove()` write `opaqueSecretKeys` / `removeSecretKeys`. Legacy `fullSecretKeys` / `deleteSecretKeys` remain accepted on config objects and are normalized internally.
+Builder methods `.opaque()` / `.remove()` write `opaqueSecretKeys` / `removeSecretKeys`. In 1.6, legacy `fullSecretKeys` / `deleteSecretKeys` remained accepted and were normalized internally; **2.0 removes those aliases** (see [migration 1.6 → 2.0](migration-1.6-to-2.0.md)).
 
 ## Behavior-sensitive notes
 
@@ -44,9 +44,9 @@ Only the package root is exported. If you imported internal files (for example `
 
 Source files were reorganized under `api/`, `engine/`, `rules/`, etc. That affects only consumers who imported unpublished internal paths—not `import { FieldRedactor } from 'field-redactor'`.
 
-## No action required
+## No action required (for 1.5 → 1.6)
 
-- Existing `secretKeys` / `deepSecretKeys` / `fullSecretKeys` / `deleteSecretKeys` configs
+- Existing `secretKeys` / `deepSecretKeys` / `opaqueSecretKeys` / `removeSecretKeys` configs (and, in 1.6 only, `fullSecretKeys` / `deleteSecretKeys`)
 - `createSafe()`, builder, presets, `dryRun` / `dryRunSync`
 - Copy-on-write and sync APIs from 1.5.0
 
