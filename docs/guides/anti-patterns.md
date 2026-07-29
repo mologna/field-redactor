@@ -4,16 +4,18 @@ Common mistakes when configuring Field Redactor — and what to do instead. Many
 
 ## Using `new FieldRedactor()` without rules
 
-**Problem:** With no `secretKeys`, `deepSecretKeys`, `opaqueSecretKeys`, `removeSecretKeys`, or `customObjects`, every value is redacted. Easy to ship a config that wipes entire payloads.
+**Problem:** Construction requires at least one non-empty rule list. Empty config throws `FieldRedactorConfigurationError` (same bar as `createSafe`).
 
-**Instead:** Use `FieldRedactor.createSafe()`, `FieldRedactorConfigBuilder.buildSafeRedactor()`, or the builder with at least one explicit rule.
+**Instead:** Pass explicit rules via the constructor, `FieldRedactor.createSafe()`, or `FieldRedactorConfigBuilder.buildRedactor()` / `buildSafeRedactor()`.
 
 ```typescript
-// Avoid
+// Throws
 const redactor = new FieldRedactor();
 
 // Prefer
 const redactor = FieldRedactor.createSafe({ secretKeys: [/email/i] });
+// or
+const redactor = new FieldRedactor({ secretKeys: [/email/i] });
 ```
 
 ## Same regex in multiple key groups

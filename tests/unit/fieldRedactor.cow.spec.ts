@@ -71,7 +71,7 @@ describe('FieldRedactor copy-on-write', () => {
   });
 
   it('redactCopyOnWrite matches deep-clone then redactInPlaceSync output', () => {
-    const fieldRedactor = new FieldRedactor();
+    const fieldRedactor = new FieldRedactor({ secretKeys: [/.+/] });
     const cowInput = deepCopy(validNestedInputWithAllTypes);
     const expectedInput = deepCopy(validNestedInputWithAllTypes);
 

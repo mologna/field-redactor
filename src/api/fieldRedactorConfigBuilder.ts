@@ -114,14 +114,14 @@ export class FieldRedactorConfigBuilder {
     return { ...this.config, ...finalizeRegisteredSchemas(this.schemas) };
   }
 
-  /** Constructs a {@link FieldRedactor} from the built config. */
+  /** Like {@link FieldRedactor} / {@link FieldRedactor.createSafe} using the built config. */
   buildRedactor(): FieldRedactor {
     return new FieldRedactor(this.build());
   }
 
-  /** Like {@link FieldRedactor.createSafe} using the built config. */
+  /** Alias of {@link FieldRedactorConfigBuilder.buildRedactor}. */
   buildSafeRedactor(): FieldRedactor {
-    return FieldRedactor.createSafe(this.build());
+    return this.buildRedactor();
   }
 
   private appendRegex(field: SecretRegexField, patterns: RegExp[]): this {

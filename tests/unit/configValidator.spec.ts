@@ -1,14 +1,24 @@
 import { CustomObjectMatchType, FieldRedactor, FieldRedactorConfigurationError, validateFieldRedactorConfig } from '../../src';
 
 describe('validateFieldRedactorConfig', () => {
-  it('warns when no redaction rules are configured', () => {
-    const warnings = validateFieldRedactorConfig({});
-    expect(warnings).toContainEqual(expect.stringMatching(/All values will be redacted/));
+  it('does not warn solely because redaction rules are missing', () => {
+    expect(validateFieldRedactorConfig({})).toEqual([]);
+    expect(validateFieldRedactorConfig()).toEqual([]);
   });
 
   it('throws the first warning when strict is true', () => {
-    expect(() => validateFieldRedactorConfig({ strict: true })).toThrow(FieldRedactorConfigurationError);
-    expect(() => validateFieldRedactorConfig({ strict: true })).toThrow(/All values will be redacted/);
+    expect(() =>
+      validateFieldRedactorConfig({
+        strict: true,
+        secretKeys: [/email/g]
+      })
+    ).toThrow(FieldRedactorConfigurationError);
+    expect(() =>
+      validateFieldRedactorConfig({
+        strict: true,
+        secretKeys: [/email/g]
+      })
+    ).toThrow(/Global regex/);
   });
 
   it('warns when the same regex appears in multiple key groups', () => {
@@ -43,6 +53,16 @@ describe('validateFieldRedactorConfig', () => {
     });
 
     expect(warnings.some((warning) => warning.includes('Global regex'))).toBe(true);
+  });
+
+  it('warns about global flags on valuePatterns without key-rule duplicate tracking', () => {
+    const warnings = validateFieldRedactorConfig({
+      valuePatterns: [/email/g]
+    });
+
+    expect(warnings.some((warning) => warning.includes('Global regex') && warning.includes('valuePatterns'))).toBe(
+      true
+    );
   });
 
   it('still throws for identical schema key sets', () => {
@@ -83,13 +103,13 @@ describe('validateFieldRedactorConfig', () => {
 
 describe('FieldRedactor configuration warnings', () => {
   it('exposes warnings on the instance', () => {
-    const redactor = new FieldRedactor({});
-    expect(redactor.configWarnings.length).toBeGreaterThan(0);
+    const redactor = new FieldRedactor({ secretKeys: [/email/g] });
+    expect(redactor.configWarnings.some((warning) => warning.includes('Global regex'))).toBe(true);
   });
 
   it('invokes onConfigWarning for each warning', () => {
     const onConfigWarning = jest.fn();
-    new FieldRedactor({ onConfigWarning });
-    expect(onConfigWarning).toHaveBeenCalledWith(expect.stringMatching(/All values will be redacted/));
+    new FieldRedactor({ secretKeys: [/email/g], onConfigWarning });
+    expect(onConfigWarning).toHaveBeenCalledWith(expect.stringMatching(/Global regex/));
   });
 });

@@ -6,7 +6,7 @@
 |-----------|--------------|------|---------|--------|
 | — | `redactor` | `(val) => Promise<string>` | `"REDACTED"` async | Custom async redactor; enables async traversal when sole redactor |
 | — | `syncRedactor` | `(val) => string` | `"REDACTED"` sync | Sync redactor; enables `redactSync()` without per-field Promises |
-| **Shallow** | `secretKeys` | `RegExp[]` | `null` | Redact matching scalar values; if no rules at all, everything matches |
+| **Shallow** | `secretKeys` | `RegExp[]` | `null` | Redact matching scalar values |
 | **Deep** | `deepSecretKeys` | `RegExp[]` | `[]` | Deeply redact all primitives under matching keys |
 | **Opaque** | `opaqueSecretKeys` | `RegExp[]` | `[]` | Stringify and redact entire values |
 | **Remove** | `removeSecretKeys` | `RegExp[]` | `[]` | Delete matching keys |
@@ -33,10 +33,10 @@
 | `dryRunSync(value)` | `{ result, report }` | Sync dry run |
 | `configWarnings` | `readonly string[]` | Warnings from construction |
 
-### Static factories
+### Construction
 
-- `FieldRedactor.createSafe(config)` — requires at least one rule; throws `FieldRedactorConfigurationError` otherwise
-- `new FieldRedactor(config)` — legacy; no rules ⇒ redact everything
+- `new FieldRedactor(config)` — requires at least one non-empty rule list; throws `FieldRedactorConfigurationError` otherwise
+- `FieldRedactor.createSafe(config)` — same requirement; preferred name when highlighting safe construction
 
 ## Builder API
 
@@ -112,7 +112,7 @@ type DryRunReport = {
 | Class | When |
 | --- | --- |
 | `FieldRedactorError` | Redaction failure at runtime |
-| `FieldRedactorConfigurationError` | Invalid config, `createSafe()` with no rules, `strict` warnings |
+| `FieldRedactorConfigurationError` | Invalid config, construction / `createSafe()` with no rules, `strict` warnings |
 
 ## `redactor` / `syncRedactor`
 

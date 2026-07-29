@@ -45,3 +45,15 @@ describe('FieldRedactor.createSafe', () => {
     expect(result).toEqual({ email: 'REDACTED', username: 'alice' });
   });
 });
+
+describe('FieldRedactor constructor explicit rules', () => {
+  it('throws when constructed with no rules', () => {
+    expect(() => new FieldRedactor()).toThrow(FieldRedactorConfigurationError);
+    expect(() => new FieldRedactor({})).toThrow(/requires at least one non-empty/);
+  });
+
+  it('createSafe and constructor share the same guard', () => {
+    expect(() => new FieldRedactor({})).toThrow(FieldRedactorConfigurationError);
+    expect(() => FieldRedactor.createSafe({})).toThrow(FieldRedactorConfigurationError);
+  });
+});

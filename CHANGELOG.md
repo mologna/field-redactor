@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-alpha.2] - 2026-07-29
+
+Prerelease: safe-by-default construction (option A). Not published to npm. See [docs/release-notes/v2.0.0-alpha.2.md](docs/release-notes/v2.0.0-alpha.2.md).
+
+### Changed
+
+- `new FieldRedactor()` / empty config throws `FieldRedactorConfigurationError` (same explicit-rule bar as `createSafe`).
+- `createSafe` is a thin alias of the constructor; `buildSafeRedactor()` aliases `buildRedactor()`.
+- Removed the “All values will be redacted…” empty-config warning path.
+
+### Not yet in this alpha
+
+- Dropping `@internal` root type exports.
+
 ## [2.0.0-alpha.1] - 2026-07-28
 
 First prerelease toward npm **2.0.0**: Opaque/Remove-only naming and dry-run Remove vocabulary. Not published to npm (prerelease tags are skipped by the publish workflow). See [docs/release-notes/v2.0.0-alpha.1.md](docs/release-notes/v2.0.0-alpha.1.md) and [docs/plans/2.0.md](docs/plans/2.0.md).
@@ -22,7 +36,7 @@ First prerelease toward npm **2.0.0**: Opaque/Remove-only naming and dry-run Rem
 
 ### Not yet in this alpha
 
-- Constructor requiring explicit rules (option A).
+- Constructor requiring explicit rules (option A) — landed in **2.0.0-alpha.2**.
 - Dropping `@internal` root type exports.
 
 ## [1.6.3] - 2026-07-27
@@ -233,6 +247,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[2.0.0-alpha.2]: https://github.com/mologna/field-redactor/compare/v2.0.0-alpha.1...v2.0.0-alpha.2
 [2.0.0-alpha.1]: https://github.com/mologna/field-redactor/compare/v1.6.3...v2.0.0-alpha.1
 [1.6.3]: https://github.com/mologna/field-redactor/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/mologna/field-redactor/compare/v1.6.1...v1.6.2

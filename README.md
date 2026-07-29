@@ -59,7 +59,7 @@ Do you know which JSON keys are always sensitive?
 | Remove | `removeSecretKeys` |
 | Schema | `customObjects` |
 
-Use `FieldRedactor.createSafe({ ... })` or `FieldRedactorConfigBuilder` so you never accidentally redact every field. `new FieldRedactor()` without rules still redacts all values (legacy default).
+Use `FieldRedactor.createSafe({ ... })`, `new FieldRedactor({ ... })` with explicit rules, or `FieldRedactorConfigBuilder` — empty construction throws.
 
 ## Documentation
 

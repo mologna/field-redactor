@@ -13,12 +13,16 @@ import { buildDryRunReport, EMPTY_DRY_RUN_REPORT } from '../dryrun/dryRun';
 import rfdc from 'rfdc';
 import { hasExplicitRedactionRules, validateFieldRedactorConfig } from '../config/configValidator';
 
+const EXPLICIT_RULES_REQUIRED_MESSAGE =
+  'FieldRedactor requires at least one non-empty secretKeys, deepSecretKeys, opaqueSecretKeys, removeSecretKeys, customObjects, valuePatterns, or pathRules entry.';
+
 /**
  * FieldRedactor is a highly customizable JSON object field redactor. It conditionally redacts fields based on
  * the secret key rules, path rules, value patterns, and custom object schemas in the configuration. Refer to the README.md
  * for more details.
  *
- * Defaults: `ignoreNullOrUndefined` is `true`, `ignoreBooleans` is `false`, `cloneInput` is `true`.
+ * Defaults: `ignoreBooleans` is `false`, `ignoreNullOrUndefined` is `true`, `cloneInput` is `true`.
+ * Construction requires at least one explicit redaction rule (same bar as {@link FieldRedactor.createSafe}).
  */
 export class FieldRedactor {
   private readonly deepCopy = rfdc({ proto: true, circles: true });
@@ -28,6 +32,10 @@ export class FieldRedactor {
   public readonly configWarnings: readonly string[];
 
   constructor(config?: FieldRedactorConfig) {
+    if (!hasExplicitRedactionRules(config)) {
+      throw new FieldRedactorConfigurationError(EXPLICIT_RULES_REQUIRED_MESSAGE);
+    }
+
     this.configWarnings = validateFieldRedactorConfig(config);
     for (const warning of this.configWarnings) {
       config?.onConfigWarning?.(warning);
@@ -37,18 +45,10 @@ export class FieldRedactor {
   }
 
   /**
-   * Creates a FieldRedactor that requires at least one explicit redaction rule:
-   * `secretKeys`, `deepSecretKeys`, `opaqueSecretKeys`, `removeSecretKeys`, `customObjects`,
-   * `valuePatterns`, or `pathRules`.
-   * Unlike `new FieldRedactor()`, omitting all rules does not default to redacting every value.
+   * Creates a FieldRedactor with the same explicit-rule requirement as the constructor.
+   * Prefer this name when you want the “safe construction” intent to be obvious at the call site.
    */
   public static createSafe(config: FieldRedactorConfig): FieldRedactor {
-    if (!hasExplicitRedactionRules(config)) {
-      throw new FieldRedactorConfigurationError(
-        'FieldRedactor.createSafe() requires at least one non-empty secretKeys, deepSecretKeys, opaqueSecretKeys, removeSecretKeys, customObjects, valuePatterns, or pathRules entry. Without explicit rules, new FieldRedactor() redacts all values by default.'
-      );
-    }
-
     return new FieldRedactor(config);
   }
 

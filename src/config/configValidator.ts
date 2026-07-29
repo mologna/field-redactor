@@ -1,6 +1,6 @@
 import { FieldRedactorConfigurationError } from '../errors';
 import { formatRegExp, regexIdentity } from '../util/regexUtils';
-import { hasExplicitRedactionRules, normalizeFieldRedactorConfig, REGEX_ARRAY_CONFIG_FIELDS, SECRET_REGEX_FIELDS } from './redactionRules';
+import { normalizeFieldRedactorConfig, REGEX_ARRAY_CONFIG_FIELDS, SECRET_REGEX_FIELDS } from './redactionRules';
 import { analyzeSchemaPairs, assertNoIdenticalCustomObjectSchemas } from './customObjectSchemas';
 import { CustomObject, FieldRedactorConfig } from '../types';
 
@@ -72,6 +72,7 @@ const collectSchemaWarnings = (customObjects: CustomObject[]): string[] => {
 /**
  * Returns non-fatal configuration warnings. Throws {@link FieldRedactorConfigurationError} for
  * invalid custom object duplicates, removed legacy naming keys, and when `strict` is true on any warning.
+ * Missing redaction rules are enforced by {@link FieldRedactor} construction (not as a warning here).
  */
 export const validateFieldRedactorConfig = (config?: FieldRedactorConfig): string[] => {
   assertNoRemovedLegacyNamingKeys(config);
@@ -79,9 +80,6 @@ export const validateFieldRedactorConfig = (config?: FieldRedactorConfig): strin
   assertNoIdenticalCustomObjectSchemas(resolved.customObjects);
 
   const warnings = [
-    ...(!hasExplicitRedactionRules(resolved)
-      ? ['All values will be redacted. Did you mean to set `secretKeys` or use `FieldRedactor.createSafe()`?']
-      : []),
     ...collectRegexWarnings(resolved),
     ...collectSchemaWarnings(resolved.customObjects ?? [])
   ];

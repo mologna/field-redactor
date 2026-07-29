@@ -59,7 +59,11 @@ describe('FieldRedactor dryRun', () => {
     expect(report).toEqual(EMPTY_DRY_RUN_REPORT);
   });
 
-  it('attributes deep, opaque, and default rules in pathRules', () => {
+  it('dryRun returns empty report for primitive roots', async () => {
+    await expect(redactor.dryRun('alice')).resolves.toEqual({ result: 'alice', report: EMPTY_DRY_RUN_REPORT });
+  });
+
+  it('attributes deep, opaque, and shallow rules in pathRules', () => {
     const configured = FieldRedactor.createSafe({
       deepSecretKeys: [/contactInfo/],
       opaqueSecretKeys: [/rawPayload/]
@@ -77,8 +81,12 @@ describe('FieldRedactor dryRun', () => {
       ])
     );
 
-    const { report: defaultReport } = new FieldRedactor().dryRunSync({ username: 'alice' });
-    expect(defaultReport.pathRules).toEqual([{ path: 'username', action: 'redact', rule: 'default' }]);
+    const { report: shallowReport } = FieldRedactor.createSafe({ secretKeys: [/username/] }).dryRunSync({
+      username: 'alice'
+    });
+    expect(shallowReport.pathRules).toEqual([
+      { path: 'username', action: 'redact', rule: 'shallow', pattern: '/username/' }
+    ]);
   });
 });
 

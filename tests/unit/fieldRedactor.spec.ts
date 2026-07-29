@@ -1,4 +1,4 @@
-import { FieldRedactor, FieldRedactorError } from '../../src';
+import { CustomObjectMatchType, FieldRedactor, FieldRedactorError } from '../../src';
 import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
 import { SecretManager } from '../../src/rules/secretManager';
 import { CustomObjectManager } from '../../src/rules/customObjectManager';
@@ -7,6 +7,8 @@ jest.mock('../../src/engine/primitiveRedactor');
 jest.mock('../../src/rules/secretManager');
 jest.mock('../../src/rules/customObjectManager');
 jest.mock('../../src/engine/objectRedactorTraversal');
+
+const minimalRules = { secretKeys: [/x/] };
 
 describe('FieldRedactor', () => {
   beforeEach(() => {
@@ -19,6 +21,7 @@ describe('FieldRedactor', () => {
   describe('constructor', () => {
     it('Should create the PrimitiveRedactor with the correct configuration', () => {
       const config = {
+        ...minimalRules,
         ignoreBooleans: true,
         ignoreNullOrUndefined: true,
         redactor: () => Promise.resolve('foobar')
@@ -26,11 +29,16 @@ describe('FieldRedactor', () => {
 
       new FieldRedactor(config);
       expect(PrimitiveRedactor).toHaveBeenCalledTimes(1);
-      expect(PrimitiveRedactor).toHaveBeenCalledWith(config);
+      expect(PrimitiveRedactor).toHaveBeenCalledWith({
+        ignoreBooleans: true,
+        ignoreNullOrUndefined: true,
+        redactor: config.redactor,
+        syncRedactor: undefined
+      });
     });
 
     it('Should default ignoreBooleans to false and ignoreNullOrUndefined to true', () => {
-      new FieldRedactor();
+      new FieldRedactor(minimalRules);
       expect(PrimitiveRedactor).toHaveBeenCalledTimes(1);
       expect(PrimitiveRedactor).toHaveBeenCalledWith({
         ignoreBooleans: false,
@@ -61,7 +69,7 @@ describe('FieldRedactor', () => {
 
     it('Should create the CustomObjectManager with the correct configuration', () => {
       const config = {
-        customObjects: []
+        customObjects: [{ name: CustomObjectMatchType.Ignore, value: 'name' }]
       };
 
       new FieldRedactor(config);
@@ -70,8 +78,7 @@ describe('FieldRedactor', () => {
     });
 
     it('Should create the ObjectRedactorTraversal with the correct dependency-injected inputs', () => {
-      const config = {};
-      new FieldRedactor(config);
+      new FieldRedactor(minimalRules);
       expect(ObjectRedactorTraversal).toHaveBeenCalledTimes(1);
       const mockPrimitiveRedactor = (PrimitiveRedactor as any).mock.instances[0];
       const mockSecretManager = (SecretManager as any).mock.instances[0];
@@ -85,7 +92,7 @@ describe('FieldRedactor', () => {
 
   describe('redact', () => {
     it('Should call traversal redactInPlaceAsync with a copy of the input', async () => {
-      const fieldRedactor = new FieldRedactor();
+      const fieldRedactor = new FieldRedactor(minimalRules);
       const input = { foo: 'bar' };
       await fieldRedactor.redact(input);
       const mockTraversal = (ObjectRedactorTraversal as any).mock.instances[0];
@@ -97,7 +104,7 @@ describe('FieldRedactor', () => {
     it('Should return undefined, null, Date, or non-primitive input as-is', async () => {
       const func = () => {};
       const date = new Date();
-      const fieldRedactor = new FieldRedactor();
+      const fieldRedactor = new FieldRedactor(minimalRules);
       expect(await fieldRedactor.redact(undefined)).toBe(undefined);
       expect(await fieldRedactor.redact(null)).toBe(null);
       expect(await fieldRedactor.redact(1)).toBe(1);
@@ -110,7 +117,7 @@ describe('FieldRedactor', () => {
 
     it('Should wrap any thrown exceptions in a FieldRedactorError', async () => {
       const errorText = 'foobar';
-      const fieldRedactor = new FieldRedactor();
+      const fieldRedactor = new FieldRedactor(minimalRules);
       const mockTraversal = (ObjectRedactorTraversal as any).mock.instances[0];
       mockTraversal.redactInPlaceAsync.mockImplementation(async () => {
         throw new Error(errorText);
@@ -121,7 +128,7 @@ describe('FieldRedactor', () => {
 
   describe('redactInPlace', () => {
     it('Should call traversal redactInPlaceAsync with the input', async () => {
-      const fieldRedactor = new FieldRedactor();
+      const fieldRedactor = new FieldRedactor(minimalRules);
       const input = { foo: 'bar' };
       await fieldRedactor.redactInPlace(input);
       const mockTraversal = (ObjectRedactorTraversal as any).mock.instances[0];
@@ -138,7 +145,7 @@ describe('FieldRedactor', () => {
       const boolTrue = true;
       const boolFalse = false;
       const str = 'foo';
-      const fieldRedactor = new FieldRedactor();
+      const fieldRedactor = new FieldRedactor(minimalRules);
 
       await fieldRedactor.redactInPlace(undefinedValue);
       await fieldRedactor.redactInPlace(nullValue);
@@ -161,7 +168,7 @@ describe('FieldRedactor', () => {
 
     it('Should wrap any thrown exceptions in a FieldRedactorError', async () => {
       const errorText = 'foobar';
-      const fieldRedactor = new FieldRedactor();
+      const fieldRedactor = new FieldRedactor(minimalRules);
       const mockTraversal = (ObjectRedactorTraversal as any).mock.instances[0];
       mockTraversal.redactInPlaceAsync.mockImplementation(async () => {
         throw new Error(errorText);
