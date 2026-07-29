@@ -1,6 +1,6 @@
 # Migration: npm 1.6.x → 2.0
 
-**Status:** In progress on `chore/2x-major`. Current prerelease: **2.0.0-alpha.2** (naming, dry-run rename, safe-by-default construction). `@internal` export trim remains.
+**Status:** In progress on `chore/2x-major`. Current prerelease: **2.0.0-alpha.3**. Planned breaking themes are implemented; remaining work is final **2.0.0** release assets / npm publish.
 
 **2.0.0** will be a major release: Opaque/Remove-only naming, safer construction, smaller public type exports, and dry-run vocabulary aligned with Remove. Redaction behavior for configs that already use preferred 1.6 names is unchanged once all planned breaks land.
 
@@ -10,14 +10,14 @@ Canonical checklist: [docs/plans/2.0-breaking-surface.md](../plans/2.0-breaking-
 
 ```bash
 # Prerelease from git / local package (not on npm)
-npm install field-redactor@2.0.0-alpha.2
+npm install field-redactor@2.0.0-alpha.3
 # or
-yarn add field-redactor@2.0.0-alpha.2
+yarn add field-redactor@2.0.0-alpha.3
 ```
 
-> **2.0.0-alpha.2** is not published to the npm registry. Final **2.0.0** will use a `v2.0.0` release tag.
+> **2.0.0-alpha.3** is not published to the npm registry. Final **2.0.0** will use a `v2.0.0` release tag.
 
-## Breaking changes in 2.0.0-alpha.1 / 2.0.0-alpha.2
+## Breaking changes in 2.0 (through current branch)
 
 ### 1. Rename Full / Delete → Opaque / Remove
 
@@ -72,11 +72,9 @@ new FieldRedactor({ secretKeys: [/email/i] });
 FieldRedactor.createSafe({ secretKeys: [/email/i] });
 ```
 
-## Breaking changes still planned for 2.0.0
-
 ### 4. Incidental types no longer exported from the package root
 
-These are still exported today (marked `@internal`). Planned removal from the public export surface:
+These types are no longer re-exported from `field-redactor` (still used internally):
 
 - `JsonFunction`
 - `JsonLeafValue`
@@ -106,7 +104,11 @@ Replace bare `new FieldRedactor()` with an explicit rule list or `createSafe` / 
 
 Rename `deletedPaths` → `removedPaths` and treat path-rule action `'remove'` as the remove outcome.
 
-### Step 4 — Re-validate on real payloads
+### Step 4 — Fix type imports
+
+If you imported any of the removed `@internal` types from `field-redactor`, switch to the supported public types above (or local aliases).
+
+### Step 5 — Re-validate on real payloads
 
 ```typescript
 const redactor = FieldRedactor.createSafe(yourConfig);
@@ -124,6 +126,7 @@ const { result, report } = redactor.dryRunSync(samplePayload);
 
 ## Links
 
+- [Release notes v2.0.0-alpha.3](../release-notes/v2.0.0-alpha.3.md)
 - [Release notes v2.0.0-alpha.2](../release-notes/v2.0.0-alpha.2.md)
 - [Release notes v2.0.0-alpha.1](../release-notes/v2.0.0-alpha.1.md)
 - [Breaking surface checklist](../plans/2.0-breaking-surface.md)

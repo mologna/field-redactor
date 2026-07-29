@@ -13,18 +13,12 @@ export {
   RedactionMode,
   RedactionRuleLabel,
   JsonArray,
-  JsonFunction,
-  JsonLeafValue,
   JsonObject,
   JsonPrimitive,
   JsonValue,
   RedactableInput,
-  RedactablePrimitive,
-  RedactedPrimitive,
   RedactorInput,
-  SecretSpecifierValue,
   SyncRedactor,
-  TraversableJson,
   isJsonObject
 } from './types';
 export { FieldRedactorError, FieldRedactorConfigurationError } from './errors';

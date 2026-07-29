@@ -6,6 +6,7 @@ npm versions use the same `vMAJOR.MINOR.PATCH` git tags (for example `v1.6.3`). 
 
 | Version | npm | Notes |
 | --- | --- | --- |
+| **v2.0.0-alpha.3** | No (prerelease; publish skipped) | [v2.0.0-alpha.3.md](v2.0.0-alpha.3.md) — shrink `@internal` public type exports |
 | **v2.0.0-alpha.2** | No (prerelease; publish skipped) | [v2.0.0-alpha.2.md](v2.0.0-alpha.2.md) — safe-by-default constructor (option A) |
 | **v2.0.0-alpha.1** | No (prerelease; publish skipped) | [v2.0.0-alpha.1.md](v2.0.0-alpha.1.md) — Opaque/Remove-only naming; dry-run remove vocabulary |
 | **v1.6.3** | Yes | [v1.6.3.md](v1.6.3.md) — examples, OIDC publish, legacy naming warnings |
