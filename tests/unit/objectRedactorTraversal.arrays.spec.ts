@@ -3,16 +3,16 @@ import { ObjectRedactorTraversal } from '../../src/engine/objectRedactorTraversa
 import { SecretManager } from '../../src/rules/secretManager';
 import {
   DEFAULT_REDACTED_TEXT,
-  makeObjectRedactorFixture,
-  ObjectRedactorFixture,
+  makeObjectRedactorTraversalFixture,
+  ObjectRedactorTraversalFixture,
   createTraversalFromFixture
-} from '../helpers/objectRedactorSpecUtils';
+} from '../helpers/objectRedactorTraversalSpecUtils';
 
 describe('ObjectRedactorTraversal arrays', () => {
-  let fixture: ObjectRedactorFixture;
+  let fixture: ObjectRedactorTraversalFixture;
 
   beforeEach(() => {
-    fixture = makeObjectRedactorFixture();
+    fixture = makeObjectRedactorTraversalFixture();
   });
 
 describe('Complex Object Redaction', () => {
@@ -25,7 +25,7 @@ describe('Complex Object Redaction', () => {
     ];
 
     const input = { testArray };
-    const result = await fixture.basicObjectRedactor.redactInPlace(input);
+    const result = await fixture.basicTraversal.redactInPlace(input);
     expect(result.testArray[0].foo).toBe(DEFAULT_REDACTED_TEXT);
     expect(result.testArray[0].password).toBe(DEFAULT_REDACTED_TEXT);
   });
@@ -36,7 +36,7 @@ describe('Complex Object Redaction', () => {
     };
 
     const input = { testObject };
-    const result = await fixture.basicObjectRedactor.redactInPlace(input);
+    const result = await fixture.basicTraversal.redactInPlace(input);
     expect(result.testObject.foo.length).toBe(3);
     result.testObject.foo.forEach((value: any) => {
       expect(value).toBe(DEFAULT_REDACTED_TEXT);
@@ -60,7 +60,7 @@ describe('Complex Object Redaction', () => {
     };
 
     const input = { testObject };
-    const result = await fixture.basicObjectRedactor.redactInPlace(input);
+    const result = await fixture.basicTraversal.redactInPlace(input);
     expect(result.testObject.foo.length).toBe(testObject.foo.length);
     expect(result.testObject.foo[0] as JsonObject).toEqual(
       expect.objectContaining({

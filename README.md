@@ -73,6 +73,7 @@ Use `FieldRedactor.createSafe({ ... })`, `new FieldRedactor({ ... })` with expli
 | [Configuration reference](docs/reference/config.md) | Full option table, API, presets, validation |
 | [Examples](examples/README.md) | Copy-paste recipes (logging, path rules, value patterns, dryRun) |
 | [Migration 1.5 → 1.6](docs/guides/migration-1.5-to-1.6.md) | Upgrade from 1.5.x (path rules, naming, exports) |
+| [Migration 1.6 → 2.0](docs/guides/migration-1.6-to-2.0.md) | Major upgrade (Opaque/Remove-only, safe construction, exports) |
 | [Migration 1.2 → 1.5](docs/guides/migration-1.2-to-1.5.md) | Upgrade from the previous npm line |
 | [Release notes](docs/release-notes/README.md) | Per-version notes for every published tag |
 | [Contributing](CONTRIBUTING.md) | Layout, precedence, naming, and local workflow |

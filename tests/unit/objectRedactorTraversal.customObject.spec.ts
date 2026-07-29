@@ -5,16 +5,16 @@ import { SecretManager } from '../../src/rules/secretManager';
 import { CustomObjectManager } from '../../src/rules/customObjectManager';
 import {
   DEFAULT_REDACTED_TEXT,
-  makeObjectRedactorFixture,
-  ObjectRedactorFixture,
+  makeObjectRedactorTraversalFixture,
+  ObjectRedactorTraversalFixture,
   createTraversalFromFixture
-} from '../helpers/objectRedactorSpecUtils';
+} from '../helpers/objectRedactorTraversalSpecUtils';
 
 describe('ObjectRedactorTraversal custom objects', () => {
-  let fixture: ObjectRedactorFixture;
+  let fixture: ObjectRedactorTraversalFixture;
 
   beforeEach(() => {
-    fixture = makeObjectRedactorFixture();
+    fixture = makeObjectRedactorTraversalFixture();
   });
 
 describe('Custom Object Redaction', () => {

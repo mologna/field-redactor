@@ -9,7 +9,7 @@ import { buildFieldRedactorDeps, FieldRedactorDeps } from '../../src/api/fieldRe
 
 export { EMPTY_VALUE_PATTERN_MATCHER, EMPTY_PATH_RULE_MATCHER };
 
-export type ObjectRedactorTestOptions = {
+export type ObjectRedactorTraversalTestOptions = {
   secretManagerConfig?: SecretManagerConfig;
   valuePatternMatcher?: ValuePatternMatcher;
   pathRuleMatcher?: PathRuleMatcher;
@@ -18,7 +18,7 @@ export type ObjectRedactorTestOptions = {
   customObjectManager?: CustomObjectManager;
 };
 
-const buildTestDeps = (options: ObjectRedactorTestOptions = {}): FieldRedactorDeps =>
+const buildTestDeps = (options: ObjectRedactorTraversalTestOptions = {}): FieldRedactorDeps =>
   buildFieldRedactorDeps({
     secretKeys: options.secretManagerConfig?.secretKeys,
     deepSecretKeys: options.secretManagerConfig?.deepSecretKeys,
@@ -29,7 +29,7 @@ const buildTestDeps = (options: ObjectRedactorTestOptions = {}): FieldRedactorDe
   });
 
 const buildTraversal = (
-  options: ObjectRedactorTestOptions,
+  options: ObjectRedactorTraversalTestOptions,
   deps: FieldRedactorDeps
 ): ObjectRedactorTraversal =>
   new ObjectRedactorTraversal(
@@ -40,7 +40,7 @@ const buildTraversal = (
     options.pathRuleMatcher ?? deps.pathRuleMatcher
   );
 
-export const createTraversal = (options: ObjectRedactorTestOptions = {}): ObjectRedactorTraversal => {
+export const createTraversal = (options: ObjectRedactorTraversalTestOptions = {}): ObjectRedactorTraversal => {
   const deps = buildTestDeps(options);
   if (
     !options.primitiveRedactor &&

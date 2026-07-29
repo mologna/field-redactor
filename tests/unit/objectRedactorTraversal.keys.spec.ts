@@ -7,29 +7,29 @@ import { PrimitiveRedactor } from '../../src/engine/primitiveRedactor';
 import {
   DEFAULT_REDACTED_TEXT,
   deepCopy,
-  makeObjectRedactorFixture,
-  ObjectRedactorFixture,
+  makeObjectRedactorTraversalFixture,
+  ObjectRedactorTraversalFixture,
   redactCopy,
   validateRedactorOutput,
   createTraversalFromFixture
-} from '../helpers/objectRedactorSpecUtils';
+} from '../helpers/objectRedactorTraversalSpecUtils';
 
 describe('ObjectRedactorTraversal keys', () => {
-  let fixture: ObjectRedactorFixture;
+  let fixture: ObjectRedactorTraversalFixture;
 
   beforeEach(() => {
-    fixture = makeObjectRedactorFixture();
+    fixture = makeObjectRedactorTraversalFixture();
   });
 
 describe('Basic/Primitive Secret Redaction', () => {
   it('Should return a redacted copy of the input JSON for all value types', async () => {
-    const copy = redactCopy(fixture.basicObjectRedactor, validInputWithAllTypes);
+    const copy = redactCopy(fixture.basicTraversal, validInputWithAllTypes);
     expect(copy).not.toBe(validInputWithAllTypes);
     validateRedactorOutput(validInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT);
   });
 
   it('Should be able to handle nested JSON objects of various types, sizes, and lengths', async () => {
-    const copy = redactCopy(fixture.basicObjectRedactor, validNestedInputWithAllTypes);
+    const copy = redactCopy(fixture.basicTraversal, validNestedInputWithAllTypes);
     expect(copy).not.toBe(validNestedInputWithAllTypes);
     validateRedactorOutput(validNestedInputWithAllTypes, copy, DEFAULT_REDACTED_TEXT);
   });
@@ -38,7 +38,7 @@ describe('Basic/Primitive Secret Redaction', () => {
     const testArray = ['foo', new Date(), 12, 123.45, true];
 
     const input = { testArray };
-    await fixture.basicObjectRedactor.redactInPlace(input);
+    await fixture.basicTraversal.redactInPlace(input);
     input.testArray.forEach((value: any) => {
       expect(value).toBe(DEFAULT_REDACTED_TEXT);
     });
@@ -47,7 +47,7 @@ describe('Basic/Primitive Secret Redaction', () => {
   it('Skips nulls and undefined when included in an array', async () => {
     const testArray = [null, undefined];
     const input = { testArray };
-    await fixture.basicObjectRedactor.redactInPlace(input);
+    await fixture.basicTraversal.redactInPlace(input);
     input.testArray.forEach((value: any, index: number) => {
       expect(value).toBe(testArray[index]);
     });

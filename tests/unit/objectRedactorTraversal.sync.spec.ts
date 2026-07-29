@@ -1,23 +1,23 @@
 import { validNestedInputWithAllTypes } from '../mocks/inputMocks';
 import {
   deepCopy,
-  makeObjectRedactorFixture,
-  ObjectRedactorFixture
-} from '../helpers/objectRedactorSpecUtils';
+  makeObjectRedactorTraversalFixture,
+  ObjectRedactorTraversalFixture
+} from '../helpers/objectRedactorTraversalSpecUtils';
 
 describe('ObjectRedactorTraversal sync traversal', () => {
-  let fixture: ObjectRedactorFixture;
+  let fixture: ObjectRedactorTraversalFixture;
 
   beforeEach(() => {
-    fixture = makeObjectRedactorFixture();
+    fixture = makeObjectRedactorTraversalFixture();
   });
 
   it('redactInPlaceSync produces the same result as redactInPlace for default configuration', async () => {
     const asyncInput = deepCopy(validNestedInputWithAllTypes);
     const syncInput = deepCopy(validNestedInputWithAllTypes);
 
-    await fixture.basicObjectRedactor.redactInPlace(asyncInput);
-    fixture.basicObjectRedactor.redactInPlace(syncInput);
+    await fixture.basicTraversal.redactInPlace(asyncInput);
+    fixture.basicTraversal.redactInPlace(syncInput);
 
     expect(syncInput).toEqual(asyncInput);
   });
@@ -26,8 +26,8 @@ describe('ObjectRedactorTraversal sync traversal', () => {
     const cowInput = deepCopy(validNestedInputWithAllTypes);
     const syncInput = deepCopy(validNestedInputWithAllTypes);
 
-    const cowResult = fixture.basicObjectRedactor.redactCopyOnWrite(cowInput);
-    fixture.basicObjectRedactor.redactInPlace(syncInput);
+    const cowResult = fixture.basicTraversal.redactCopyOnWrite(cowInput);
+    fixture.basicTraversal.redactInPlace(syncInput);
 
     expect(cowResult).toEqual(syncInput);
   });

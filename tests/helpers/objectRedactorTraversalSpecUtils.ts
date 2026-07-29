@@ -38,16 +38,18 @@ export const validateRedactorOutput = (
   }
 };
 
-export type ObjectRedactorFixture = {
+export type ObjectRedactorTraversalFixture = {
   primitiveRedactor: PrimitiveRedactor;
   secretManager: SecretManager;
   customObjectManager: CustomObjectManager;
-  basicObjectRedactor: ObjectRedactorTraversal;
-  makeRedactor: (secretManagerConfig?: SecretManagerConfig) => ObjectRedactorTraversal;
+  basicTraversal: ObjectRedactorTraversal;
+  makeTraversal: (secretManagerConfig?: SecretManagerConfig) => ObjectRedactorTraversal;
 };
 
 /** Build traversal from the fixture's current managers (after mutating `fixture.secretManager`, etc.). */
-export const createTraversalFromFixture = (fixture: ObjectRedactorFixture): ObjectRedactorTraversal =>
+export const createTraversalFromFixture = (
+  fixture: ObjectRedactorTraversalFixture
+): ObjectRedactorTraversal =>
   new ObjectRedactorTraversal(
     fixture.primitiveRedactor,
     fixture.secretManager,
@@ -56,18 +58,18 @@ export const createTraversalFromFixture = (fixture: ObjectRedactorFixture): Obje
     EMPTY_PATH_RULE_MATCHER
   );
 
-export const makeObjectRedactorFixture = (): ObjectRedactorFixture => {
+export const makeObjectRedactorTraversalFixture = (): ObjectRedactorTraversalFixture => {
   const primitiveRedactor = new PrimitiveRedactor({ ignoreBooleans: false, ignoreNullOrUndefined: true });
   const secretManager = new SecretManager({});
   const customObjectManager = new CustomObjectManager();
-  const makeRedactor = (secretManagerConfig: SecretManagerConfig = {}) =>
+  const makeTraversal = (secretManagerConfig: SecretManagerConfig = {}) =>
     createTraversal({ secretManagerConfig, primitiveRedactor, customObjectManager });
 
   return {
     primitiveRedactor,
     secretManager,
     customObjectManager,
-    basicObjectRedactor: makeRedactor(),
-    makeRedactor
+    basicTraversal: makeTraversal(),
+    makeTraversal
   };
 };

@@ -1,23 +1,29 @@
 # Migration: npm 1.6.x → 2.0
 
-**Status:** In progress on `chore/2x-major`. Current prerelease: **2.0.0-alpha.3**. Planned breaking themes are implemented; remaining work is final **2.0.0** release assets / npm publish.
+**Status:** Breaking surface finalized through **2.0.0-alpha.3**; housekeeping in **2.0.0-alpha.4**. Install the latest prerelease until **2.0.0** is tagged and published. Cumulative notes: [v2.0.0.md](../release-notes/v2.0.0.md).
 
-**2.0.0** will be a major release: Opaque/Remove-only naming, safer construction, smaller public type exports, and dry-run vocabulary aligned with Remove. Redaction behavior for configs that already use preferred 1.6 names is unchanged once all planned breaks land.
+**2.0.0** is a major release: Opaque/Remove-only naming, safer construction, smaller public type exports, and dry-run vocabulary aligned with Remove. Redaction behavior for configs that already use preferred 1.6 names is unchanged.
 
 Canonical checklist: [docs/plans/2.0-breaking-surface.md](../plans/2.0-breaking-surface.md). Plan: [docs/plans/2.0.md](../plans/2.0.md).
 
 ## Install
 
 ```bash
-# Prerelease from git / local package (not on npm)
-npm install field-redactor@2.0.0-alpha.3
+# Current prerelease (git / local; not on npm)
+npm install field-redactor@2.0.0-alpha.4
 # or
-yarn add field-redactor@2.0.0-alpha.3
+yarn add field-redactor@2.0.0-alpha.4
 ```
 
-> **2.0.0-alpha.3** is not published to the npm registry. Final **2.0.0** will use a `v2.0.0` release tag.
+After the release cut:
 
-## Breaking changes in 2.0 (through current branch)
+```bash
+npm install field-redactor@2.0.0
+```
+
+> Prerelease tags (`v2.0.0-alpha.*`) do not publish to npm. Final **2.0.0** uses tag `v2.0.0`.
+
+## Breaking changes
 
 ### 1. Rename Full / Delete → Opaque / Remove
 
@@ -29,7 +35,7 @@ yarn add field-redactor@2.0.0-alpha.3
 | `CustomObjectMatchType.Delete` | `CustomObjectMatchType.Remove` |
 | Builder `.delete()` | `.remove()` |
 
-Legacy aliases are **removed** (not merely deprecated). Passing `fullSecretKeys` / `deleteSecretKeys` fails validation with a clear configuration error.
+Legacy aliases are **removed**. Passing `fullSecretKeys` / `deleteSecretKeys` fails validation with a clear configuration error.
 
 ```typescript
 // Before
@@ -126,6 +132,8 @@ const { result, report } = redactor.dryRunSync(samplePayload);
 
 ## Links
 
+- [Release notes v2.0.0](../release-notes/v2.0.0.md) (pending publish cut)
+- [Release notes v2.0.0-alpha.4](../release-notes/v2.0.0-alpha.4.md)
 - [Release notes v2.0.0-alpha.3](../release-notes/v2.0.0-alpha.3.md)
 - [Release notes v2.0.0-alpha.2](../release-notes/v2.0.0-alpha.2.md)
 - [Release notes v2.0.0-alpha.1](../release-notes/v2.0.0-alpha.1.md)

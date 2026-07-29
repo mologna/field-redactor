@@ -6,6 +6,8 @@ npm versions use the same `vMAJOR.MINOR.PATCH` git tags (for example `v1.6.3`). 
 
 | Version | npm | Notes |
 | --- | --- | --- |
+| **v2.0.0** | Pending | [v2.0.0.md](v2.0.0.md) — major: Opaque/Remove-only, safe construction, export trim (content ready; tag/publish cut remaining) |
+| **v2.0.0-alpha.4** | No (prerelease; publish skipped) | [v2.0.0-alpha.4.md](v2.0.0-alpha.4.md) — housekeeping (test renames, migration/notes finalize) |
 | **v2.0.0-alpha.3** | No (prerelease; publish skipped) | [v2.0.0-alpha.3.md](v2.0.0-alpha.3.md) — shrink `@internal` public type exports |
 | **v2.0.0-alpha.2** | No (prerelease; publish skipped) | [v2.0.0-alpha.2.md](v2.0.0-alpha.2.md) — safe-by-default constructor (option A) |
 | **v2.0.0-alpha.1** | No (prerelease; publish skipped) | [v2.0.0-alpha.1.md](v2.0.0-alpha.1.md) — Opaque/Remove-only naming; dry-run remove vocabulary |
@@ -23,11 +25,13 @@ npm versions use the same `vMAJOR.MINOR.PATCH` git tags (for example `v1.6.3`). 
 
 ## Migration
 
-- [1.6.x → 2.0](../guides/migration-1.6-to-2.0.md) — draft major upgrade (in progress; see alpha notes)
+- [1.6.x → 2.0](../guides/migration-1.6-to-2.0.md) — major upgrade (breaking surface finalized through alpha.3; housekeeping in alpha.4)
 - [1.5.x → 1.6.x](../guides/migration-1.5-to-1.6.md) — path rules, naming aliases, package exports
 - [1.2.x → 1.5.0](../guides/migration-1.2-to-1.5.md) — upgrade path from the previous npm line
 
 ## Internal milestones (removed)
+
+> **Do not confuse with npm 2.0.0.** Files named `2.0.0.md` … `2.5.1.md` document **historical internal git tags** that were never published to npm and were folded into **v1.3.0** / **v1.5.0**. The npm major is tracked as **[v2.0.0.md](v2.0.0.md)** (and prereleases `v2.0.0-alpha.*`).
 
 Git tags `2.0.0`–`2.5.1` tracked incremental development toward **v1.3.0** and **v1.5.0**. They were never published to npm and are removed from the repository. Their notes remain for archaeology:
 
