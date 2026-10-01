@@ -114,7 +114,7 @@ export type PathRule = {
 export type PathRuleConfig = {
   /**
    * Path-based rules apply a redaction mode at an exact JSON path (for example `metadata.*.value`).
-   * Precedence: schema → path rule → key-regex rules → value patterns.
+   * Precedence: Schema → path rule → Opaque → Deep → Remove → Shallow → Value-pattern → default.
    */
   pathRules?: PathRule[];
 };

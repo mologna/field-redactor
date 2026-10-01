@@ -1,6 +1,6 @@
 # Migration: npm 1.6.x → 2.0
 
-**Status:** Breaking surface finalized through **2.0.0-alpha.3**; housekeeping in **2.0.0-alpha.4**. Install the latest prerelease until **2.0.0** is tagged and published. Cumulative notes: [v2.0.0.md](../release-notes/v2.0.0.md).
+**Status:** **2.0.0** package cut on this branch. Publish to npm when tag `v2.0.0` is pushed. Cumulative notes: [v2.0.0.md](../release-notes/v2.0.0.md).
 
 **2.0.0** is a major release: Opaque/Remove-only naming, safer construction, smaller public type exports, and dry-run vocabulary aligned with Remove. Redaction behavior for configs that already use preferred 1.6 names is unchanged.
 
@@ -9,20 +9,12 @@ Canonical checklist: [docs/plans/2.0-breaking-surface.md](../plans/2.0-breaking-
 ## Install
 
 ```bash
-# Current prerelease (git / local; not on npm)
-npm install field-redactor@2.0.0-alpha.4
-# or
-yarn add field-redactor@2.0.0-alpha.4
-```
-
-After the release cut:
-
-```bash
 npm install field-redactor@2.0.0
+# or
+yarn add field-redactor@2.0.0
 ```
 
-> Prerelease tags (`v2.0.0-alpha.*`) do not publish to npm. Final **2.0.0** uses tag `v2.0.0`.
-
+> Until `v2.0.0` is tagged and the publish workflow completes, the npm registry may still show **1.6.3**. Install from this branch or wait for the tag.
 ## Breaking changes
 
 ### 1. Rename Full / Delete → Opaque / Remove
@@ -122,6 +114,10 @@ const { result, report } = redactor.dryRunSync(samplePayload);
 // Review report.redactedPaths, report.removedPaths, report.matchedSchemas, report.pathRules
 ```
 
+## Behavior to be aware of (unchanged from 1.6)
+
+A config with **only** `customObjects` still shallow-redacts unmatched keys (legacy SecretManager default). Pair schemas with explicit key rules, or set `secretKeys: []`. See [Anti-patterns](anti-patterns.md#schema-only-config-still-redacts-unmatched-keys).
+
 ## No action required (when already on preferred 1.6 APIs)
 
 - `secretKeys` / `deepSecretKeys` / `opaqueSecretKeys` / `removeSecretKeys`
@@ -132,11 +128,11 @@ const { result, report } = redactor.dryRunSync(samplePayload);
 
 ## Links
 
-- [Release notes v2.0.0](../release-notes/v2.0.0.md) (pending publish cut)
-- [Release notes v2.0.0-alpha.4](../release-notes/v2.0.0-alpha.4.md)
-- [Release notes v2.0.0-alpha.3](../release-notes/v2.0.0-alpha.3.md)
-- [Release notes v2.0.0-alpha.2](../release-notes/v2.0.0-alpha.2.md)
-- [Release notes v2.0.0-alpha.1](../release-notes/v2.0.0-alpha.1.md)
+- [Release notes v2.0.0](../release-notes/v2.0.0.md)
+- [Release notes v2.0.0-alpha.4](../release-notes/v2.0.0-alpha.4.md) (prerelease)
+- [Release notes v2.0.0-alpha.3](../release-notes/v2.0.0-alpha.3.md) (prerelease)
+- [Release notes v2.0.0-alpha.2](../release-notes/v2.0.0-alpha.2.md) (prerelease)
+- [Release notes v2.0.0-alpha.1](../release-notes/v2.0.0-alpha.1.md) (prerelease)
 - [Breaking surface checklist](../plans/2.0-breaking-surface.md)
 - [2.0 plan](../plans/2.0.md)
 - [Migration 1.5 → 1.6](migration-1.5-to-1.6.md)

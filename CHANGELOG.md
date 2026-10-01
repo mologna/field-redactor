@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-08-31
+
+First published major after **1.6.x**. Opaque/Remove-only naming, safe-by-default construction, smaller public type exports, and dry-run Remove vocabulary. See [docs/release-notes/v2.0.0.md](docs/release-notes/v2.0.0.md) and [docs/guides/migration-1.6-to-2.0.md](docs/guides/migration-1.6-to-2.0.md).
+
+### Removed
+
+- Config aliases `fullSecretKeys` / `deleteSecretKeys` (use `opaqueSecretKeys` / `removeSecretKeys`; legacy keys throw at validation).
+- `CustomObjectMatchType.Full` / `.Delete` (use `.Opaque` / `.Remove`).
+- Builder `.delete()` (use `.remove()`).
+- Package-root re-exports of incidental `@internal` types: `JsonFunction`, `JsonLeafValue`, `RedactablePrimitive`, `RedactedPrimitive`, `SecretSpecifierValue`, `TraversableJson`.
+
+### Changed
+
+- Dry-run: `deletedPaths` → `removedPaths`; `pathRules[].action` `'delete'` → `'remove'`.
+- `new FieldRedactor()` / empty config throws `FieldRedactorConfigurationError` (same explicit-rule bar as `createSafe`).
+- `createSafe` is a thin alias of the constructor; `buildSafeRedactor()` aliases `buildRedactor()`.
+- Removed the “All values will be redacted…” empty-config warning path.
+- Publish workflow only publishes tags matching `^v[0-9]+\.[0-9]+\.[0-9]+$` (prerelease tags are skipped).
+- Docs: aligned precedence (includes path rules); documented schema-only configs still shallow-redact unmatched keys.
+
+### Prereleases
+
+Development tags `v2.0.0-alpha.1`–`v2.0.0-alpha.4` tracked the breaking surface on `chore/2x-major` before this cut.
+
 ## [2.0.0-alpha.4] - 2026-07-29
 
 Prerelease: 2.0 housekeeping — test renames, finalized migration/release notes, archaeology labeling. Not published to npm. See [docs/release-notes/v2.0.0-alpha.4.md](docs/release-notes/v2.0.0-alpha.4.md).
@@ -269,6 +293,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[2.0.0]: https://github.com/mologna/field-redactor/compare/v1.6.3...v2.0.0
 [2.0.0-alpha.4]: https://github.com/mologna/field-redactor/compare/v2.0.0-alpha.3...v2.0.0-alpha.4
 [2.0.0-alpha.3]: https://github.com/mologna/field-redactor/compare/v2.0.0-alpha.2...v2.0.0-alpha.3
 [2.0.0-alpha.2]: https://github.com/mologna/field-redactor/compare/v2.0.0-alpha.1...v2.0.0-alpha.2

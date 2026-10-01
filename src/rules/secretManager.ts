@@ -6,8 +6,10 @@ export type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
 const KEY_RULE_PRECEDENCE: KeyRule[] = ['remove', 'opaque', 'deep', 'shallow'];
 
 /**
- * Utility class for managing secrets and determining if a given value is a secret of any type. If no secrets of
- * any type are provided in the configuration then all values are considered secrets (but not deep or opaque secrets).
+ * Key-regex matcher. When `secretKeys` is omitted (`undefined`) and no opaque/deep/remove lists
+ * force it to `[]`, every key is treated as a shallow secret. {@link FieldRedactor} still requires
+ * at least one explicit rule list; a schemas-only config can leave `secretKeys` undefined so
+ * unmatched keys are still shallow-redacted.
  */
 export class SecretManager {
   private secretKeys?: RegExp[];
@@ -31,8 +33,7 @@ export class SecretManager {
   }
 
   /**
-   * Determines if the given key is a secret. If no secrets of any type are provided then this function
-   * always returns true.
+   * True when the key matches `secretKeys`, or when `secretKeys` is `undefined` (all-keys shallow default).
    */
   public isSecretKey(key: SecretSpecifierValue): boolean {
     if (!this.secretKeys) {

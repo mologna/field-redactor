@@ -79,7 +79,8 @@ export const resolvePathDisposition = (
 
 /**
  * Single source of truth for field-level rule precedence shared by traversal and dry-run attribution.
- * Precedence: schema → path rule → enclosing opaque/deep key → leaf key rule → value pattern → default.
+ * Precedence: Schema → path rule → Opaque → Deep → Remove → Shallow → Value-pattern → default
+ * (enclosing opaque/deep keys apply before the leaf key rule).
  */
 export class RuleResolver {
   constructor(

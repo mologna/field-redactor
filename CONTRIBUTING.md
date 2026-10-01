@@ -6,10 +6,11 @@ This repository publishes the npm package **`field-redactor`**. The local folder
 
 | Channel | Meaning |
 |---------|---------|
-| npm `1.x` | Public releases (current line: `1.6.x`) |
-| Internal `2.x` tags / release notes | Historical development tags; not the npm line of record |
+| npm `2.x` | Current major (`2.0.0` on this branch; npm registry remains `1.6.3` until `v2.0.0` is tagged) |
+| npm `1.x` | Previous public line (`1.6.x`) |
+| Internal `2.x` tags / release notes | Historical development tags toward 1.3 / 1.5; **not** npm 2.0 (see [release-notes index](docs/release-notes/README.md#internal-milestones-removed)) |
 
-Prefer npm version numbers in user-facing docs. Internal release notes under `docs/release-notes/` may still mention older `2.x` tags for chronology.
+Prefer npm version numbers in user-facing docs. Files named `docs/release-notes/2.0.0.md` … `2.5.1.md` are archaeology; the npm major is [v2.0.0.md](docs/release-notes/v2.0.0.md).
 
 ## Layout
 
@@ -32,7 +33,7 @@ Public consumers should import from `field-redactor` (see `package.json` `export
 
 Single source of truth: **`RuleResolver`** (`src/rules/ruleResolver.ts`).
 
-Order: **schema → path rule → enclosing opaque/deep key → leaf key rule → value pattern → default**.
+Order: **Schema → path rule → Opaque → Deep → Remove → Shallow → Value-pattern → default** (enclosing opaque/deep keys apply before the leaf key rule).
 
 Traversal and dry-run attribution both use this module. When adding a rule type, update `RuleResolver` and add a contract case in `tests/unit/ruleResolver.contract.spec.ts`.
 
@@ -78,8 +79,8 @@ Prerelease-style tags such as `v2.0.0-alpha.1` still match the workflow’s broa
 4. Save. After a successful OIDC publish, you can optionally restrict token-based publishing in **Publishing access**.
 
 ```bash
-git tag -a v1.6.3 -m "v1.6.3"
-git push origin v1.6.3
+git tag -a v2.0.0 -m "v2.0.0"
+git push origin v2.0.0
 ```
 
 ## Pull requests

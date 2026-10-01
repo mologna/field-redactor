@@ -49,7 +49,7 @@ Do you know which JSON keys are always sensitive?
   └─ only sometimes → shaped objects like { name, value }? → Schema rules (see metadata guide)
 ```
 
-**Precedence:** Schema → Opaque → Deep → Remove → Shallow → Value-pattern
+**Precedence:** Schema → path rule → Opaque → Deep → Remove → Shallow → Value-pattern → default
 
 | Concept | Config field |
 | --- | --- |

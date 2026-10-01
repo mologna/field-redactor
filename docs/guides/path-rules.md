@@ -23,7 +23,7 @@ const redactor = FieldRedactorConfigBuilder.create()
 | `remove` | Delete the field |
 | `pass` | Leave the field and subtree unchanged |
 
-Path rules take precedence over key-regex rules but not over schema (`customObjects`) matches.
+Path rules take precedence over key-regex rules but not over schema (`customObjects`) matches. Full order: Schema → path rule → Opaque → Deep → Remove → Shallow → Value-pattern → default.
 
 ## Allowlist keys (`passKeys`)
 

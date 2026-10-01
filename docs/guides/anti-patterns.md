@@ -18,9 +18,28 @@ const redactor = FieldRedactor.createSafe({ secretKeys: [/email/i] });
 const redactor = new FieldRedactor({ secretKeys: [/email/i] });
 ```
 
+## Schema-only config still redacts unmatched keys
+
+**Problem:** `customObjects` counts as an explicit rule, so construction succeeds — but omitting key-regex lists leaves the legacy “all unmatched keys are shallow secrets” behavior. Fields that do not match a schema are still redacted.
+
+**Instead:** Pair schemas with explicit `secretKeys` (or other key lists), or set `secretKeys: []` so only schema / path / value-pattern rules apply.
+
+```typescript
+// Avoid — username and other unmatched keys are still redacted
+FieldRedactor.createSafe({
+  customObjects: [{ name: CustomObjectMatchType.Ignore, value: 'name' }]
+});
+
+// Prefer — only schema matches and listed keys change
+FieldRedactor.createSafe({
+  secretKeys: [/email/i],
+  customObjects: [{ name: CustomObjectMatchType.Ignore, value: 'name' }]
+});
+```
+
 ## Same regex in multiple key groups
 
-**Problem:** `/email/i` in both `secretKeys` and `deepSecretKeys` is confusing — only the higher-precedence group applies (Opaque → Deep → Remove → Shallow).
+**Problem:** `/email/i` in both `secretKeys` and `deepSecretKeys` is confusing — only the higher-precedence group applies (Schema → path rule → Opaque → Deep → Remove → Shallow).
 
 **Instead:** Pick one mode per pattern. Use `dryRun()` and inspect `report.pathRules` to confirm which rule fired.
 

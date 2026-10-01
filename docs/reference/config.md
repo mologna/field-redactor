@@ -10,7 +10,7 @@
 | **Deep** | `deepSecretKeys` | `RegExp[]` | `[]` | Deeply redact all primitives under matching keys |
 | **Opaque** | `opaqueSecretKeys` | `RegExp[]` | `[]` | Stringify and redact entire values |
 | **Remove** | `removeSecretKeys` | `RegExp[]` | `[]` | Delete matching keys |
-| **Schema** | `customObjects` | `CustomObject[]` | `[]` | Per-shape rules; see [metadata guide](../guides/metadata-redaction.md) |
+| **Schema** | `customObjects` | `CustomObject[]` | `[]` | Per-shape rules; see [metadata guide](../guides/metadata-redaction.md). Schema-only config still shallow-redacts unmatched keys |
 | **Value-pattern** | `valuePatterns` | `RegExp[]` | `[]` | Opt-in: redact scalars whose string form matches a pattern |
 | **Path rule** | `pathRules` | `PathRule[]` | `[]` | Apply a mode at a JSON path (`metadata.*.value`) |
 | **Allowlist** | `passKeys` | `RegExp[]` | `[]` | Never redact matching key names under deep parents |
@@ -58,7 +58,7 @@ const redactor = FieldRedactorConfigBuilder.create()
 
 Methods: `shallow`, `deep`, `opaque`, `remove`, `schema`, `valuePattern`, `pathRule`, `passKey`, `usePreset`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
 
-**Precedence:** Schema → path rule → opaque → deep → remove → shallow → value-pattern → default.
+**Precedence:** Schema → path rule → Opaque → Deep → Remove → Shallow → Value-pattern → default.
 
 ## Configuration validation
 
@@ -68,7 +68,7 @@ import { validateFieldRedactorConfig } from 'field-redactor';
 const warnings = validateFieldRedactorConfig({ secretKeys: [/email/] });
 ```
 
-Warnings include: no rules configured, duplicate regex across key groups, global regex flag, missing schema sibling keys, overlapping schemas. Set `strict: true` to throw on warnings.
+Warnings include: duplicate regex across key groups, global regex flag, missing schema sibling keys, overlapping schemas. Missing redaction rules throw at construction (`FieldRedactorConfigurationError`); they are not a warning. Set `strict: true` to throw on warnings.
 
 ## Presets
 
@@ -131,6 +131,8 @@ const fieldRedactor = new FieldRedactor({ redactor, secretKeys: [/email/] });
 ## Object schemas (`customObjects`)
 
 Highest precedence. See [Metadata redaction](../guides/metadata-redaction.md) for sibling-key patterns and [Secret key modes](../guides/secret-key-modes.md) for key-based modes.
+
+A config with only `customObjects` (no `secretKeys` / `deepSecretKeys` / `opaqueSecretKeys` / `removeSecretKeys` / `valuePatterns` / `pathRules`) still **shallow-redacts every unmatched key**. Pair schemas with explicit key rules, or pass `secretKeys: []` if you want only schema matches to change.
 
 ## Guides
 

@@ -18,6 +18,8 @@ An object matches a `CustomObject` schema when it contains **every key defined i
 
 When multiple schemas match, the one with the **most keys** wins.
 
+Schema-only config (`customObjects` with no key-regex lists) still **shallow-redacts keys that do not match a schema**. Combine schemas with `secretKeys` (or pass `secretKeys: []`) if you want unmatched fields left alone. See [Anti-patterns](anti-patterns.md#schema-only-config-still-redacts-unmatched-keys).
+
 ```typescript
 import { CustomObject, CustomObjectMatchType } from 'field-redactor';
 
