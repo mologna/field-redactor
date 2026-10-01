@@ -4,9 +4,11 @@
 
 npm versions use the same `vMAJOR.MINOR.PATCH` git tags (for example `v1.6.3`). Pushing a tag matching `^v[0-9]+\.[0-9]+\.[0-9]+$` runs [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml) (build, test, `npm publish` via OIDC trusted publishing). Tags with a prerelease suffix (for example `v2.0.0-alpha.1`) do not publish. Configure a Trusted Publisher on npm for `mologna/field-redactor` with workflow filename `publish.yml` — see [CONTRIBUTING.md](../../CONTRIBUTING.md#publishing).
 
+GitHub Releases exist for every `v*` tag (alphas marked pre-release). Bodies mirror these notes with absolute links into the tagged tree.
+
 | Version | npm | Notes |
 | --- | --- | --- |
-| **v2.0.0** | After tag `v2.0.0` | [v2.0.0.md](v2.0.0.md) — major: Opaque/Remove-only, safe construction, export trim (`package.json` is `2.0.0`; publish on tag) |
+| **v2.0.0** | Yes | [v2.0.0.md](v2.0.0.md) — major: Opaque/Remove-only, safe construction, export trim · [GitHub Release](https://github.com/mologna/field-redactor/releases/tag/v2.0.0) |
 | **v2.0.0-alpha.4** | No (prerelease; publish skipped) | [v2.0.0-alpha.4.md](v2.0.0-alpha.4.md) — housekeeping (test renames, migration/notes finalize) |
 | **v2.0.0-alpha.3** | No (prerelease; publish skipped) | [v2.0.0-alpha.3.md](v2.0.0-alpha.3.md) — shrink `@internal` public type exports |
 | **v2.0.0-alpha.2** | No (prerelease; publish skipped) | [v2.0.0-alpha.2.md](v2.0.0-alpha.2.md) — safe-by-default constructor (option A) |

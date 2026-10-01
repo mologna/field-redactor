@@ -1,6 +1,6 @@
 # Migration: npm 1.6.x → 2.0
 
-**Status:** **2.0.0** package cut on this branch. Publish to npm when tag `v2.0.0` is pushed. Cumulative notes: [v2.0.0.md](../release-notes/v2.0.0.md).
+**Status:** **2.0.0** released. Cumulative notes: [v2.0.0.md](../release-notes/v2.0.0.md) · [GitHub Release](https://github.com/mologna/field-redactor/releases/tag/v2.0.0).
 
 **2.0.0** is a major release: Opaque/Remove-only naming, safer construction, smaller public type exports, and dry-run vocabulary aligned with Remove. Redaction behavior for configs that already use preferred 1.6 names is unchanged.
 
@@ -13,8 +13,6 @@ npm install field-redactor@2.0.0
 # or
 yarn add field-redactor@2.0.0
 ```
-
-> Until `v2.0.0` is tagged and the publish workflow completes, the npm registry may still show **1.6.3**. Install from this branch or wait for the tag.
 ## Breaking changes
 
 ### 1. Rename Full / Delete → Opaque / Remove
