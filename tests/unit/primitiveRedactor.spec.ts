@@ -111,4 +111,39 @@ describe('PrimitiveRedactor', () => {
     expect(redactor.redactValueSync('')).toBe(DEFAULT_REDACTED_TEXT);
     expect(redactor.redactValueSync(0)).toBe(DEFAULT_REDACTED_TEXT);
   });
+
+  it('Coerces numbers and booleans to strings for custom redactors', async () => {
+    const seen: unknown[] = [];
+    const redactor = new PrimitiveRedactor({
+      syncRedactor: (val) => {
+        seen.push(val);
+        return typeof val === 'string' ? `REDACTED:${val}` : 'UNEXPECTED';
+      },
+      ignoreBooleans: false,
+      ignoreNullOrUndefined: false
+    });
+
+    expect(redactor.redactValueSync(1234567890)).toBe('REDACTED:1234567890');
+    expect(redactor.redactValueSync(0)).toBe('REDACTED:0');
+    expect(redactor.redactValueSync(true)).toBe('REDACTED:true');
+    expect(redactor.redactValueSync('already')).toBe('REDACTED:already');
+    await expect(redactor.redactValue(12.5)).resolves.toBe('REDACTED:12.5');
+    expect(seen).toEqual(['1234567890', '0', 'true', 'already', '12.5']);
+  });
+
+  it('Does not coerce null or undefined before calling the redactor', async () => {
+    const seen: unknown[] = [];
+    const redactor = new PrimitiveRedactor({
+      syncRedactor: (val) => {
+        seen.push(val);
+        return 'REDACTED_NULLISH';
+      },
+      ignoreBooleans: false,
+      ignoreNullOrUndefined: false
+    });
+
+    expect(redactor.redactValueSync(null)).toBe('REDACTED_NULLISH');
+    expect(redactor.redactValueSync(undefined)).toBe('REDACTED_NULLISH');
+    expect(seen).toEqual([null, undefined]);
+  });
 });

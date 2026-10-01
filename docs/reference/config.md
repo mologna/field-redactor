@@ -4,8 +4,8 @@
 
 | Doc label | Config field | Type | Default | Effect |
 |-----------|--------------|------|---------|--------|
-| — | `redactor` | `(val) => Promise<string>` | `"REDACTED"` async | Custom async redactor; enables async traversal when sole redactor |
-| — | `syncRedactor` | `(val) => string` | `"REDACTED"` sync | Sync redactor; enables `redactSync()` without per-field Promises |
+| — | `redactor` | `(val) => Promise<string>` | `"REDACTED"` async | Custom async redactor; enables async traversal when sole redactor. Numbers/booleans coerced to strings before call |
+| — | `syncRedactor` | `(val) => string` | `"REDACTED"` sync | Sync redactor; enables `redactSync()` without per-field Promises. Numbers/booleans coerced to strings before call |
 | **Shallow** | `secretKeys` | `RegExp[]` | `null` | Redact matching scalar values |
 | **Deep** | `deepSecretKeys` | `RegExp[]` | `[]` | Deeply redact all primitives under matching keys |
 | **Opaque** | `opaqueSecretKeys` | `RegExp[]` | `[]` | Stringify and redact entire values |
@@ -117,6 +117,8 @@ type DryRunReport = {
 ## `redactor` / `syncRedactor`
 
 Provide `syncRedactor` (or use the default) when you want `redactSync()` without Promise overhead. Async-only `redactor` keeps `redact()` fully async.
+
+Before calling your redactor, non-string scalars that should be redacted (**numbers**, and **booleans** when `ignoreBooleans` is `false`) are coerced with `String(...)`. That way string-only redactors still mask numeric PII such as `{ "mdn": 1234567890 }`. `null` / `undefined` are passed through unchanged when they are redacted (`ignoreNullOrUndefined: false`).
 
 ```typescript
 import * as crypto from 'crypto';

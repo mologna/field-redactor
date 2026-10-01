@@ -8,6 +8,7 @@ GitHub Releases exist for every `v*` tag (alphas marked pre-release). Bodies mir
 
 | Version | npm | Notes |
 | --- | --- | --- |
+| **v2.1.0** | Pending tag | [v2.1.0.md](v2.1.0.md) — coerce numeric/boolean secrets to strings for custom redactors (`package.json` is `2.1.0`) |
 | **v2.0.0** | Yes | [v2.0.0.md](v2.0.0.md) — major: Opaque/Remove-only, safe construction, export trim · [GitHub Release](https://github.com/mologna/field-redactor/releases/tag/v2.0.0) |
 | **v2.0.0-alpha.4** | No (prerelease; publish skipped) | [v2.0.0-alpha.4.md](v2.0.0-alpha.4.md) — housekeeping (test renames, migration/notes finalize) |
 | **v2.0.0-alpha.3** | No (prerelease; publish skipped) | [v2.0.0-alpha.3.md](v2.0.0-alpha.3.md) — shrink `@internal` public type exports |

@@ -54,7 +54,7 @@ await fieldRedactor.redact({
 // → userId, email, firstName redacted; Salutation unchanged
 ```
 
-Nested objects keep normal traversal rules; primitives inside arrays at matching keys are redacted.
+Nested objects keep normal traversal rules; primitives inside arrays at matching keys are redacted. Numeric scalars (for example `{ "mdn": 1234567890 }`) are coerced to strings before your custom `redactor` / `syncRedactor` runs, so string-only redactors still mask them.
 
 ## Deep (`deepSecretKeys`)
 

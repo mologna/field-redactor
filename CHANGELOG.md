@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-10-01
+
+Fixes numeric (and boolean) secret values leaking through string-only custom redactors. See [docs/release-notes/v2.1.0.md](docs/release-notes/v2.1.0.md).
+
+### Fixed
+
+- Coerce non-string scalars (numbers, and booleans when not ignored) to strings before invoking custom `redactor` / `syncRedactor`, so string-only redactors still mask numeric secret fields (for example `{ "mdn": 1234567890 }`).
+
 ## [2.0.0] - 2026-08-31
 
 First published major after **1.6.x**. Opaque/Remove-only naming, safe-by-default construction, smaller public type exports, and dry-run Remove vocabulary. See [docs/release-notes/v2.0.0.md](docs/release-notes/v2.0.0.md) and [docs/guides/migration-1.6-to-2.0.md](docs/guides/migration-1.6-to-2.0.md).
@@ -293,6 +301,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[2.1.0]: https://github.com/mologna/field-redactor/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/mologna/field-redactor/compare/v1.6.3...v2.0.0
 [2.0.0-alpha.4]: https://github.com/mologna/field-redactor/compare/v2.0.0-alpha.3...v2.0.0-alpha.4
 [2.0.0-alpha.3]: https://github.com/mologna/field-redactor/compare/v2.0.0-alpha.2...v2.0.0-alpha.3

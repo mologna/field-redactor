@@ -28,7 +28,11 @@ export type JsonValue = JsonLeafValue | JsonObject | JsonArray;
  */
 export type RedactableInput = JsonValue | undefined;
 
-/** Primitive values that may be passed to a custom {@link Redactor} function. */
+/**
+ * Primitive values that may be passed to a custom {@link Redactor} / {@link SyncRedactor}.
+ * Numbers and booleans selected for redaction are coerced to strings before the call;
+ * `null` / `undefined` may still be passed when not ignored.
+ */
 export type RedactorInput = JsonPrimitive | undefined;
 
 /**
@@ -50,9 +54,13 @@ export type RedactedPrimitive = string | boolean | null | undefined | 0;
  */
 export type SecretSpecifierValue = string | number | boolean;
 
+/** Async custom redactor. Prefer handling `string` inputs; see {@link RedactorInput}. */
 export type Redactor = (value: RedactorInput) => Promise<string>;
 
-/** Synchronous redactor for use with {@link FieldRedactor.redactSync} without Promise overhead. */
+/**
+ * Synchronous redactor for use with {@link FieldRedactor.redactSync} without Promise overhead.
+ * Prefer handling `string` inputs; see {@link RedactorInput}.
+ */
 export type SyncRedactor = (value: RedactorInput) => string;
 
 /**

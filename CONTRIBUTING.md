@@ -6,7 +6,7 @@ This repository publishes the npm package **`field-redactor`**. The local folder
 
 | Channel | Meaning |
 |---------|---------|
-| npm `2.x` | Current major (`2.0.0`) |
+| npm `2.x` | Current major (`2.1.0` on this branch) |
 | npm `1.x` | Previous public line (`1.6.x`) |
 | Internal `2.x` tags / release notes | Historical development tags toward 1.3 / 1.5; **not** npm 2.0 (see [release-notes index](docs/release-notes/README.md#internal-milestones-removed)) |
 
@@ -79,8 +79,8 @@ Prerelease-style tags such as `v2.0.0-alpha.1` still match the workflow’s broa
 4. Save. After a successful OIDC publish, you can optionally restrict token-based publishing in **Publishing access**.
 
 ```bash
-git tag -a v2.0.0 -m "v2.0.0"
-git push origin v2.0.0
+git tag -a v2.1.0 -m "v2.1.0"
+git push origin v2.1.0
 ```
 
 ## Pull requests

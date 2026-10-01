@@ -37,6 +37,23 @@ FieldRedactor.createSafe({
 });
 ```
 
+## Custom redactors that ignore non-strings
+
+**Problem (fixed in 2.1.0):** A custom `redactor` / `syncRedactor` that only handles strings (for example `typeof val === 'string' ? mask(val) : val`) used to leave **numeric** secret fields unmasked — `{ "mdn": 1234567890 }` could leak while `"1234567890"` was redacted.
+
+**Now:** Before your function runs, Field Redactor coerces numbers (and booleans when `ignoreBooleans` is `false`) with `String(...)`. Write redactors for **string** input; you no longer need to special-case numbers for key-based redaction. `null` / `undefined` are still passed through when they are redacted.
+
+```typescript
+// Safe — receives "1234567890" for numeric mdn
+FieldRedactor.createSafe({
+  secretKeys: [/mdn/i],
+  syncRedactor: (val) => (typeof val === 'string' ? 'REDACTED' : String(val))
+}).redactSync({ mdn: 1234567890 });
+// → { mdn: 'REDACTED' }
+```
+
+See [Configuration reference](../reference/config.md#redactor--syncredactor) and [Secret key modes](secret-key-modes.md).
+
 ## Same regex in multiple key groups
 
 **Problem:** `/email/i` in both `secretKeys` and `deepSecretKeys` is confusing — only the higher-precedence group applies (Schema → path rule → Opaque → Deep → Remove → Shallow).

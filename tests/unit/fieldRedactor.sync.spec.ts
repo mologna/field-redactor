@@ -66,6 +66,16 @@ describe('FieldRedactor sync API', () => {
     expect(fieldRedactor.redactSync({ password: 'secret' })).toEqual({ password: 'SYNC' });
   });
 
+  it('coerces numeric secret values to strings for custom redactors', () => {
+    const fieldRedactor = new FieldRedactor({
+      secretKeys: [/mdn/i],
+      syncRedactor: (val) => (typeof val === 'string' ? 'REDACTED' : String(val))
+    });
+
+    expect(fieldRedactor.redactSync({ mdn: 1234567890 })).toEqual({ mdn: 'REDACTED' });
+    expect(fieldRedactor.redactSync({ mdn: '1234567890' })).toEqual({ mdn: 'REDACTED' });
+  });
+
   it('redactInPlaceSync wraps thrown errors in FieldRedactorError', () => {
     const fieldRedactor = new FieldRedactor({
       secretKeys: [/password/],
