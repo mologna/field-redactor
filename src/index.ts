@@ -8,10 +8,13 @@ export {
   DryRunResult,
   DryRunPathRule,
   MatchedSchemaReport,
+  KeyRedactorRule,
   PathRule,
   PathRuleMode,
   RedactionMode,
   RedactionRuleLabel,
+  RedactorContext,
+  SecretKeyPattern,
   JsonArray,
   JsonObject,
   JsonPrimitive,
@@ -25,6 +28,7 @@ export { FieldRedactorError, FieldRedactorConfigurationError } from './errors';
 export { validateFieldRedactorConfig, hasExplicitRedactionRules } from './config/configValidator';
 export { EMPTY_DRY_RUN_REPORT } from './dryrun/dryRun';
 export { presets } from './config/presets';
+export { maskKeepLast, maskKeepLastDigits } from './redactors/mask';
 export { FieldRedactorConfigBuilder } from './api/fieldRedactorConfigBuilder';
 export type { SchemaOptions } from './api/fieldRedactorConfigBuilder';
 export { FieldRedactor };

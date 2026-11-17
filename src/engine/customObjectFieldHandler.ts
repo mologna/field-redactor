@@ -11,6 +11,7 @@ import {
 import { ContainerMutation, createContainerMutation } from './objectRedactorMutation';
 import { applyCustomObjectMatchType } from './objectRedactorCustomObject';
 import { getStringSpecifiedCustomObjectSecretKeyValueIfExists } from '../rules/schemaSiblingKey';
+import { FieldRedactionScope, scopeForKey } from '../rules/redactorBinding';
 import { finalizeMaybeAsync, MaybeAsync, resolveMaybeAsync, runSequential } from '../util/maybeAsync';
 import { TraversalServices } from './traversalServices';
 import { SecretManager } from '../rules/secretManager';
@@ -56,40 +57,56 @@ const shapeOf = (value: JsonValue | undefined): ValueShape => {
 export class CustomObjectFieldHandler {
   constructor(private readonly services: TraversalServices) {}
 
-  handleCustomObject(container: ContainerMutation<JsonObject>, customObject: CustomObject): MaybeAsync<void> {
+  handleCustomObject(
+    container: ContainerMutation<JsonObject>,
+    customObject: CustomObject,
+    scope: FieldRedactionScope
+  ): MaybeAsync<void> {
     return runSequential(
       Object.keys(customObject),
-      (key) => this.handleField(container, key, customObject),
-      this.services.asyncMode
+      (key) => this.handleField(container, key, customObject, scope),
+      scope.asyncMode
     );
   }
 
   private handleField(
     container: ContainerMutation<JsonObject>,
     key: string,
-    customObject: CustomObject
+    customObject: CustomObject,
+    scope: FieldRedactionScope
   ): MaybeAsync<void> {
     const fieldValue = container.source[key];
     const shape = shapeOf(fieldValue);
     const stringKey = getStringSpecifiedCustomObjectSecretKeyValueIfExists(container.source, customObject, key);
 
     if (stringKey !== undefined) {
-      return this.applyStringKeyRule(container, key, stringKey, shape);
+      return this.applyStringKeyRule(container, key, stringKey, shape, scope);
     }
 
     if (typeof customObject[key] === 'number') {
-      return this.applyMatchTypeRule(container, key, customObject[key], shape);
+      return this.applyMatchTypeRule(container, key, customObject[key], shape, scope);
     }
 
     return undefined;
+  }
+
+  private fieldScope(scope: FieldRedactionScope, key: string, lookupKey: SecretSpecifierValue): FieldRedactionScope {
+    return scopeForKey(
+      scope,
+      key,
+      this.services.ruleResolver.bindingToInherit([...scope.pathSegments, key], lookupKey)
+    );
   }
 
   private applyStringKeyRule(
     container: ContainerMutation<JsonObject>,
     key: string,
     stringKey: SecretSpecifierValue,
-    shape: ValueShape
+    shape: ValueShape,
+    scope: FieldRedactionScope
   ): MaybeAsync<void> {
+    const fieldScope = this.fieldScope(scope, key, stringKey);
+
     if (shape === 'primitive') {
       const action = resolveCustomObjectStringKeyAction(this.services.secretManager, stringKey);
       if (action.type === 'remove') {
@@ -98,12 +115,14 @@ export class CustomObjectFieldHandler {
       }
 
       // Opaque/shallow/deep scalar handling stays in setPrimitiveValueIfSecret for value-pattern fallthrough.
+      // The sibling specifier selects the transform (`cardNumber`), not the leaf key (`value`).
       return this.services.setPrimitiveValueIfSecret(
         container,
         key,
         stringKey,
         container.source[key] as RedactablePrimitive,
-        false
+        false,
+        fieldScope
       );
     }
 
@@ -115,25 +134,26 @@ export class CustomObjectFieldHandler {
 
       const nestedSchema = this.services.ruleResolver.getMatchingSchema(fieldValue);
       if (nestedSchema) {
-        const child = createContainerMutation(fieldValue, container.copyOnWrite);
+        const child = createContainerMutation(fieldValue, container.copyOnWrite, fieldScope.rollback);
         return finalizeMaybeAsync(
-          this.handleCustomObject(child, nestedSchema),
+          this.handleCustomObject(child, nestedSchema, fieldScope),
           () => {
             container.set(key, child.result());
           },
-          this.services.asyncMode
+          fieldScope.asyncMode
         );
       }
     }
 
-    return this.applyContainerStringKeyAction(container, key, stringKey, shape);
+    return this.applyContainerStringKeyAction(container, key, stringKey, shape, fieldScope);
   }
 
   private applyContainerStringKeyAction(
     container: ContainerMutation<JsonObject>,
     key: string,
     stringKey: SecretSpecifierValue,
-    shape: 'array' | 'object'
+    shape: 'array' | 'object',
+    fieldScope: FieldRedactionScope
   ): MaybeAsync<void> {
     const fieldValue = container.source[key];
     const action = resolveCustomObjectStringKeyAction(this.services.secretManager, stringKey);
@@ -143,11 +163,11 @@ export class CustomObjectFieldHandler {
         container.remove(key);
         return;
       case 'opaque':
-        return this.services.setPrimitiveFromValue(container, key, fieldValue);
+        return this.services.setPrimitiveFromValue(container, key, fieldValue, fieldScope, stringKey);
       case 'traverse':
         return shape === 'array'
-          ? this.setRedactedArray(container, key, fieldValue as JsonArray, action.forceDeep)
-          : this.setRedactedObject(container, key, fieldValue as JsonObject, action.forceDeep);
+          ? this.setRedactedArray(container, key, fieldValue as JsonArray, action.forceDeep, fieldScope)
+          : this.setRedactedObject(container, key, fieldValue as JsonObject, action.forceDeep, fieldScope);
       case 'none':
         return;
     }
@@ -157,20 +177,22 @@ export class CustomObjectFieldHandler {
     container: ContainerMutation<JsonObject>,
     key: string,
     matchType: CustomObjectMatchType,
-    shape: ValueShape
+    shape: ValueShape,
+    scope: FieldRedactionScope
   ): MaybeAsync<void> {
     const fieldValue = container.source[key];
+    const fieldScope = this.fieldScope(scope, key, key);
 
     if (shape === 'primitive') {
       return resolveMaybeAsync(
         applyCustomObjectMatchType(matchType, {
           remove: () => container.remove(key),
-          opaque: () => this.services.setPrimitiveFromValue(container, key, fieldValue),
-          deep: () => this.services.setPrimitive(container, key, fieldValue as RedactablePrimitive),
-          shallow: () => this.services.setPrimitive(container, key, fieldValue as RedactablePrimitive),
+          opaque: () => this.services.setPrimitiveFromValue(container, key, fieldValue, fieldScope),
+          deep: () => this.services.setPrimitive(container, key, fieldValue as RedactablePrimitive, fieldScope),
+          shallow: () => this.services.setPrimitive(container, key, fieldValue as RedactablePrimitive, fieldScope),
           pass: () => undefined
         }),
-        this.services.asyncMode
+        fieldScope.asyncMode
       );
     }
 
@@ -182,12 +204,12 @@ export class CustomObjectFieldHandler {
       return resolveMaybeAsync(
         applyCustomObjectMatchType(matchType, {
           remove: () => container.remove(key),
-          opaque: () => this.services.setPrimitiveFromValue(container, key, fieldValue),
-          deep: () => this.setRedactedArray(container, key, fieldValue, true),
-          shallow: () => this.setRedactedArray(container, key, fieldValue, false),
-          pass: () => this.services.redactArrayInObject(fieldValue, key, false, container, [])
+          opaque: () => this.services.setPrimitiveFromValue(container, key, fieldValue, fieldScope),
+          deep: () => this.setRedactedArray(container, key, fieldValue, true, fieldScope),
+          shallow: () => this.setRedactedArray(container, key, fieldValue, false, fieldScope),
+          pass: () => this.services.redactArrayInObject(fieldValue, key, false, container, fieldScope)
         }),
-        this.services.asyncMode
+        fieldScope.asyncMode
       );
     }
 
@@ -195,17 +217,17 @@ export class CustomObjectFieldHandler {
       return;
     }
 
-    const traverseShallow = () => this.setRedactedObject(container, key, fieldValue, false);
+    const traverseShallow = () => this.setRedactedObject(container, key, fieldValue, false, fieldScope);
     return resolveMaybeAsync(
       applyCustomObjectMatchType(matchType, {
         remove: () => container.remove(key),
-        opaque: () => this.services.setPrimitiveFromValue(container, key, fieldValue),
-        deep: () => this.setRedactedObject(container, key, fieldValue, true),
+        opaque: () => this.services.setPrimitiveFromValue(container, key, fieldValue, fieldScope),
+        deep: () => this.setRedactedObject(container, key, fieldValue, true, fieldScope),
         shallow: traverseShallow,
         // Object Pass ≈ shallow traverse (walk nested secrets, keep structure).
         pass: traverseShallow
       }),
-      this.services.asyncMode
+      fieldScope.asyncMode
     );
   }
 
@@ -213,9 +235,15 @@ export class CustomObjectFieldHandler {
     container: ContainerMutation<JsonObject>,
     key: string,
     fieldValue: JsonArray,
-    forceDeepRedaction: boolean
+    forceDeepRedaction: boolean,
+    fieldScope: FieldRedactionScope
   ): MaybeAsync<void> {
-    const redacted = this.services.redactAllArrayValues(fieldValue, forceDeepRedaction, container.copyOnWrite, []);
+    const redacted = this.services.redactAllArrayValues(
+      fieldValue,
+      forceDeepRedaction,
+      container.copyOnWrite,
+      fieldScope
+    );
     if (redacted instanceof Promise) {
       return redacted.then((result) => {
         container.set(key, result);
@@ -229,15 +257,16 @@ export class CustomObjectFieldHandler {
     container: ContainerMutation<JsonObject>,
     key: string,
     fieldValue: JsonObject,
-    forceDeepRedaction: boolean
+    forceDeepRedaction: boolean,
+    fieldScope: FieldRedactionScope
   ): MaybeAsync<void> {
-    const child = createContainerMutation(fieldValue, container.copyOnWrite);
+    const child = createContainerMutation(fieldValue, container.copyOnWrite, fieldScope.rollback);
     return finalizeMaybeAsync(
-      this.services.redactSecretFields(child, forceDeepRedaction, []),
+      this.services.redactSecretFields(child, forceDeepRedaction, fieldScope),
       () => {
         container.set(key, child.result());
       },
-      this.services.asyncMode
+      fieldScope.asyncMode
     );
   }
 }

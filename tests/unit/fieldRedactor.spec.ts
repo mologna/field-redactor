@@ -33,7 +33,8 @@ describe('FieldRedactor', () => {
         ignoreBooleans: true,
         ignoreNullOrUndefined: true,
         redactor: config.redactor,
-        syncRedactor: undefined
+        syncRedactor: undefined,
+        bindings: []
       });
     });
 
@@ -44,7 +45,8 @@ describe('FieldRedactor', () => {
         ignoreBooleans: false,
         ignoreNullOrUndefined: true,
         redactor: undefined,
-        syncRedactor: undefined
+        syncRedactor: undefined,
+        bindings: []
       });
     });
 

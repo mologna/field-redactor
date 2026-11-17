@@ -2,36 +2,36 @@
 
 ## Overview
 
-| Doc label | Config field | Type | Default | Effect |
-|-----------|--------------|------|---------|--------|
-| — | `redactor` | `(val) => Promise<string>` | `"REDACTED"` async | Custom async redactor; enables async traversal when sole redactor. Numbers/booleans coerced to strings before call |
-| — | `syncRedactor` | `(val) => string` | `"REDACTED"` sync | Sync redactor; enables `redactSync()` without per-field Promises. Numbers/booleans coerced to strings before call |
-| **Shallow** | `secretKeys` | `RegExp[]` | `null` | Redact matching scalar values |
-| **Deep** | `deepSecretKeys` | `RegExp[]` | `[]` | Deeply redact all primitives under matching keys |
-| **Opaque** | `opaqueSecretKeys` | `RegExp[]` | `[]` | Stringify and redact entire values |
-| **Remove** | `removeSecretKeys` | `RegExp[]` | `[]` | Delete matching keys |
-| **Schema** | `customObjects` | `CustomObject[]` | `[]` | Per-shape rules; see [metadata guide](../guides/metadata-redaction.md). Schema-only config still shallow-redacts unmatched keys |
-| **Value-pattern** | `valuePatterns` | `RegExp[]` | `[]` | Opt-in: redact scalars whose string form matches a pattern |
-| **Path rule** | `pathRules` | `PathRule[]` | `[]` | Apply a mode at a JSON path (`metadata.*.value`) |
-| **Allowlist** | `passKeys` | `RegExp[]` | `[]` | Never redact matching key names under deep parents |
-| — | `schemaNames` | `string[]` | — | Optional labels parallel to `customObjects` for `dryRun` reports |
-| — | `ignoreBooleans` | `boolean` | `false` | Skip boolean redaction when `true` |
-| — | `ignoreNullOrUndefined` | `boolean` | `true` | Skip null/undefined redaction when `true` |
-| — | `cloneInput` | `boolean` | `true` | Copy-on-write for `redact()` / `redactSync()` |
-| — | `strict` | `boolean` | `false` | Throw on config warnings when `true` |
-| — | `onConfigWarning` | `(msg) => void` | — | Callback for non-fatal config warnings |
+| Doc label         | Config field            | Type                               | Default            | Effect                                                                                                                              |
+| ----------------- | ----------------------- | ---------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| —                 | `redactor`              | `(val) => Promise<string>`         | `"REDACTED"` async | Custom async redactor; enables async traversal when sole redactor. Numbers/booleans coerced to strings before call                  |
+| —                 | `syncRedactor`          | `(val) => string`                  | `"REDACTED"` sync  | Sync redactor; enables `redactSync()` without per-field Promises. Numbers/booleans coerced to strings before call                   |
+| **Shallow**       | `secretKeys`            | `Array<RegExp \| KeyRedactorRule>` | `null`             | Redact matching scalar values. A rule object `{ keys, redactor?, syncRedactor? }` shares one transform across those keys            |
+| **Deep**          | `deepSecretKeys`        | `Array<RegExp \| KeyRedactorRule>` | `[]`               | Deeply redact all primitives under matching keys. A rule transform is inherited by descendants that do not set their own            |
+| **Opaque**        | `opaqueSecretKeys`      | `Array<RegExp \| KeyRedactorRule>` | `[]`               | Stringify and redact entire values. A rule transform runs on the stringified value                                                  |
+| **Remove**        | `removeSecretKeys`      | `RegExp[]`                         | `[]`               | Delete matching keys                                                                                                                |
+| **Schema**        | `customObjects`         | `CustomObject[]`                   | `[]`               | Per-shape rules; see [metadata guide](../guides/metadata-redaction.md). Schema-only config still shallow-redacts unmatched keys     |
+| **Value-pattern** | `valuePatterns`         | `RegExp[]`                         | `[]`               | Opt-in: redact scalars whose string form matches a pattern                                                                          |
+| **Path rule**     | `pathRules`             | `PathRule[]`                       | `[]`               | Apply a mode at a JSON path (`metadata.*.value`). Optional `redactor` / `syncRedactor` override the key-rule transform at that path |
+| **Allowlist**     | `passKeys`              | `RegExp[]`                         | `[]`               | Never redact matching key names under deep parents                                                                                  |
+| —                 | `schemaNames`           | `string[]`                         | —                  | Optional labels parallel to `customObjects` for `dryRun` reports                                                                    |
+| —                 | `ignoreBooleans`        | `boolean`                          | `false`            | Skip boolean redaction when `true`                                                                                                  |
+| —                 | `ignoreNullOrUndefined` | `boolean`                          | `true`             | Skip null/undefined redaction when `true`                                                                                           |
+| —                 | `cloneInput`            | `boolean`                          | `true`             | Copy-on-write for `redact()` / `redactSync()`                                                                                       |
+| —                 | `strict`                | `boolean`                          | `false`            | Throw on config warnings when `true`                                                                                                |
+| —                 | `onConfigWarning`       | `(msg) => void`                    | —                  | Callback for non-fatal config warnings                                                                                              |
 
 ## FieldRedactor API
 
-| Method | Returns | Notes |
-|--------|---------|-------|
-| `redact(value)` | `Promise<T>` | Copy-on-write by default |
-| `redactSync(value)` | `T` | Sync path when no async-only `redactor` |
-| `redactInPlace(value)` | `Promise<void>` | Mutates traversable input |
-| `redactInPlaceSync(value)` | `void` | Sync in-place |
-| `dryRun(value)` | `Promise<{ result, report }>` | Redact + path audit |
-| `dryRunSync(value)` | `{ result, report }` | Sync dry run |
-| `configWarnings` | `readonly string[]` | Warnings from construction |
+| Method                     | Returns                       | Notes                                   |
+| -------------------------- | ----------------------------- | --------------------------------------- |
+| `redact(value)`            | `Promise<T>`                  | Copy-on-write by default                |
+| `redactSync(value)`        | `T`                           | Sync path when no async-only `redactor` |
+| `redactInPlace(value)`     | `Promise<void>`               | Mutates traversable input               |
+| `redactInPlaceSync(value)` | `void`                        | Sync in-place                           |
+| `dryRun(value)`            | `Promise<{ result, report }>` | Redact + path audit                     |
+| `dryRunSync(value)`        | `{ result, report }`          | Sync dry run                            |
+| `configWarnings`           | `readonly string[]`           | Warnings from construction              |
 
 ### Construction
 
@@ -41,12 +41,13 @@
 ## Builder API
 
 ```typescript
-import { CustomObjectMatchType, FieldRedactorConfigBuilder } from 'field-redactor';
+import { CustomObjectMatchType, FieldRedactorConfigBuilder, maskKeepLastDigits } from 'field-redactor';
 
 const redactor = FieldRedactorConfigBuilder.create()
   .usePreset(presets.applicationLogging())
   .valuePattern(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
   .shallow(/ssn/i)
+  .shallow({ keys: [/cardNumber/i], syncRedactor: maskKeepLastDigits(4) })
   .deep(/accountInfo/i)
   .opaque(/rawPayload/i)
   .remove(/authKey/i)
@@ -57,6 +58,8 @@ const redactor = FieldRedactorConfigBuilder.create()
 ```
 
 Methods: `shallow`, `deep`, `opaque`, `remove`, `schema`, `valuePattern`, `pathRule`, `passKey`, `usePreset`, `redactor`, `syncRedactor`, `ignoreBooleans`, `ignoreNullOrUndefined`, `cloneInput`, `strict`, `onConfigWarning`, `build`, `buildRedactor`, `buildSafeRedactor`.
+
+`shallow`, `deep`, and `opaque` accept either regexes or one `{ keys, redactor?, syncRedactor? }` rule. `pathRule` accepts `(path, mode)` or `{ path, mode, redactor?, syncRedactor? }`. See [Per-field redactors](../guides/secret-key-modes.md#per-field-redactors). `maskKeepLast` and `maskKeepLastDigits` build sync transforms for partial masks.
 
 **Precedence:** Schema → path rule → Opaque → Deep → Remove → Shallow → Value-pattern → default.
 
@@ -81,11 +84,11 @@ FieldRedactor.createSafe({
 });
 ```
 
-| Preset | Contents |
-| --- | --- |
-| `loggingMetadata()` | `{ name, type, value }` schema + auth key removal |
-| `applicationLogging()` | Common PII patterns + event metadata schema |
-| `keyValueEntries()` | `{ key, value }` schema |
+| Preset                 | Contents                                          |
+| ---------------------- | ------------------------------------------------- |
+| `loggingMetadata()`    | `{ name, type, value }` schema + auth key removal |
+| `applicationLogging()` | Common PII patterns + event metadata schema       |
+| `keyValueEntries()`    | `{ key, value }` schema                           |
 
 ## Dry run report
 
@@ -109,14 +112,14 @@ type DryRunReport = {
 
 ## Errors
 
-| Class | When |
-| --- | --- |
-| `FieldRedactorError` | Redaction failure at runtime |
+| Class                             | When                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------ |
+| `FieldRedactorError`              | Redaction failure at runtime                                                   |
 | `FieldRedactorConfigurationError` | Invalid config, construction / `createSafe()` with no rules, `strict` warnings |
 
 ## `redactor` / `syncRedactor`
 
-Provide `syncRedactor` (or use the default) when you want `redactSync()` without Promise overhead. Async-only `redactor` keeps `redact()` fully async.
+Provide `syncRedactor` (or use the default) when you want `redactSync()` without Promise overhead. Async-only `redactor` keeps `redact()` fully async. A per-field rule with `redactor` and no `syncRedactor` makes `redactSync()` and `redactInPlaceSync()` throw only when a matching value reaches that rule. If that in-place walk throws, it undoes the writes it already made on the same objects and does not clone the input. When a rule sets both, `redact()` calls `redactor` and `redactSync()` calls `syncRedactor`. The global pair still uses `syncRedactor` for both paths when both are set.
 
 Before calling your redactor, non-string scalars that should be redacted (**numbers**, and **booleans** when `ignoreBooleans` is `false`) are coerced with `String(...)`. That way string-only redactors still mask numeric PII such as `{ "mdn": 1234567890 }`. `null` / `undefined` are passed through unchanged when they are redacted (`ignoreNullOrUndefined: false`).
 
@@ -124,8 +127,7 @@ Before calling your redactor, non-string scalars that should be redacted (**numb
 import * as crypto from 'crypto';
 import { FieldRedactor, Redactor } from 'field-redactor';
 
-const redactor: Redactor = (val) =>
-  Promise.resolve(crypto.createHash('sha256').update(String(val)).digest('hex'));
+const redactor: Redactor = (val) => Promise.resolve(crypto.createHash('sha256').update(String(val)).digest('hex'));
 
 const fieldRedactor = new FieldRedactor({ redactor, secretKeys: [/email/] });
 ```

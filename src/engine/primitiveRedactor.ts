@@ -3,9 +3,13 @@ import {
   RedactablePrimitive,
   RedactedPrimitive,
   Redactor,
+  RedactorContext,
   RedactorInput,
   SyncRedactor
 } from '../types';
+import { isAsyncOnlyBinding, RedactorBinding } from '../rules/redactorBinding';
+
+const EMPTY_CONTEXT: RedactorContext = { key: '', path: '' };
 
 /**
  * Redacts primitive values based on the configuration provided in the constructor. Uses the redactor
@@ -15,11 +19,20 @@ import {
  * Non-string scalars selected for redaction (numbers, and booleans when not ignored) are coerced with
  * `String(...)` before the custom redactor runs so string-only redactors still mask numeric PII.
  */
+export type PrimitiveRedactorOptions = PrimitiveRedactorConfig & {
+  /** Transforms attached to key and path rules. An async transform makes `redact()` walk asynchronously. */
+  bindings?: RedactorBinding[];
+};
+
 export class PrimitiveRedactor {
   private static DEFAULT_REDACTED_TEXT = 'REDACTED';
   private readonly ignoreBooleans: boolean;
   private readonly ignoreNullOrUndefined: boolean;
-  private readonly useAsyncRedactor: boolean;
+  /** True when `redact()` must walk asynchronously (global async-only, or any binding defines `redactor`). */
+  private readonly needsAsyncTraversal: boolean;
+  /** False when a sync walk can throw because a redactor is async-only. */
+  private readonly syncRedactionAllowed: boolean;
+  private readonly globalAsyncOnly: boolean;
   private readonly syncRedactor: SyncRedactor;
   private readonly asyncRedactor?: Redactor;
 
@@ -28,23 +41,34 @@ export class PrimitiveRedactor {
    * @param config The PrimitiveRedactor configuration which specifies the redactor to use, whether to
    * ignore booleans, and whether to ignore null or undefined values.
    */
-  constructor(config: PrimitiveRedactorConfig) {
+  constructor(config: PrimitiveRedactorOptions) {
+    const bindings = config.bindings ?? [];
     this.ignoreBooleans = config.ignoreBooleans;
     this.ignoreNullOrUndefined = config.ignoreNullOrUndefined;
-    this.useAsyncRedactor = !!config.redactor && !config.syncRedactor;
-    this.syncRedactor = config.syncRedactor ?? (config.redactor
-      ? () => {
-          throw new Error('Sync redaction is not available without syncRedactor configuration');
-        }
-      : () => PrimitiveRedactor.DEFAULT_REDACTED_TEXT);
+    this.globalAsyncOnly = !!config.redactor && !config.syncRedactor;
+    this.needsAsyncTraversal = this.globalAsyncOnly || bindings.some((binding) => !!binding.redactor);
+    this.syncRedactionAllowed = !this.globalAsyncOnly && !bindings.some((binding) => isAsyncOnlyBinding(binding));
+    this.syncRedactor =
+      config.syncRedactor ??
+      (config.redactor
+        ? () => {
+            throw new Error('Sync redaction is not available without syncRedactor configuration');
+          }
+        : () => PrimitiveRedactor.DEFAULT_REDACTED_TEXT);
 
     if (config.redactor) {
       this.asyncRedactor = config.redactor;
     }
   }
 
+  /** True when `redact()` should use the async walk. A binding with both functions counts. */
   public usesAsyncRedactor(): boolean {
-    return this.useAsyncRedactor;
+    return this.needsAsyncTraversal;
+  }
+
+  /** False when a sync walk can throw because the global redactor or a field rule is async-only. */
+  public allowsSyncRedaction(): boolean {
+    return this.syncRedactionAllowed;
   }
 
   /**
@@ -52,19 +76,59 @@ export class PrimitiveRedactor {
    * @param value The value to redact.
    * @returns The redacted value.
    */
-  public async redactValue(value: RedactablePrimitive): Promise<RedactedPrimitive> {
-    if (!this.useAsyncRedactor) {
-      return this.redactValueSync(value);
+  public async redactValue(
+    value: RedactablePrimitive,
+    binding?: RedactorBinding,
+    context?: RedactorContext
+  ): Promise<RedactedPrimitive> {
+    if (!this.needsAsyncTraversal) {
+      return this.redactValueSync(value, binding, context);
     }
 
-    return this.redactWith(value, (input) => this.asyncRedactor!(input)) as Promise<RedactedPrimitive>;
+    return this.redactWith(value, this.selectRedactor(binding, context, false)) as Promise<RedactedPrimitive>;
   }
 
   /**
    * Synchronously redacts a primitive value without Promise allocation.
+   * A binding that defines both functions uses `syncRedactor` here and `redactor` on the async path.
    */
-  public redactValueSync(value: RedactablePrimitive): RedactedPrimitive {
-    return this.redactWith(value, (input) => this.syncRedactor(input)) as RedactedPrimitive;
+  public redactValueSync(
+    value: RedactablePrimitive,
+    binding?: RedactorBinding,
+    context?: RedactorContext
+  ): RedactedPrimitive {
+    return this.redactWith(value, this.selectRedactor(binding, context, true)) as RedactedPrimitive;
+  }
+
+  /**
+   * On the async path, a binding's `redactor` wins, then its `syncRedactor`, then the global function.
+   * On the sync path, a binding's `syncRedactor` wins. The global pair still prefers `syncRedactor`
+   * for both paths when both are set, matching the historical default.
+   */
+  private selectRedactor(
+    binding: RedactorBinding | undefined,
+    context: RedactorContext | undefined,
+    sync: boolean
+  ): (input: RedactorInput) => RedactedPrimitive | Promise<RedactedPrimitive> {
+    const ctx = context ?? EMPTY_CONTEXT;
+
+    if (!sync && binding?.redactor) {
+      return (input) => binding.redactor!(input, ctx);
+    }
+
+    if (binding?.syncRedactor) {
+      return (input) => binding.syncRedactor!(input, ctx);
+    }
+
+    if (!sync && this.globalAsyncOnly && this.asyncRedactor) {
+      return (input) => this.asyncRedactor!(input, ctx);
+    }
+
+    if (sync && isAsyncOnlyBinding(binding)) {
+      throw new Error('Sync redaction is not available without syncRedactor configuration');
+    }
+
+    return (input) => this.syncRedactor(input, ctx);
   }
 
   private redactWith(

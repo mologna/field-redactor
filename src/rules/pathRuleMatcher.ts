@@ -1,10 +1,12 @@
 import { parsePathRulePattern, PathPatternSegment } from '../util/pathParsing';
 import { PathRule, PathRuleMode } from '../types';
+import { bindingFrom, RedactorBinding } from './redactorBinding';
 
 type CompiledPathRule = {
   segments: PathPatternSegment[];
   mode: PathRuleMode;
   path: string;
+  binding?: RedactorBinding;
 };
 
 const segmentsMatch = (rule: PathPatternSegment[], path: Array<string | number>): boolean => {
@@ -23,11 +25,15 @@ export class PathRuleMatcher {
 
   constructor(pathRules?: PathRule[]) {
     this.rules = (pathRules ?? [])
-      .map((rule) => ({
-        segments: parsePathRulePattern(rule.path),
-        mode: rule.mode,
-        path: rule.path
-      }))
+      .map((rule) => {
+        const binding = bindingFrom(rule);
+        return {
+          segments: parsePathRulePattern(rule.path),
+          mode: rule.mode,
+          path: rule.path,
+          ...(binding ? { binding } : {})
+        };
+      })
       .filter((rule) => rule.segments.length > 0)
       .sort((left, right) => {
         if (right.segments.length !== left.segments.length) {

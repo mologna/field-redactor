@@ -1,6 +1,9 @@
 import { isJsonObject, JsonArray, JsonObject, JsonValue } from '../types';
 
-export const getJsonValueAtPath = (value: JsonValue | undefined, segments: Array<string | number>): JsonValue | undefined => {
+export const getJsonValueAtPath = (
+  value: JsonValue | undefined,
+  segments: Array<string | number>
+): JsonValue | undefined => {
   let current: JsonValue | undefined = value;
 
   for (const segment of segments) {
@@ -40,6 +43,10 @@ export const getParentContext = (
 
 export const joinPath = (base: string, segment: string | number): string =>
   typeof segment === 'number' ? (base ? `${base}[${segment}]` : `[${segment}]`) : base ? `${base}.${segment}` : segment;
+
+/** Format traversal segments the same way dry-run paths are formatted. */
+export const formatJsonPath = (segments: readonly (string | number)[]): string =>
+  segments.reduce<string>((path, segment) => joinPath(path, segment), '');
 
 export const isTraversableJson = (value: JsonValue | undefined): value is JsonObject | JsonValue[] =>
   !!value && typeof value === 'object' && !(value instanceof Date);

@@ -12,6 +12,7 @@ import {
 import { buildDryRunReport, EMPTY_DRY_RUN_REPORT } from '../dryrun/dryRun';
 import rfdc from 'rfdc';
 import { hasExplicitRedactionRules, validateFieldRedactorConfig } from '../config/configValidator';
+import { createInPlaceRollback } from '../util/inPlaceRollback';
 
 const EXPLICIT_RULES_REQUIRED_MESSAGE =
   'FieldRedactor requires at least one non-empty secretKeys, deepSecretKeys, opaqueSecretKeys, removeSecretKeys, customObjects, valuePatterns, or pathRules entry.';
@@ -155,20 +156,25 @@ export class FieldRedactor {
 
   /**
    * Synchronously redacts fields in the JSON object in place without per-field Promise overhead.
-   * Requires a `syncRedactor` or the default redactor; throws when only an async `redactor` is configured.
+   * Throws when a value reaches a redactor that is async-only. If that throw happens after other
+   * fields were already changed, those writes are undone on the same objects. The input is not cloned.
    */
   public redactInPlaceSync<T extends RedactableInput>(value: T): void {
-    if (this.deps.usesAsyncRedactor) {
-      throw new FieldRedactorError('redactInPlaceSync requires syncRedactor configuration or the default redactor');
+    if (this.isPrimitiveOrUndefined(value) || this.deps.allowsSyncRedaction) {
+      this.runTraversableRedaction(value, () => this.deps.traversal.redactInPlace(value as TraversableJson));
+      return;
     }
 
-    this.runTraversableRedaction(value, () => this.deps.traversal.redactInPlace(value as TraversableJson));
+    const rollback = createInPlaceRollback();
+    try {
+      this.runTraversableRedaction(value, () => this.deps.traversal.redactInPlace(value as TraversableJson, rollback));
+    } catch (error) {
+      rollback.undo();
+      throw error;
+    }
   }
 
-  private runTraversableRedaction<T extends RedactableInput>(
-    value: T,
-    redact: () => unknown
-  ): void | Promise<void> {
+  private runTraversableRedaction<T extends RedactableInput>(value: T, redact: () => unknown): void | Promise<void> {
     if (this.isPrimitiveOrUndefined(value)) {
       return;
     }
