@@ -54,14 +54,41 @@ export type RedactedPrimitive = string | boolean | null | undefined | 0;
  */
 export type SecretSpecifierValue = string | number | boolean;
 
-/** Async custom redactor. Prefer handling `string` inputs; see {@link RedactorInput}. */
-export type Redactor = (value: RedactorInput) => Promise<string>;
+/**
+ * Where a value was found when a custom redactor runs.
+ * `key` is the secret specifier: the field name, or the schema sibling value (for example `"cardNumber"`).
+ * `path` is the JSON path of the value being redacted (`account.cardNumber`, `metadata[0].value`).
+ */
+export type RedactorContext = {
+  key: string;
+  path: string;
+};
+
+/**
+ * Async custom redactor. Prefer handling `string` inputs; see {@link RedactorInput}.
+ * FieldRedactor always passes `context`. Direct callers may omit it.
+ */
+export type Redactor = (value: RedactorInput, context?: RedactorContext) => Promise<string>;
 
 /**
  * Synchronous redactor for use with {@link FieldRedactor.redactSync} without Promise overhead.
  * Prefer handling `string` inputs; see {@link RedactorInput}.
+ * FieldRedactor always passes `context`. Direct callers may omit it.
  */
-export type SyncRedactor = (value: RedactorInput) => string;
+export type SyncRedactor = (value: RedactorInput, context?: RedactorContext) => string;
+
+/**
+ * One transform shared by every key in {@link KeyRedactorRule.keys}.
+ * A bare `RegExp` in a secret-key list is the same rule with the default redactor.
+ */
+export type KeyRedactorRule = {
+  keys: RegExp[];
+  redactor?: Redactor;
+  syncRedactor?: SyncRedactor;
+};
+
+/** A secret-key list entry: a pattern using the default redactor, or a rule object. */
+export type SecretKeyPattern = RegExp | KeyRedactorRule;
 
 /**
  * Per-field redaction mode inside a {@link CustomObject} schema.
@@ -95,11 +122,11 @@ export type PrimitiveRedactorConfig = {
 
 export type SecretManagerConfig = {
   /** Shallow — redact matching keys' scalar values only (`secretKeys`). */
-  secretKeys?: RegExp[];
+  secretKeys?: SecretKeyPattern[];
   /** Deep — redact matching keys and all descendant primitives (`deepSecretKeys`). */
-  deepSecretKeys?: RegExp[];
+  deepSecretKeys?: SecretKeyPattern[];
   /** Opaque — stringify entire value at matching keys, then redact. */
-  opaqueSecretKeys?: RegExp[];
+  opaqueSecretKeys?: SecretKeyPattern[];
   /** Remove — delete matching keys from output. */
   removeSecretKeys?: RegExp[];
   /**
@@ -117,6 +144,10 @@ export type PathRule = {
   /** JSON path pattern with `.` segments, `[index]` arrays, and `*` single-segment wildcards. */
   path: string;
   mode: PathRuleMode;
+  /** Async transform for values selected by this path. Overrides key-rule and inherited transforms. */
+  redactor?: Redactor;
+  /** Sync transform for values selected by this path. Used by `redactSync` when `redactor` is also set. */
+  syncRedactor?: SyncRedactor;
 };
 
 export type PathRuleConfig = {

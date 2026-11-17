@@ -1,4 +1,5 @@
 import { JsonArray, JsonObject, JsonRecord, JsonValue } from '../types';
+import { InPlaceRollback } from '../util/inPlaceRollback';
 
 type ObjectCopyState<T extends JsonObject> = {
   source: T;
@@ -56,9 +57,27 @@ const ensureArrayCopy = <T extends JsonArray>(state: ArrayCopyState<T>): JsonArr
   return state.current;
 };
 
+const rememberWrite = (record: JsonRecord, key: string, rollback: InPlaceRollback | undefined): void => {
+  if (!rollback) {
+    return;
+  }
+
+  const had = Object.prototype.hasOwnProperty.call(record, key);
+  const previous = record[key];
+  rollback.record(() => {
+    if (had) {
+      record[key] = previous;
+      return;
+    }
+
+    delete record[key];
+  });
+};
+
 export const createContainerMutation = <T extends JsonObject | JsonArray>(
   source: T,
-  copyOnWrite: boolean
+  copyOnWrite: boolean,
+  rollback?: InPlaceRollback
 ): ContainerMutation<T> => {
   if (!copyOnWrite) {
     const record = source as JsonRecord;
@@ -66,9 +85,20 @@ export const createContainerMutation = <T extends JsonObject | JsonArray>(
       copyOnWrite: false,
       source,
       set(key, value) {
+        const had = Object.prototype.hasOwnProperty.call(record, key);
+        if (had && record[key] === value) {
+          return;
+        }
+
+        rememberWrite(record, key, rollback);
         record[key] = value;
       },
       remove(key) {
+        if (!Object.prototype.hasOwnProperty.call(record, key)) {
+          return;
+        }
+
+        rememberWrite(record, key, rollback);
         delete record[key];
       },
       result() {

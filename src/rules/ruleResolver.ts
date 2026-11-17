@@ -6,6 +6,7 @@ import { toRedactablePrimitive } from '../util/primitiveCoercion';
 import { PathRuleMatcher } from './pathRuleMatcher';
 import { KeyRule, SecretManager } from './secretManager';
 import { ValuePatternMatcher } from './valuePatternMatcher';
+import { hasBinding, RedactorBinding } from './redactorBinding';
 import {
   CustomObject,
   DryRunPathRule,
@@ -112,11 +113,7 @@ export class RuleResolver {
   }
 
   shouldTraverseContainerByKey(key: SecretSpecifierValue, forceDeepRedaction: boolean): boolean {
-    return (
-      this.secretManager.isSecretKey(key) ||
-      this.secretManager.isDeepSecretKey(key) ||
-      forceDeepRedaction
-    );
+    return this.secretManager.isSecretKey(key) || this.secretManager.isDeepSecretKey(key) || forceDeepRedaction;
   }
 
   /** True when the key itself is deep, or an ancestor already forced deep redaction. */
@@ -124,11 +121,7 @@ export class RuleResolver {
     return forceDeepRedaction || this.secretManager.isDeepSecretKey(key);
   }
 
-  attributeKeyRule(
-    path: string,
-    action: DryRunPathRule['action'],
-    key: SecretSpecifierValue
-  ): DryRunPathRule {
+  attributeKeyRule(path: string, action: DryRunPathRule['action'], key: SecretSpecifierValue): DryRunPathRule {
     const rule = this.secretManager.classifyKeyRule(key) ?? 'default';
     if (rule === 'default') {
       return toPathRule(path, action, rule);
@@ -266,6 +259,60 @@ export class RuleResolver {
     }
 
     return toPathRule(path, 'remove', 'default');
+  }
+
+  /**
+   * Transform for a value that has already been selected for redaction.
+   * Path-rule transform, then the winning key pattern's transform, then the inherited ancestor transform.
+   * `secretKey` is the schema sibling specifier when the leaf key is only a value slot.
+   */
+  resolveRedactorBinding(
+    pathSegments: Array<string | number>,
+    secretKey: SecretSpecifierValue,
+    inherited?: RedactorBinding
+  ): RedactorBinding | undefined {
+    const pathRule = this.pathRuleMatcher.getMatchingRule(pathSegments);
+    if (hasBinding(pathRule?.binding)) {
+      return pathRule.binding;
+    }
+
+    const keyBinding = this.bindingForWinningKey(secretKey);
+    if (hasBinding(keyBinding)) {
+      return keyBinding;
+    }
+
+    return hasBinding(inherited) ? inherited : undefined;
+  }
+
+  /**
+   * Transform to carry into descendants when this key or path is an opaque or deep region.
+   * Shallow transforms stay on the matching value and are not inherited.
+   */
+  bindingToInherit(pathSegments: Array<string | number>, lookupKey: SecretSpecifierValue): RedactorBinding | undefined {
+    const pathRule = this.pathRuleMatcher.getMatchingRule(pathSegments);
+    if ((pathRule?.mode === 'deep' || pathRule?.mode === 'opaque') && hasBinding(pathRule.binding)) {
+      return pathRule.binding;
+    }
+
+    for (const rule of ['opaque', 'deep'] as const) {
+      const entry = this.secretManager.findKeyPattern(lookupKey, rule);
+      if (entry) {
+        return hasBinding(entry.binding) ? entry.binding : undefined;
+      }
+    }
+
+    return undefined;
+  }
+
+  private bindingForWinningKey(key: SecretSpecifierValue): RedactorBinding | undefined {
+    for (const rule of ['opaque', 'deep', 'shallow'] as const) {
+      const entry = this.secretManager.findKeyPattern(key, rule);
+      if (entry) {
+        return entry.binding;
+      }
+    }
+
+    return undefined;
   }
 
   /** Returns the matching schema when a shaped object should be handled at this node. */

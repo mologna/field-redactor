@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-17
+
+Per-field redactors. See [docs/release-notes/v2.2.0.md](docs/release-notes/v2.2.0.md).
+
+### Added
+
+- `secretKeys`, `deepSecretKeys`, and `opaqueSecretKeys` accept `{ keys, redactor?, syncRedactor? }` beside bare regexes. `pathRule` accepts the same optional transform. Descendants inherit an opaque or deep transform until a more specific rule sets its own. `maskKeepLast` and `maskKeepLastDigits` build partial-mask functions.
+- `Redactor` and `SyncRedactor` receive an optional second argument, `{ key, path }`. Existing one-argument functions are unaffected.
+
+### Changed
+
+- `secretKeys`, `deepSecretKeys`, and `opaqueSecretKeys` are typed `Array<RegExp | KeyRedactorRule>`. Code that writes configs is unaffected. Code that reads these fields as `RegExp[]` must handle the union.
+- `redactSync()` and `redactInPlaceSync()` throw when a value reaches a field redactor that is async-only. They do not throw when nothing matches. An in-place sync walk that throws undoes its writes on the same objects, including nested ones, and does not clone the input first.
+
+### Fixed
+
+- `maskKeepLast(0)` and `maskKeepLastDigits` no longer return the original value. A count of 0 masks the whole value, and `maskKeepLastDigits` masks every digit when the value has `count` digits or fewer.
+- Overlapping `redact()` calls on one instance no longer share a single async flag.
+
 ## [2.1.0] - 2026-10-01
 
 Fixes numeric (and boolean) secret values leaking through string-only custom redactors. See [docs/release-notes/v2.1.0.md](docs/release-notes/v2.1.0.md).
@@ -301,6 +320,7 @@ Development tags `2.0.0`–`2.3.1` track incremental work toward `1.3.0`. See [d
 
 - Initial public release: regex key rules, custom object schemas with sibling-key indirection, async `redact()` / `redactInPlace()`, and configurable redactor functions.
 
+[2.2.0]: https://github.com/mologna/field-redactor/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/mologna/field-redactor/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/mologna/field-redactor/compare/v1.6.3...v2.0.0
 [2.0.0-alpha.4]: https://github.com/mologna/field-redactor/compare/v2.0.0-alpha.3...v2.0.0-alpha.4

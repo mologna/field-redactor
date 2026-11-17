@@ -86,6 +86,8 @@ import {
   FieldRedactorConfigBuilder,
   FieldRedactorConfigurationError,
   FieldRedactorError,
+  maskKeepLast,
+  maskKeepLastDigits,
   presets,
   validateFieldRedactorConfig
 } from 'field-redactor';
@@ -94,7 +96,7 @@ import type { DryRunPathRule, RedactionRuleLabel, MatchedSchemaReport } from 'fi
 ```
 
 - **Sync:** `redactSync()`, `redactInPlaceSync()`, `dryRunSync()`
-- **Async:** `redact()`, `redactInPlace()`, `dryRun()` (sync path when no async-only `redactor`)
+- **Async:** `redact()`, `redactInPlace()`, `dryRun()` (sync path unless a redactor is async-only, or a per-field rule defines `redactor`)
 - **Presets:** `presets.loggingMetadata()`, `presets.applicationLogging()`, `presets.keyValueEntries()`
 
 ## Why this library exists

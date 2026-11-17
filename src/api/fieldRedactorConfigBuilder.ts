@@ -1,12 +1,24 @@
 import { FieldRedactor } from './fieldRedactor';
+import { FieldRedactorConfigurationError } from '../errors';
 import {
   appendRegExpArray,
+  appendSecretKeyPatterns,
   finalizeRegisteredSchemas,
   mergePartialConfig,
   RegisteredSchema,
-  SecretRegexField
+  SecretPatternField
 } from '../config/redactionRules';
-import { CustomObject, FieldRedactorConfig, PathRuleMode, Redactor, SyncRedactor } from '../types';
+import { assertValidKeyRedactorRules } from '../config/configValidator';
+import {
+  CustomObject,
+  FieldRedactorConfig,
+  KeyRedactorRule,
+  PathRule,
+  PathRuleMode,
+  Redactor,
+  SyncRedactor
+} from '../types';
+import { isKeyRedactorRule } from '../rules/redactorBinding';
 
 export type SchemaOptions = {
   /** Optional label surfaced in {@link FieldRedactor.dryRun} `matchedSchemas` reports. */
@@ -25,23 +37,33 @@ export class FieldRedactorConfigBuilder {
   }
 
   /** Shallow — redact matching keys' scalar values (`secretKeys`). */
-  shallow(...patterns: RegExp[]): this {
-    return this.appendRegex('secretKeys', patterns);
+  shallow(...patterns: RegExp[]): this;
+  /** Shallow rule with its own transform. Every key in `keys` shares that transform. */
+  shallow(rule: KeyRedactorRule): this;
+  shallow(...args: Array<RegExp | KeyRedactorRule>): this {
+    return this.appendKeyRule('secretKeys', 'shallow', args);
   }
 
   /** Deep — redact matching keys and descendants (`deepSecretKeys`). */
-  deep(...patterns: RegExp[]): this {
-    return this.appendRegex('deepSecretKeys', patterns);
+  deep(...patterns: RegExp[]): this;
+  /** Deep rule with its own transform, inherited by descendants that do not set their own. */
+  deep(rule: KeyRedactorRule): this;
+  deep(...args: Array<RegExp | KeyRedactorRule>): this {
+    return this.appendKeyRule('deepSecretKeys', 'deep', args);
   }
 
   /** Opaque — stringify entire values at matching keys (`opaqueSecretKeys`). */
-  opaque(...patterns: RegExp[]): this {
-    return this.appendRegex('opaqueSecretKeys', patterns);
+  opaque(...patterns: RegExp[]): this;
+  /** Opaque rule with its own transform, applied to the stringified value. */
+  opaque(rule: KeyRedactorRule): this;
+  opaque(...args: Array<RegExp | KeyRedactorRule>): this {
+    return this.appendKeyRule('opaqueSecretKeys', 'opaque', args);
   }
 
   /** Remove — delete matching keys from output (`removeSecretKeys`). */
   remove(...patterns: RegExp[]): this {
-    return this.appendRegex('removeSecretKeys', patterns);
+    appendRegExpArray(this.config, 'removeSecretKeys', patterns);
+    return this;
   }
 
   /** Register an object schema (`customObjects`). */
@@ -61,9 +83,25 @@ export class FieldRedactorConfigBuilder {
 
   /**
    * Path rule — apply a redaction mode at a JSON path (`metadata.*.value`, `accountInfo.id`).
+   * An optional transform on the rule overrides key-rule and inherited transforms at that path.
    */
-  pathRule(path: string, mode: PathRuleMode): this {
-    this.config.pathRules = [...(this.config.pathRules ?? []), { path, mode }];
+  pathRule(path: string, mode: PathRuleMode): this;
+  pathRule(rule: PathRule): this;
+  pathRule(pathOrRule: string | PathRule, mode?: PathRuleMode): this {
+    if (typeof pathOrRule !== 'string') {
+      if (!pathOrRule.path || !pathOrRule.mode) {
+        throw new FieldRedactorConfigurationError('`pathRule` requires `path` and `mode`.');
+      }
+
+      this.config.pathRules = [...(this.config.pathRules ?? []), pathOrRule];
+      return this;
+    }
+
+    if (!mode) {
+      throw new FieldRedactorConfigurationError('`pathRule` requires a mode.');
+    }
+
+    this.config.pathRules = [...(this.config.pathRules ?? []), { path: pathOrRule, mode }];
     return this;
   }
 
@@ -124,8 +162,20 @@ export class FieldRedactorConfigBuilder {
     return this.buildRedactor();
   }
 
-  private appendRegex(field: SecretRegexField, patterns: RegExp[]): this {
-    appendRegExpArray(this.config, field, patterns);
+  private appendKeyRule(field: SecretPatternField, label: string, args: Array<RegExp | KeyRedactorRule>): this {
+    if (args.length === 1 && isKeyRedactorRule(args[0])) {
+      assertValidKeyRedactorRules({ [field]: [args[0]] });
+      appendSecretKeyPatterns(this.config, field, [args[0]]);
+      return this;
+    }
+
+    if (args.some((pattern) => !(pattern instanceof RegExp))) {
+      throw new FieldRedactorConfigurationError(
+        `\`${label}\` accepts regular expressions or a single { keys, redactor?, syncRedactor? } rule.`
+      );
+    }
+
+    appendSecretKeyPatterns(this.config, field, args as RegExp[]);
     return this;
   }
 

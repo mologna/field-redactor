@@ -3,23 +3,64 @@ import { formatRegExp, regexIdentity } from '../util/regexUtils';
 import { normalizeFieldRedactorConfig, REGEX_ARRAY_CONFIG_FIELDS, SECRET_REGEX_FIELDS } from './redactionRules';
 import { analyzeSchemaPairs, assertNoIdenticalCustomObjectSchemas } from './customObjectSchemas';
 import { CustomObject, FieldRedactorConfig } from '../types';
+import {
+  bindingsMatch,
+  flattenSecretKeyPatterns,
+  hasBinding,
+  isKeyRedactorRule,
+  KeyPatternEntry,
+  RedactorBinding
+} from '../rules/redactorBinding';
 
 export { hasExplicitRedactionRules } from './redactionRules';
 export { assertNoIdenticalCustomObjectSchemas } from './customObjectSchemas';
 
 const KEY_RULE_FIELDS = new Set<string>(SECRET_REGEX_FIELDS);
+const SECRET_PATTERN_FIELDS = ['secretKeys', 'deepSecretKeys', 'opaqueSecretKeys'] as const;
+
+type SeenPattern = {
+  field: string;
+  binding?: RedactorBinding;
+};
+
+const patternsForField = (
+  config: FieldRedactorConfig,
+  field: (typeof REGEX_ARRAY_CONFIG_FIELDS)[number]
+): KeyPatternEntry[] => {
+  if (field === 'secretKeys' || field === 'deepSecretKeys' || field === 'opaqueSecretKeys') {
+    return flattenSecretKeyPatterns(config[field]) ?? [];
+  }
+
+  return (config[field] ?? []).map((pattern) => ({ pattern }));
+};
+
+export const assertValidKeyRedactorRules = (config?: FieldRedactorConfig): void => {
+  if (!config) {
+    return;
+  }
+
+  for (const field of SECRET_PATTERN_FIELDS) {
+    for (const entry of config[field] ?? []) {
+      if (entry instanceof RegExp) {
+        continue;
+      }
+
+      if (!isKeyRedactorRule(entry) || entry.keys.length === 0 || entry.keys.some((key) => !(key instanceof RegExp))) {
+        throw new FieldRedactorConfigurationError(
+          `\`${field}\` rules require a non-empty \`keys\` array of regular expressions.`
+        );
+      }
+    }
+  }
+};
 
 const collectRegexWarnings = (config: FieldRedactorConfig): string[] => {
   const warnings: string[] = [];
-  const keyRuleDuplicates = new Map<string, string>();
+  const seenPatterns = new Map<string, SeenPattern>();
 
   for (const field of REGEX_ARRAY_CONFIG_FIELDS) {
-    const regexes = config[field];
-    if (!regexes) {
-      continue;
-    }
-
-    for (const regex of regexes) {
+    for (const entry of patternsForField(config, field)) {
+      const regex = entry.pattern;
       if (regex.global) {
         warnings.push(
           `Global regex ${formatRegExp(regex)} in \`${field}\` can produce surprising \`.test()\` results; remove the \`g\` flag.`
@@ -31,13 +72,23 @@ const collectRegexWarnings = (config: FieldRedactorConfig): string[] => {
       }
 
       const identity = regexIdentity(regex);
-      const prior = keyRuleDuplicates.get(identity);
-      if (prior && prior !== field) {
+      const prior = seenPatterns.get(identity);
+      if (prior && prior.field !== field) {
         warnings.push(
-          `${formatRegExp(regex)} appears in both \`${prior}\` and \`${field}\` — only the higher-precedence rule applies.`
+          `${formatRegExp(regex)} appears in both \`${prior.field}\` and \`${field}\` — only the higher-precedence rule applies.`
         );
-      } else if (!prior) {
-        keyRuleDuplicates.set(identity, field);
+      }
+
+      if (
+        prior &&
+        !bindingsMatch(prior.binding, entry.binding) &&
+        (hasBinding(prior.binding) || hasBinding(entry.binding))
+      ) {
+        warnings.push(`${formatRegExp(regex)} is configured with more than one redactor; the first match is used.`);
+      }
+
+      if (!prior) {
+        seenPatterns.set(identity, { field, binding: entry.binding });
       }
     }
   }
@@ -76,13 +127,11 @@ const collectSchemaWarnings = (customObjects: CustomObject[]): string[] => {
  */
 export const validateFieldRedactorConfig = (config?: FieldRedactorConfig): string[] => {
   assertNoRemovedLegacyNamingKeys(config);
+  assertValidKeyRedactorRules(config);
   const resolved = normalizeFieldRedactorConfig(config) ?? {};
   assertNoIdenticalCustomObjectSchemas(resolved.customObjects);
 
-  const warnings = [
-    ...collectRegexWarnings(resolved),
-    ...collectSchemaWarnings(resolved.customObjects ?? [])
-  ];
+  const warnings = [...collectRegexWarnings(resolved), ...collectSchemaWarnings(resolved.customObjects ?? [])];
 
   if (resolved.strict && warnings[0]) {
     throw new FieldRedactorConfigurationError(warnings[0]);
@@ -102,13 +151,9 @@ const assertNoRemovedLegacyNamingKeys = (config?: FieldRedactorConfig): void => 
   };
 
   if (Object.prototype.hasOwnProperty.call(legacy, 'fullSecretKeys')) {
-    throw new FieldRedactorConfigurationError(
-      '`fullSecretKeys` was removed in 2.0; use `opaqueSecretKeys` instead.'
-    );
+    throw new FieldRedactorConfigurationError('`fullSecretKeys` was removed in 2.0; use `opaqueSecretKeys` instead.');
   }
   if (Object.prototype.hasOwnProperty.call(legacy, 'deleteSecretKeys')) {
-    throw new FieldRedactorConfigurationError(
-      '`deleteSecretKeys` was removed in 2.0; use `removeSecretKeys` instead.'
-    );
+    throw new FieldRedactorConfigurationError('`deleteSecretKeys` was removed in 2.0; use `removeSecretKeys` instead.');
   }
 };

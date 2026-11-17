@@ -1,5 +1,6 @@
 import { formatRegExp } from '../util/regexUtils';
 import { SecretManagerConfig, SecretSpecifierValue } from '../types';
+import { flattenSecretKeyPatterns, KeyPatternEntry } from './redactorBinding';
 
 export type KeyRule = 'remove' | 'opaque' | 'deep' | 'shallow';
 
@@ -10,25 +11,28 @@ const KEY_RULE_PRECEDENCE: KeyRule[] = ['remove', 'opaque', 'deep', 'shallow'];
  * force it to `[]`, every key is treated as a shallow secret. {@link FieldRedactor} still requires
  * at least one explicit rule list; a schemas-only config can leave `secretKeys` undefined so
  * unmatched keys are still shallow-redacted.
+ *
+ * Rule objects are flattened to one entry per regex. The first matching entry in a list wins,
+ * and its transform (if any) is the one {@link RuleResolver} will prefer for that mode.
  */
 export class SecretManager {
-  private secretKeys?: RegExp[];
-  private deepSecretKeys?: RegExp[];
-  private opaqueSecretKeys?: RegExp[];
+  private secretKeys?: KeyPatternEntry[];
+  private deepSecretKeys?: KeyPatternEntry[];
+  private opaqueSecretKeys?: KeyPatternEntry[];
   private removeSecretKeys?: RegExp[];
   private passKeys?: RegExp[];
 
   constructor(config: SecretManagerConfig) {
-    this.deepSecretKeys = config.deepSecretKeys;
-    this.opaqueSecretKeys = config.opaqueSecretKeys;
+    this.deepSecretKeys = flattenSecretKeyPatterns(config.deepSecretKeys);
+    this.opaqueSecretKeys = flattenSecretKeyPatterns(config.opaqueSecretKeys);
     this.removeSecretKeys = config.removeSecretKeys;
     this.passKeys = config.passKeys;
 
-    const hasScopedKeyRules = !!(this.deepSecretKeys || this.opaqueSecretKeys || this.removeSecretKeys);
+    const hasScopedKeyRules = !!(config.deepSecretKeys || config.opaqueSecretKeys || config.removeSecretKeys);
     if (!config.secretKeys && hasScopedKeyRules) {
       this.secretKeys = [];
     } else {
-      this.secretKeys = config.secretKeys;
+      this.secretKeys = flattenSecretKeyPatterns(config.secretKeys);
     }
   }
 
@@ -61,8 +65,18 @@ export class SecretManager {
   }
 
   public getKeyRulePattern(key: SecretSpecifierValue, rule: KeyRule): string | undefined {
-    const match = SecretManager.findMatchingRegex(key, this.regexListFor(rule));
-    return match ? formatRegExp(match) : undefined;
+    const entry = this.findKeyPattern(key, rule);
+    return entry ? formatRegExp(entry.pattern) : undefined;
+  }
+
+  /** First matching pattern for a mode, including a transform copied from a rule object. */
+  public findKeyPattern(key: SecretSpecifierValue, rule: KeyRule): KeyPatternEntry | undefined {
+    if (rule === 'remove') {
+      const pattern = SecretManager.findMatchingRegex(key, this.removeSecretKeys);
+      return pattern ? { pattern } : undefined;
+    }
+
+    return SecretManager.findMatchingEntry(key, this.entriesFor(rule));
   }
 
   public classifyKeyRule(key: SecretSpecifierValue): KeyRule | 'default' | null {
@@ -80,14 +94,11 @@ export class SecretManager {
   }
 
   private matchesRule(key: SecretSpecifierValue, rule: KeyRule): boolean {
-    const regexes = this.regexListFor(rule);
-    return !!regexes && SecretManager.matchesAnyRegex(key, regexes);
+    return !!this.findKeyPattern(key, rule);
   }
 
-  private regexListFor(rule: KeyRule): RegExp[] | undefined {
+  private entriesFor(rule: Exclude<KeyRule, 'remove'>): KeyPatternEntry[] | undefined {
     switch (rule) {
-      case 'remove':
-        return this.removeSecretKeys;
       case 'opaque':
         return this.opaqueSecretKeys;
       case 'deep':
@@ -95,6 +106,13 @@ export class SecretManager {
       case 'shallow':
         return this.secretKeys;
     }
+  }
+
+  private static findMatchingEntry(
+    key: SecretSpecifierValue,
+    entries?: KeyPatternEntry[]
+  ): KeyPatternEntry | undefined {
+    return entries?.find((entry) => entry.pattern.test(String(key)));
   }
 
   private static findMatchingRegex(key: SecretSpecifierValue, regexes?: RegExp[]): RegExp | undefined {

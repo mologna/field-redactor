@@ -6,6 +6,7 @@ import { SecretManager } from '../rules/secretManager';
 import { FieldRedactorConfig } from '../types';
 import { EMPTY_PATH_RULE_MATCHER, PathRuleMatcher } from '../rules/pathRuleMatcher';
 import { EMPTY_VALUE_PATTERN_MATCHER, ValuePatternMatcher } from '../rules/valuePatternMatcher';
+import { collectRedactorBindings } from '../rules/redactorBinding';
 
 export type FieldRedactorDeps = {
   primitiveRedactor: PrimitiveRedactor;
@@ -15,6 +16,7 @@ export type FieldRedactorDeps = {
   customObjectManager: CustomObjectManager;
   traversal: ObjectRedactorTraversal;
   usesAsyncRedactor: boolean;
+  allowsSyncRedaction: boolean;
   cloneInput: boolean;
 };
 
@@ -39,7 +41,8 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     ignoreBooleans: resolveBoolean(normalized.ignoreBooleans, false),
     ignoreNullOrUndefined: resolveBoolean(normalized.ignoreNullOrUndefined, true),
     redactor,
-    syncRedactor
+    syncRedactor,
+    bindings: collectRedactorBindings([normalized.secretKeys, deepSecretKeys, opaqueSecretKeys], pathRules)
   });
 
   const secretManager = new SecretManager({
@@ -49,7 +52,9 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     removeSecretKeys,
     passKeys
   });
-  const valuePatternMatcher = valuePatterns?.length ? new ValuePatternMatcher(valuePatterns) : EMPTY_VALUE_PATTERN_MATCHER;
+  const valuePatternMatcher = valuePatterns?.length
+    ? new ValuePatternMatcher(valuePatterns)
+    : EMPTY_VALUE_PATTERN_MATCHER;
   const pathRuleMatcher = pathRules?.length ? new PathRuleMatcher(pathRules) : EMPTY_PATH_RULE_MATCHER;
   const customObjectManager = new CustomObjectManager(customObjects, normalized.schemaNames);
   const traversal = new ObjectRedactorTraversal(
@@ -68,6 +73,7 @@ export const buildFieldRedactorDeps = (config?: FieldRedactorConfig): FieldRedac
     customObjectManager,
     traversal,
     usesAsyncRedactor: primitiveRedactor.usesAsyncRedactor(),
+    allowsSyncRedaction: primitiveRedactor.allowsSyncRedaction(),
     cloneInput: normalized.cloneInput !== false
   };
 };

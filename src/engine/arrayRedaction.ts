@@ -2,6 +2,7 @@ import { isJsonObject, JsonArray, JsonObject } from '../types';
 import { ContainerMutation, createContainerMutation } from './objectRedactorMutation';
 import { finalizeMaybeAsync, MaybeAsync, runSequential } from '../util/maybeAsync';
 import { toRedactablePrimitive } from './objectRedactorHelpers';
+import { scopeForKey } from '../rules/redactorBinding';
 import { TraversalServices } from './traversalServices';
 
 export class ArrayRedactor {
@@ -12,16 +13,16 @@ export class ArrayRedactor {
     key: string,
     forceDeepRedaction: boolean,
     parent: ContainerMutation<JsonObject | JsonArray>,
-    pathSegments: Array<string | number>
+    scope: ReturnType<typeof scopeForKey>
   ): MaybeAsync<void> {
     const redacted = this.services.ruleResolver.shouldTraverseContainerByKey(key, forceDeepRedaction)
       ? this.redactAllArrayValues(
           array,
           this.services.ruleResolver.forceDeepForKey(key, forceDeepRedaction),
           parent.copyOnWrite,
-          pathSegments
+          scope
         )
-      : this.redactObjectsInArray(array, parent.copyOnWrite, pathSegments);
+      : this.redactObjectsInArray(array, parent.copyOnWrite, scope);
 
     if (redacted instanceof Promise) {
       return redacted.then((result) => {
@@ -35,9 +36,9 @@ export class ArrayRedactor {
   redactObjectsInArray(
     array: JsonArray,
     copyOnWrite: boolean,
-    pathSegments: Array<string | number>
+    scope: ReturnType<typeof scopeForKey>
   ): MaybeAsync<JsonArray> {
-    const container = createContainerMutation(array, copyOnWrite);
+    const container = createContainerMutation(array, copyOnWrite, scope.rollback);
 
     const work = runSequential(
       array,
@@ -47,40 +48,40 @@ export class ArrayRedactor {
         }
 
         const customObject = this.services.ruleResolver.getMatchingSchema(item);
-        const child = createContainerMutation(item, copyOnWrite);
-        const itemPath = [...pathSegments, index];
+        const itemScope = scopeForKey(scope, index);
+        const child = createContainerMutation(item, copyOnWrite, itemScope.rollback);
         return finalizeMaybeAsync(
           customObject
-            ? this.services.handleCustomObject(child, customObject)
-            : this.services.redactSecretFields(child, false, itemPath),
+            ? this.services.handleCustomObject(child, customObject, itemScope)
+            : this.services.redactSecretFields(child, false, itemScope),
           () => {
             container.set(String(index), child.result());
           },
-          this.services.asyncMode
+          scope.asyncMode
         );
       },
-      this.services.asyncMode
+      scope.asyncMode
     );
 
-    return finalizeMaybeAsync(work, () => container.result(), this.services.asyncMode);
+    return finalizeMaybeAsync(work, () => container.result(), scope.asyncMode);
   }
 
   redactAllArrayValues(
     array: JsonArray,
     forceDeepRedaction: boolean,
     copyOnWrite: boolean,
-    pathSegments: Array<string | number>
+    scope: ReturnType<typeof scopeForKey>
   ): MaybeAsync<JsonArray> {
-    const container = createContainerMutation(array, copyOnWrite);
+    const container = createContainerMutation(array, copyOnWrite, scope.rollback);
 
     const work = runSequential(
       array,
       (item, index) => {
         const key = String(index);
-        const itemPath = [...pathSegments, index];
+        const itemScope = scopeForKey(scope, index);
 
         if (Array.isArray(item)) {
-          const nested = this.redactAllArrayValues(item, forceDeepRedaction, copyOnWrite, itemPath);
+          const nested = this.redactAllArrayValues(item, forceDeepRedaction, copyOnWrite, itemScope);
           if (nested instanceof Promise) {
             return nested.then((result) => {
               container.set(key, result);
@@ -92,24 +93,24 @@ export class ArrayRedactor {
         }
 
         if (!isJsonObject(item)) {
-          return this.services.setPrimitive(container, key, toRedactablePrimitive(item));
+          return this.services.setPrimitive(container, key, toRedactablePrimitive(item), itemScope);
         }
 
         const customObject = this.services.ruleResolver.getMatchingSchema(item);
-        const child = createContainerMutation(item, copyOnWrite);
+        const child = createContainerMutation(item, copyOnWrite, itemScope.rollback);
         return finalizeMaybeAsync(
           customObject
-            ? this.services.handleCustomObject(child, customObject)
-            : this.services.redactSecretFields(child, forceDeepRedaction, itemPath),
+            ? this.services.handleCustomObject(child, customObject, itemScope)
+            : this.services.redactSecretFields(child, forceDeepRedaction, itemScope),
           () => {
             container.set(key, child.result());
           },
-          this.services.asyncMode
+          scope.asyncMode
         );
       },
-      this.services.asyncMode
+      scope.asyncMode
     );
 
-    return finalizeMaybeAsync(work, () => container.result(), this.services.asyncMode);
+    return finalizeMaybeAsync(work, () => container.result(), scope.asyncMode);
   }
 }
